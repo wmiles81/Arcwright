@@ -4,6 +4,7 @@ import { genreSystem } from '../data/genreSystem';
 import { plotStructures } from '../data/plotStructures';
 import { dimensions, DIMENSION_KEYS } from '../data/dimensions';
 import { WEIGHT_KEYS } from '../engine/weights';
+import { buildPaneContext } from './editPrompts';
 
 function routeToWorkflow(route) {
   if (route?.includes('edit')) return 'Edit';
@@ -24,7 +25,7 @@ export function buildChatSystemPrompt(currentRoute, { nativeToolsActive = false 
   const structure = plotStructures[genre?.structure];
   const workflow = routeToWorkflow(currentRoute);
 
-  let prompt = `You are a narrative design assistant embedded in the "Arcwrite" application. You help writers build, analyze, and refine story arcs across 11 narrative dimensions.
+  let prompt = `You are a narrative design assistant embedded in the "Arcwright" application. You help writers build, analyze, and refine story arcs across 11 narrative dimensions.
 
 You are conversational, knowledgeable about storytelling craft, and can both advise AND directly modify the application state when asked.
 
@@ -226,6 +227,120 @@ When the user asks you to revise or fix a chapter, write the revised version to 
 5. If the user asks something you cannot do via actions (e.g., writing chapter text), explain what they should do manually.
 6. Be conversational and helpful — you're a writing partner, not just a tool.
 `;
+  }
+
+  return prompt;
+}
+
+// ── AI Project prompt builders ──
+
+/**
+ * Decide whether a file should be inlined into the system prompt.
+ * - 'inline': always inline
+ * - 'reference': never inline (tool-callable only)
+ * - 'auto' (default): inline if cached content is under 2000 words
+ */
+function shouldInline(f) {
+  const mode = f.includeMode || 'auto';
+  if (mode === 'inline') return true;
+  if (mode === 'reference') return false;
+  // auto: inline small files, reference large ones
+  if (!f.cachedContent) return false;
+  const wordCount = f.cachedContent.trim().split(/\s+/).filter(Boolean).length;
+  return wordCount < 2000;
+}
+
+/**
+ * Inline project file contents directly into the system prompt (Claude Projects style).
+ * Respects per-file includeMode: auto (2k word threshold), inline (always), reference (never).
+ */
+function buildProjectKnowledge(aiProject) {
+  if (!aiProject.files || aiProject.files.length === 0) return '';
+
+  let section = '\n## Project Knowledge\n';
+  section += 'The following reference documents are part of this project.\n\n';
+
+  for (const f of aiProject.files) {
+    const label = f.title || f.path;
+    if (shouldInline(f) && f.cachedContent) {
+      section += `### ${label}\n`;
+      if (f.description) section += `*${f.description}*\n\n`;
+      section += `${f.cachedContent}\n\n---\n\n`;
+    } else {
+      // Reference mode — show description only, note it's available via tool
+      section += `### ${label} (\`${f.path}\`)\n`;
+      section += `${f.description}\n`;
+      section += `*(Content available via readProjectFile tool)*\n\n`;
+    }
+  }
+
+  return section;
+}
+
+/**
+ * Format the editor's file tree as a readable listing for the system prompt.
+ * Shows files with indentation.
+ */
+function buildFileTreeListing(editorState) {
+  const { fileTree, directoryHandle, tabs } = editorState;
+  if (!directoryHandle || !fileTree || fileTree.length === 0) return '';
+
+  const openTabPaths = new Set(tabs.map((t) => t.id));
+
+  const formatEntries = (entries, indent = '') => {
+    let result = '';
+    for (const entry of entries) {
+      if (entry.type === 'dir') {
+        result += `${indent}${entry.name}/\n`;
+        if (entry.children) {
+          result += formatEntries(entry.children, indent + '  ');
+        }
+      } else if (entry.type === 'file') {
+        const isOpen = openTabPaths.has(entry.path);
+        result += `${indent}${entry.name}${isOpen ? ' [open]' : ''}\n`;
+      }
+    }
+    return result;
+  };
+
+  let listing = `\n## Editor File Tree (${directoryHandle.name}/)\n`;
+  listing += 'These files are in the editor\'s open directory. Use readProjectFile with the filename to read any of them.\n\n';
+  listing += '```\n';
+  listing += formatEntries(fileTree);
+  listing += '```\n';
+  return listing;
+}
+
+/**
+ * Build the complete system prompt for an AI project.
+ *
+ * @param {object} aiProject - The active AI project
+ * @param {object} editorState - Editor store state
+ * @param {string} currentRoute - Current route path (e.g., '/edit', '/analyze')
+ */
+export function buildAiProjectSystemPrompt(aiProject, editorState, currentRoute) {
+  const isEditRoute = currentRoute?.includes('/edit');
+  let prompt = '';
+
+  // Editor pane contents — only on Edit page (too large / irrelevant elsewhere)
+  if (isEditRoute && editorState) {
+    const paneCtx = buildPaneContext(editorState);
+    if (paneCtx.trim()) {
+      prompt += `# Editor Contents\n${paneCtx}\n---\n\n`;
+    }
+  }
+
+  // Editor file tree listing — always useful so AI knows what files exist
+  if (editorState) {
+    prompt += buildFileTreeListing(editorState);
+  }
+
+  // Inline project file contents (Claude Projects style)
+  prompt += buildProjectKnowledge(aiProject);
+
+  // Custom system prompt last (highest weight for LLMs)
+  if (aiProject.systemPrompt) {
+    prompt += `\n---\n\n${aiProject.systemPrompt}`;
   }
 
   return prompt;

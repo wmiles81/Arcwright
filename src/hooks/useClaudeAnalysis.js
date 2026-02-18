@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react';
 import useAppStore from '../store/useAppStore';
 import { genreSystem } from '../data/genreSystem';
 import { plotStructures } from '../data/plotStructures';
-import { callClaude, parseJsonResponse } from '../api/claude';
+import { parseJsonResponse } from '../api/claude';
+import { callCompletionSync } from '../api/providerAdapter';
 import {
   buildScoringSystemPrompt,
   buildScoringUserMessage,
@@ -14,9 +15,10 @@ const BATCH_SIZE = 5;
 
 export default function useClaudeAnalysis() {
   const {
-    apiKey, selectedModel, chapters, selectedGenre, selectedSubgenre,
+    activeProvider, providers, chapters, selectedGenre, selectedSubgenre,
     updateChapterScores, setAnalysisInProgress,
   } = useAppStore();
+  const apiKey = providers[activeProvider]?.apiKey || '';
 
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState('');
@@ -27,7 +29,7 @@ export default function useClaudeAnalysis() {
 
   const analyzeChapters = useCallback(async () => {
     if (!apiKey) {
-      setError('Please enter your OpenRouter API key');
+      setError('Configure an API key in Settings.');
       return;
     }
 
@@ -58,7 +60,7 @@ export default function useClaudeAnalysis() {
         }));
 
         const userMessage = buildScoringUserMessage(batchWithIndex, chapters.length);
-        const responseText = await callClaude(apiKey, systemPrompt, userMessage, { model: selectedModel, maxTokens: 8192 });
+        const responseText = await callCompletionSync(systemPrompt, userMessage, { maxTokens: 8192 });
         const parsed = parseJsonResponse(responseText);
 
         if (parsed.chapters && Array.isArray(parsed.chapters)) {
@@ -81,11 +83,11 @@ export default function useClaudeAnalysis() {
     } finally {
       setAnalysisInProgress(false);
     }
-  }, [apiKey, selectedModel, chapters, currentGenre, currentSubgenre, currentStructure, updateChapterScores, setAnalysisInProgress]);
+  }, [apiKey, chapters, currentGenre, currentSubgenre, currentStructure, updateChapterScores, setAnalysisInProgress]);
 
   const generateGetWellPlan = useCallback(async (gapAnalysis) => {
     if (!apiKey) {
-      setError('Please enter your OpenRouter API key');
+      setError('Configure an API key in Settings.');
       return null;
     }
 
@@ -96,7 +98,7 @@ export default function useClaudeAnalysis() {
     const userMessage = buildGetWellUserMessage(gapAnalysis);
 
     try {
-      const responseText = await callClaude(apiKey, systemPrompt, userMessage, { model: selectedModel, maxTokens: 8192 });
+      const responseText = await callCompletionSync(systemPrompt, userMessage, { maxTokens: 8192 });
       const parsed = parseJsonResponse(responseText);
       setProgress('');
       return parsed;
@@ -104,7 +106,7 @@ export default function useClaudeAnalysis() {
       setError(`Get-well plan generation failed: ${err.message}`);
       return null;
     }
-  }, [apiKey, selectedModel, currentGenre, currentSubgenre]);
+  }, [apiKey, currentGenre, currentSubgenre]);
 
   return { analyzeChapters, generateGetWellPlan, error, progress };
 }

@@ -20,7 +20,10 @@ function flattenTextFiles(tree, result = []) {
 export default function RevisionModal({ isOpen, onClose, pipeline }) {
   const fileTree = useEditorStore((s) => s.fileTree);
   const editorTheme = useEditorStore((s) => s.editorTheme);
-  const apiKey = useAppStore((s) => s.apiKey);
+  const apiKey = useAppStore((s) => {
+    const prov = s.providers[s.activeProvider];
+    return prov?.apiKey;
+  });
   const revisionItems = useAppStore((s) => s.revisionItems);
   const chapters = useAppStore((s) => s.chapters);
   const t = getTheme(editorTheme);

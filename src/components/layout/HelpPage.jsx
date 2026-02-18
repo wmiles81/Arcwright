@@ -5,7 +5,7 @@ import { plotStructures, referenceStructures } from '../../data/plotStructures';
 import { genreSystem } from '../../data/genreSystem';
 import ActStructuresTab from './ActStructuresTab';
 
-const tabs = ['about', 'scaffolding', 'analysis', 'editing', 'structures', 'actStructures', 'dimensions', 'changelog'];
+const tabs = ['about', 'interface', 'scaffolding', 'analysis', 'editing', 'structures', 'actStructures', 'dimensions', 'changelog'];
 
 function Tab({ id, label, active, onClick }) {
   return (
@@ -36,9 +36,9 @@ function Section({ title, children }) {
 function AboutTab() {
   return (
     <div className="space-y-4 text-sm text-purple-100 leading-relaxed">
-      <Section title="What is Narrative Context Graph?">
+      <Section title="What is Arcwright?">
         <p>
-          Narrative Context Graph is a multi-dimensional story analysis tool that treats fiction
+          Arcwright is a multi-dimensional narrative analysis and writing tool that treats fiction
           as a system of interacting forces. Instead of thinking about plot as a single rising-and-falling
           line, it tracks <strong>11 narrative dimensions</strong> simultaneously &mdash; intimacy, power,
           information asymmetry, danger, trust, and more &mdash; to reveal the hidden physics of storytelling.
@@ -50,10 +50,10 @@ function AboutTab() {
         </p>
       </Section>
 
-      <Section title="Three Workflows">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Section title="Workflows">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
-            <h4 className="font-bold text-white mb-2">Story Scaffolding</h4>
+            <h4 className="font-bold text-white mb-2">Scaffold</h4>
             <p>
               Build a new story's dimensional arc from scratch or start from a genre template.
               Set dimension values at each story beat and watch your narrative take shape in real time.
@@ -62,7 +62,7 @@ function AboutTab() {
             </p>
           </div>
           <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
-            <h4 className="font-bold text-white mb-2">Reverse Engineer & Diagnose</h4>
+            <h4 className="font-bold text-white mb-2">Analyze</h4>
             <p>
               Analyze an existing manuscript chapter-by-chapter. AI scores the narrative dimensions,
               you refine the scores, then compare against genre ideals. The tool generates a visual
@@ -73,9 +73,17 @@ function AboutTab() {
           <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
             <h4 className="font-bold text-white mb-2">Edit</h4>
             <p>
-              A full writing environment with file browser, markdown editor, and <strong>inline AI editing</strong>.
-              Open a folder, edit files with formatting tools, and use AI-powered preset prompts to revise,
-              continue, or transform your text. Run scripts to split chapters, clean up formatting, and more.
+              A full writing environment with file browser, markdown editor, <strong>inline AI editing</strong>,
+              and <strong>AI chapter revision pipeline</strong>. Open a folder, edit files, use dual-pane mode
+              with <strong>side-by-side diff/merge view</strong> to compare and cherry-pick revisions
+              paragraph-by-paragraph. Run scripts to split chapters, clean up formatting, and more.
+            </p>
+          </div>
+          <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
+            <h4 className="font-bold text-white mb-2">Projects</h4>
+            <p>
+              Manage book projects with AI-assisted metadata editing. Track project details, genres,
+              and settings across multiple works.
             </p>
           </div>
         </div>
@@ -90,7 +98,8 @@ function AboutTab() {
           or "change genre to Science Fiction."
         </p>
         <p className="mt-2">
-          Requires an <strong>OpenRouter API key</strong> (set it in the Analysis workflow).
+          Requires an API key &mdash; configure one in <strong>Settings</strong> (gear icon in the nav bar).
+          Supports OpenRouter, OpenAI, Anthropic, and Perplexity.
           Click the <em>"Prompt"</em> button in the chat header to inspect exactly what context
           the assistant receives.
         </p>
@@ -141,6 +150,515 @@ function AboutTab() {
           normalized to a 0&ndash;10 scale. Weights vary by genre/subgenre and can be adjusted manually.
         </p>
       </Section>
+    </div>
+  );
+}
+
+function InterfaceSubTabs({ active, onChange }) {
+  const subs = [
+    { id: 'nav', label: 'Nav Bar' },
+    { id: 'settings', label: 'Settings' },
+    { id: 'chat', label: 'Chat Panel' },
+    { id: 'scaffold', label: 'Scaffold' },
+    { id: 'analyze', label: 'Analyze' },
+    { id: 'edit', label: 'Editor' },
+    { id: 'projects', label: 'Projects' },
+    { id: 'keys', label: 'Shortcuts' },
+  ];
+  return (
+    <div className="flex flex-wrap gap-1 mb-5">
+      {subs.map((s) => (
+        <button
+          key={s.id}
+          onClick={() => onChange(s.id)}
+          className={`px-3 py-1 text-xs font-semibold rounded transition-colors ${
+            active === s.id
+              ? 'bg-purple-500 text-white'
+              : 'bg-slate-700/60 text-purple-300 hover:bg-slate-600 hover:text-white'
+          }`}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Kbd({ children }) {
+  return (
+    <kbd className="inline-block bg-slate-700/70 text-purple-200 text-[10px] px-1.5 py-0.5 rounded font-mono border border-slate-600/50">
+      {children}
+    </kbd>
+  );
+}
+
+function ControlRow({ name, children }) {
+  return (
+    <div className="flex gap-3 py-1.5 border-b border-purple-500/10 last:border-0">
+      <span className="text-purple-300 font-semibold w-40 flex-shrink-0 text-xs">{name}</span>
+      <span className="text-purple-200 text-xs flex-1">{children}</span>
+    </div>
+  );
+}
+
+function InterfaceGuideTab() {
+  const [sub, setSub] = useState('nav');
+
+  return (
+    <div className="space-y-4 text-sm text-purple-100 leading-relaxed">
+      <p className="text-xs text-purple-300 mb-1">
+        Visual reference for every button, control, and status indicator in the app. Click a section below.
+      </p>
+      <InterfaceSubTabs active={sub} onChange={setSub} />
+
+      <div key={sub}>
+      {/* ── NAV BAR ── */}
+      {sub === 'nav' && (
+        <>
+          <Section title="Navigation Bar">
+            <p className="mb-3">The top bar is always visible. It provides workflow navigation, project status, and access to settings and help.</p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Logo / Home">Click the Arcwright logo or title to return to the home screen.</ControlRow>
+              <ControlRow name="Scaffold">Navigate to the story scaffolding workflow. Purple highlight when active.</ControlRow>
+              <ControlRow name="Analyze">Navigate to the chapter analysis workflow.</ControlRow>
+              <ControlRow name="Edit">Navigate to the full writing/editing environment.</ControlRow>
+              <ControlRow name="Projects">Opens the Projects dialog to manage book and AI projects. Disabled until the file system is initialized.</ControlRow>
+              <ControlRow name={<>{'\u2699'} Settings</>}>Opens the Settings dialog (API keys, model selection, chat settings, appearance).</ControlRow>
+              <ControlRow name="Help">Navigate to this documentation page.</ControlRow>
+              <ControlRow name="Active Project Badge">Small purple badge showing the name of the active book or AI project. Truncates long names. Hidden when no project is active.</ControlRow>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {/* ── SETTINGS ── */}
+      {sub === 'settings' && (
+        <>
+          <Section title="Settings Dialog">
+            <p className="mb-3">Opened via the gear icon in the nav bar. Three tabs: Providers, Chat, and Appearance.</p>
+          </Section>
+
+          <Section title="Providers Tab">
+            <p className="mb-2">Configure API keys and select models for each supported provider.</p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Active Provider">Dropdown at the top. Only providers with a saved API key appear. Determines which API is used for all AI features.</ControlRow>
+              <ControlRow name="Provider Cards">One card per provider (OpenRouter, OpenAI, Anthropic, Perplexity). Each shows the provider name and logo.</ControlRow>
+              <ControlRow name="API Key Input">Password field with show/hide toggle. Keys are stored locally in your browser and sent only to the selected provider.</ControlRow>
+              <ControlRow name="Model Dropdown">Custom dropdown showing all available models. Each entry displays the model name and pricing (input/output cost per million tokens) when available.</ControlRow>
+              <ControlRow name="Refresh Models">Button to re-fetch the model list from the provider&rsquo;s API. Shows a spinner while loading.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Chat Tab">
+            <p className="mb-2">Fine-tune AI response behavior. Controls apply to all AI features (chat, inline edit, revision, analysis).</p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Temperature">Slider 0&ndash;2. Controls randomness/creativity. Lower = more deterministic. Disabled if the selected model doesn&rsquo;t support it.</ControlRow>
+              <ControlRow name="Max Tokens">Slider 256 to model&rsquo;s maximum. Caps the length of AI responses. Shows value as &ldquo;Xk&rdquo; when {'\u2265'}1000.</ControlRow>
+              <ControlRow name="Native Tools">Toggle switch. When on, uses the provider&rsquo;s native tool-calling API. When off (or unsupported), falls back to fenced-block parsing. Shows a hint explaining the current state.</ControlRow>
+              <ControlRow name="Reasoning">Toggle switch. Enables extended thinking / chain-of-thought on models that support it. Disabled with explanation on models that don&rsquo;t.</ControlRow>
+              <ControlRow name="Model Info">Read-only section showing context length, max output tokens, input/output pricing, and modalities for the selected model.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Appearance Tab">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Theme Picker">Grid of color swatches organized into Light and Dark sections. Click any swatch to apply that theme globally. The selected theme has a purple border.</ControlRow>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {/* ── CHAT PANEL ── */}
+      {sub === 'chat' && (
+        <>
+          <Section title="Chat Panel Overview">
+            <p className="mb-3">
+              The AI chat panel slides in from the left edge. Click the toggle arrow on the left edge of the screen to open/close it.
+              The panel is resizable &mdash; drag the right edge to adjust width (280px to 50% of screen).
+            </p>
+          </Section>
+
+          <Section title="Chat Header">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Provider / Model Badge">Shows &ldquo;Provider / model-name&rdquo; (e.g., &ldquo;OpenAI / gpt-4o&rdquo;). Click to open Settings and change provider or model.</ControlRow>
+              <ControlRow name="Context Mode Badge">Purple badge indicating the current context mode (see below). Shows the active project name, or &ldquo;Full Context&rdquo; when no project is active.</ControlRow>
+              <ControlRow name="&ldquo;tools&rdquo; Badge">Small green badge visible when native tools are enabled. The AI can call tools to modify app state (beats, genres, scores). Only shown in Full Context and Book Project modes.</ControlRow>
+              <ControlRow name="Prompt Button">Toggle button. When active (black background), an expandable panel shows the exact system prompt being sent to the AI. Use this to inspect what context the AI receives.</ControlRow>
+              <ControlRow name="Files Button">Toggle button. When active, shows a file tree panel listing files loaded from the open folder. Only visible when files are loaded. Files listed here are available as AI context.</ControlRow>
+              <ControlRow name="New Chat Button">Document-with-plus icon. Clears all messages and starts a fresh conversation. Shows a confirmation dialog before clearing.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Context Modes">
+            <p className="mb-3">
+              The chat panel operates in different context modes that determine what system prompt and tools the AI receives.
+              The mode is shown in the purple badge in the chat header.
+            </p>
+            <div className="space-y-3">
+              <div className="bg-slate-800/50 rounded p-4 border-l-4 border-purple-500">
+                <h5 className="font-bold text-white mb-1">Full Context</h5>
+                <p className="text-xs text-purple-200 mb-2">
+                  <strong>Default mode</strong> when no project is active. The AI receives a comprehensive system prompt
+                  containing all app state: scaffold data (beats, genre, weights), analysis data (chapter scores, gaps),
+                  editor content (open files, pane text), file tree, and the full set of tools for modifying fields.
+                </p>
+                <p className="text-xs text-purple-300">
+                  <strong>Why &ldquo;Full Context&rdquo; gets prominent placement:</strong> It&rsquo;s the mode that makes the chat panel
+                  most powerful &mdash; the AI can see and modify everything. The badge reminds you that the AI has deep access
+                  to your current work. When you switch to a project mode, the badge changes to show the project name, so you
+                  always know what context the AI is operating with.
+                </p>
+              </div>
+              <div className="bg-slate-800/50 rounded p-4 border-l-4 border-blue-500">
+                <h5 className="font-bold text-white mb-1">Book Project Mode</h5>
+                <p className="text-xs text-purple-200">
+                  Active when a book project is selected via the Projects dialog. The badge shows the project name.
+                  The AI receives project files and metadata as context. Tools remain enabled.
+                </p>
+              </div>
+              <div className="bg-slate-800/50 rounded p-4 border-l-4 border-green-500">
+                <h5 className="font-bold text-white mb-1">AI Project Mode</h5>
+                <p className="text-xs text-purple-200">
+                  Active when an AI project is selected. The badge shows the project name.
+                  Uses a custom system prompt defined in the project, plus the project&rsquo;s cataloged files.
+                  Tools are disabled in this mode &mdash; the AI cannot modify app state.
+                </p>
+              </div>
+            </div>
+          </Section>
+
+          <Section title="Prompt Modes (Edit Workflow)">
+            <p className="mb-2">
+              When the chat panel is used within the Edit workflow, additional prompt modes are available
+              that shape the AI&rsquo;s behavior for writing tasks:
+            </p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Full Context">Default. AI sees all metadata, editor content, and has tools.</ControlRow>
+              <ControlRow name="Line Editor">Focused on line-by-line editing. AI provides targeted corrections and rewrites for specific passages.</ControlRow>
+              <ControlRow name="Writing Partner">Collaborative mode. AI suggests continuations, brainstorms ideas, and helps develop scenes.</ControlRow>
+              <ControlRow name="Critic">Critical feedback mode. AI provides honest assessment of prose quality, pacing, character development, and structure.</ControlRow>
+              <ControlRow name="Version Comparator">Compares two versions of text. Useful when you have original and revised content in dual-pane mode.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Message Area & Input">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Message Area">Scrollable area showing the conversation. User messages appear right-aligned; AI responses left-aligned with markdown rendering.</ControlRow>
+              <ControlRow name="Streaming Indicator">A blinking cursor animation while the AI is generating a response.</ControlRow>
+              <ControlRow name="Loading Dots">Three bouncing dots appear while waiting for the first chunk of a streaming response.</ControlRow>
+              <ControlRow name="Error Display">Red background box showing error details if an API call fails.</ControlRow>
+              <ControlRow name="Text Input">Multi-line textarea. Press <Kbd>Enter</Kbd> to send, <Kbd>Shift+Enter</Kbd> for a new line.</ControlRow>
+              <ControlRow name={<>{'\u2191'} Send Button</>}>Bottom-right of the input. Disabled when empty. Sends the message.</ControlRow>
+              <ControlRow name={<>{'\u25A0'} Stop Button</>}>Replaces the send button while the AI is responding. Click to abort generation mid-stream.</ControlRow>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {/* ── SCAFFOLD ── */}
+      {sub === 'scaffold' && (
+        <>
+          <Section title="Genre Configuration">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Genre Dropdown">Primary genre selection (Romance, Science Fiction, Fantasy, Mystery/Thriller/Suspense). Sets the default plot structure and dimension weights.</ControlRow>
+              <ControlRow name="Subgenre Dropdown">Refines weights within the selected genre (e.g., Dark Romance, Space Opera, Cozy Mystery).</ControlRow>
+              <ControlRow name="Modifier Dropdown">Applies a pacing modifier (Relaxed, Standard, Intense, Extreme) that scales tension weights up or down.</ControlRow>
+              <ControlRow name="Blend Mode Toggle">Enable to merge two genres. Reveals a secondary genre selector and blend ratio slider.</ControlRow>
+              <ControlRow name="Blend Ratio Slider">0&ndash;100%. Controls the mix between primary and secondary genre weights, arcs, and requirements.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Structure & Templates">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Beats Structure">Teal dropdown. Selects the beat structure template (Romancing the Beat, Hero&rsquo;s Journey, Three Act, Mystery/Suspense). Shows beat count.</ControlRow>
+              <ControlRow name="Acts Structure">Indigo dropdown. Selects the act structure overlay. Includes &ldquo;None&rdquo; option. Shows act count.</ControlRow>
+              <ControlRow name="Load Template">Loads a preset arc for the selected structure/genre. Populates all beats with default dimension values.</ControlRow>
+              <ControlRow name="Save as Structure">Saves your current beats as a named, reusable custom template stored in localStorage.</ControlRow>
+              <ControlRow name="Clear All">Red button. Confirms before clearing all beats. Resets to empty state.</ControlRow>
+              <ControlRow name="Export / Import">Download beats as JSON or upload a previously exported scaffold file.</ControlRow>
+              <ControlRow name="Structure Reference">Expandable panel showing the current structure&rsquo;s acts, beats, and related frameworks.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Beat Editor">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Beat Row (collapsed)">Shows beat number, name, time%, and mini color bars summarizing dimension values. Click to expand.</ControlRow>
+              <ControlRow name="Beat Name">Click to rename inline. Press Enter to confirm, Escape to cancel.</ControlRow>
+              <ControlRow name="Time % Input">Number field (0&ndash;100). Position in the story timeline. Beats auto-sort by this value.</ControlRow>
+              <ControlRow name="Dimension Sliders">One slider (0&ndash;10) per visible dimension inside the expanded beat row. Drag to set values.</ControlRow>
+              <ControlRow name={<>{'\u2261'} Drag Handle</>}>Grip handle on each beat. Drag to reorder. Time% recalculates to fit the new position.</ControlRow>
+              <ControlRow name="+ Insertion Zone">Hover between two beats to reveal a &ldquo;+&rdquo; button. Click to insert a new beat at the midpoint with averaged dimension values.</ControlRow>
+              <ControlRow name="+ Add Beat">Finds the largest gap in the timeline and inserts there, not at the end.</ControlRow>
+              <ControlRow name="Delete Beat">Remove button on each beat row. No undo.</ControlRow>
+              <ControlRow name="Beat Suggestions">Panel showing how each dimension compares to the genre ideal. Click &ldquo;Apply Suggestions&rdquo; to snap to ideal values.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Narrative Chart">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Chart Area">Interactive Recharts visualization. X-axis = story progress (0&ndash;100%), Y-axis = intensity (0&ndash;10). Updates live as you edit beats.</ControlRow>
+              <ControlRow name="Dimension Lines">Colored lines for each visible dimension. Hover for exact values via tooltips.</ControlRow>
+              <ControlRow name="Tension Line">Red line, derived from all weighted dimensions. Not directly editable.</ControlRow>
+              <ControlRow name="Beat Markers">Vertical lines with labels showing where each beat falls in the story.</ControlRow>
+              <ControlRow name="Act Zones">Colored vertical bands when an act structure is selected.</ControlRow>
+              <ControlRow name="Dimension Toggles">Checkboxes below the chart to show/hide individual dimensions.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Validation & Output">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Genre Analysis">Shows pass/fail for genre requirements: intimacy threshold, trust threshold, tension threshold. Green checkmark or red X for each.</ControlRow>
+              <ControlRow name="Scaffold Output">Generated beat sheet with tension drivers, emotional coordinates, and narrative writing guidance. Exportable as Markdown or standalone HTML.</ControlRow>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {/* ── ANALYZE ── */}
+      {sub === 'analyze' && (
+        <>
+          <Section title="Setup">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Genre Selector">Same dropdowns as Scaffold. Sets the ideal curve your book is compared against.</ControlRow>
+              <ControlRow name="Provider Status Bar">Shows the active provider and model, or &ldquo;No API key configured&rdquo; with a hint to open Settings.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Chapter Input">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Paste Button">Click to paste chapter text from your clipboard into the input area.</ControlRow>
+              <ControlRow name="Text Area">Large text input for pasting chapter content.</ControlRow>
+              <ControlRow name="Bulk Split">Paste an entire book. The tool splits on &ldquo;Chapter X&rdquo; markers, Markdown headings, or triple-newlines.</ControlRow>
+              <ControlRow name="Chapter Cards">Each parsed chapter shows title, POV tag, word count, and status badge (pending/analyzed/reviewed).</ControlRow>
+              <ControlRow name="Delete Chapter">Remove individual chapters from the list.</ControlRow>
+              <ControlRow name="Analyze Button">Main action button. Shows &ldquo;Analyze X Chapter(s)&rdquo;. Disabled without an API key or while analysis is running.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Score Review">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Chapter Cards">Expandable rows for each analyzed chapter. Click to view/edit dimension scores.</ControlRow>
+              <ControlRow name="AI Scores (blue)">Scores assigned by the AI. Shown in blue text.</ControlRow>
+              <ControlRow name="User Overrides (amber)">When you manually adjust a score, it turns amber. Your values take precedence in all calculations.</ControlRow>
+              <ControlRow name="Reset to AI Scores">Button to undo all manual overrides for a chapter.</ControlRow>
+              <ControlRow name="Beat Assignment">Dropdown on each chapter to assign it to a specific story beat from the selected structure.</ControlRow>
+              <ControlRow name="Pacing Badge">For romance genres with 3+ beats: shows the detected pacing pattern (Slow Burn, Standard, Rapid).</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Comparison & Diagnosis">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Comparison Overlay">Chart showing solid lines (your book&rsquo;s actual values) vs dashed lines (genre ideal). Toggle dimensions with checkboxes.</ControlRow>
+              <ControlRow name="Gap Heat Strip">Color-coded bar below the chart showing average gap per beat: green (good), yellow, orange, red (needs work).</ControlRow>
+              <ControlRow name="Health Score">0&ndash;100 score based on weighted gap analysis across all dimensions and beats.</ControlRow>
+              <ControlRow name="Get-Well Plan">Priority actions, beat-by-beat diagnosis, and per-dimension trend analysis. Click &ldquo;Generate AI Plan&rdquo; for detailed editorial recommendations.</ControlRow>
+              <ControlRow name="Revision Checklist">Auto-generated from gap analysis. Interactive checkboxes with progress bar. AI-enhanced items when an API key is available.</ControlRow>
+              <ControlRow name="Projection Slider">0&ndash;100% slider blending actual toward ideal curves. Shows before/after chart with projected health score.</ControlRow>
+              <ControlRow name="Export to Editor">Green button. Creates a .md file for each chapter in a new folder and navigates to the Edit workflow.</ControlRow>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {/* ── EDIT ── */}
+      {sub === 'edit' && (
+        <>
+          <Section title="File Panel (left sidebar)">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Open Folder">Triggers the browser&rsquo;s directory picker. Loads the selected folder into the file tree.</ControlRow>
+              <ControlRow name="+f / +d Buttons">Top-level: create a new file or folder in the root. On folders: hover to reveal +f/+d for creating children.</ControlRow>
+              <ControlRow name={<>{'\u27F3'} Refresh</>}>Reload the file tree from disk.</ControlRow>
+              <ControlRow name="File Tree">Hierarchical view. Folders expand/collapse with arrows. Click any .md or .txt file to open it in a tab.</ControlRow>
+              <ControlRow name="Context Dots">Green or gray circle on each file/folder. Green = included in AI context for inline editing. Click to toggle. Clicking a folder&rsquo;s dot toggles all children.</ControlRow>
+              <ControlRow name="Rename">Double-click a file or folder name. Type the new name, press Enter to commit or Escape to cancel.</ControlRow>
+              <ControlRow name="Right-click Menu">Context menu with Rename and Delete options. Also provides access to context-appropriate scripts.</ControlRow>
+              <ControlRow name="Drag & Drop">Drag files between folders to move them.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Tab Bar">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="File Tabs">Click to switch between open files. Active tab has a distinct background.</ControlRow>
+              <ControlRow name="Orange Dot">Appears on tabs with unsaved changes.</ControlRow>
+              <ControlRow name={<>{'\u00D7'} Close Button</>}>Hover over a tab to reveal. Closes the tab.</ControlRow>
+              <ControlRow name="Double-click Tab">Rename the tab (and file) inline.</ControlRow>
+              <ControlRow name="R: Dropdown">In dual-pane mode, appears on the right side. Select which file to show in the secondary pane.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Formatting Toolbar">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="B / I / U / ~">Bold, Italic, Underline, Strikethrough. Standard text formatting.</ControlRow>
+              <ControlRow name="H1 / H2 / H3">Apply heading levels to the current line or selection.</ControlRow>
+              <ControlRow name={<>{'\u2022'} / 1.</>}>Unordered list (bullet) and ordered list (numbered).</ControlRow>
+              <ControlRow name={<>{'\u275D'} Blockquote</>}>Wrap the selection or line in a blockquote.</ControlRow>
+              <ControlRow name="&lt;/&gt; Code">Wrap selection in inline code.</ControlRow>
+              <ControlRow name={<>{'\uD83D\uDD17'} Link</>}>Prompts for a URL and wraps the selection in a markdown link.</ControlRow>
+              <ControlRow name="&mdash; HR">Insert a horizontal rule.</ControlRow>
+              <ControlRow name="A (text color)">Opens a color picker with 16 preset colors + reset to default. Changes text color of the selection.</ControlRow>
+              <ControlRow name="A (background)">Opens a color picker for background highlight color. Same 16 presets + reset.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Right-side Toolbar Controls">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name={<>{'\uD83D\uDD0D'} Search</>}>Toggle search &amp; replace bar. Purple highlight when active. Supports regex, case-sensitive toggle, match counter, prev/next/replace/replace-all.</ControlRow>
+              <ControlRow name="Revise">Opens the Revision Modal for AI-powered chapter revision. Select files, choose revision source (checklist, gaps, or custom prompt), and run a pipeline.</ControlRow>
+              <ControlRow name="Tools">Dropdown menu listing built-in scripts (Split into Chapters, Combine Chapters, Em-dash Cleanup, Regex Search &amp; Replace) and any custom scripts.</ControlRow>
+              <ControlRow name="Theme Picker">Color swatch button showing current theme. Click to open a popover with light and dark theme options. Each swatch shows a mini preview.</ControlRow>
+              <ControlRow name="Diff">Only visible in dual-pane mode. Toggles the side-by-side diff view comparing left and right panes. Purple highlight when active.</ControlRow>
+              <ControlRow name="Sync">Only visible in dual-pane mode. Toggles synchronized scrolling between the two panes. Purple highlight when active.</ControlRow>
+              <ControlRow name={<>{'\u2225'} Dual Pane</>}>Toggle between single pane and dual pane mode. Shows &ldquo;1&rdquo; (single) or &ldquo;2&rdquo; (dual). Purple highlight when dual.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Editor Pane">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Content Area">Rich-text contentEditable surface with markdown rendering. Type directly to write and edit.</ControlRow>
+              <ControlRow name="Focus Indicator">Purple 2px top border on the currently focused pane (in dual-pane mode).</ControlRow>
+              <ControlRow name="Placeholder Text">&ldquo;Start writing...&rdquo; (primary pane) or &ldquo;Click a file to open...&rdquo; (secondary pane) when empty.</ControlRow>
+              <ControlRow name={<>{'\u2728'} Inline AI Button</>}>Floating sparkle button that appears when you select text. Click to open the inline AI editing popup.</ControlRow>
+              <ControlRow name="Slash Commands">Type &ldquo;/&rdquo; at the start of an empty line to open a searchable menu of preset prompts. Arrow keys to navigate, Enter to select.</ControlRow>
+              <ControlRow name="Code View">For .js, .jsx, .py, .json files: shows a syntax-highlighted textarea instead of rich text.</ControlRow>
+              <ControlRow name="Pane Divider">In dual-pane mode: vertical bar between panes. Drag to adjust split ratio. Double-click to reset to 50/50.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Diff & Merge View">
+            <p className="mb-2">Activated by clicking Diff in dual-pane mode. Replaces the two editor panes with a structured comparison view.</p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Aligned Paragraphs">Side-by-side grid with paragraphs aligned using a diff algorithm with fuzzy matching (40% word overlap threshold).</ControlRow>
+              <ControlRow name="Green Highlights">Words added in the revised version.</ControlRow>
+              <ControlRow name="Red Strikethrough">Words removed from the original version.</ControlRow>
+              <ControlRow name="Spacer Rows">Blank row on one side when a paragraph exists only on the other, keeping the grid aligned.</ControlRow>
+              <ControlRow name={<><span className="text-green-400">{'\u2190'}</span> Accept Arrow</>}>In the gutter between panes. Click to accept the revised text into the original document for that row.</ControlRow>
+              <ControlRow name={<><span className="text-red-400">{'\u2192'}</span> Reject Arrow</>}>In the gutter. Click to push the original text into the revised document for that row.</ControlRow>
+              <ControlRow name="Accept All">Button in the stats bar. Accepts every revision at once.</ControlRow>
+              <ControlRow name="Reject All">Button in the stats bar. Rejects every revision at once.</ControlRow>
+              <ControlRow name="Inline Editing">Click into any paragraph cell to edit its text directly. Changes save on blur and the diff recomputes.</ControlRow>
+              <ControlRow name="Stats Bar">Top bar showing: character additions (green), character removals (red), change count, and paragraph counts for both sides.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Revision Pipeline">
+            <p className="mb-2">Launched from the Revise button in the toolbar.</p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="File Selection">Checkboxes for each .md/.txt file. &ldquo;Select All&rdquo; and &ldquo;Deselect All&rdquo; buttons.</ControlRow>
+              <ControlRow name="Revision Source">Radio buttons: Checklist + Gaps, Revision Checklist only, Dimension Gaps only, or Custom Prompt. First three are disabled if no analysis data exists.</ControlRow>
+              <ControlRow name="Custom Prompt">Textarea for free-form revision instructions (tone, style, POV changes, etc.).</ControlRow>
+              <ControlRow name="Pause Between">Checkbox. When on, the pipeline pauses after each file so you can review before continuing.</ControlRow>
+              <ControlRow name="Start Revision">Purple button showing file count. Disabled without file selection or API key.</ControlRow>
+              <ControlRow name="Progress Bar">Purple status bar below the tab bar during revision. Shows &ldquo;Revising X/Y&rdquo;, current file name, and pipeline controls.</ControlRow>
+              <ControlRow name="Pause / Continue">Toggle pause state during the pipeline run.</ControlRow>
+              <ControlRow name="Cancel">Stop the pipeline. Completed files are preserved.</ControlRow>
+              <ControlRow name="Dismiss">Close the progress bar after completion, cancellation, or error.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Inline AI Editing">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name={<>{'\u2728'} AI Button</>}>Appears near selected text. Click to open the editing popup.</ControlRow>
+              <ControlRow name="Preset Dropdown">Start typing to filter preset prompts (Continue, Revise, Go, Line Edit, Chapter Revision, etc.). Click to select.</ControlRow>
+              <ControlRow name="Custom Instruction">Textarea for free-form editing instructions. Supports template variables.</ControlRow>
+              <ControlRow name="Apply">Execute the edit. AI response streams in real-time.</ControlRow>
+              <ControlRow name="Accept / Reject / Retry">After AI responds: Accept replaces the selection, Reject keeps original, Retry re-runs with same or modified prompt.</ControlRow>
+              <ControlRow name="Diff Toggle">In the response popup: toggle side-by-side comparison of original vs AI output.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Status Bar">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="File Name">Active file name on the left.</ControlRow>
+              <ControlRow name="&ldquo;unsaved&rdquo;">Orange text when the file has uncommitted changes.</ControlRow>
+              <ControlRow name="Word Count">Live word count for the primary pane. Shows secondary pane count in dual mode.</ControlRow>
+              <ControlRow name="Save Button">Blue when dirty, gray &ldquo;Saved&rdquo; when clean. Also triggered by <Kbd>{'\u2318'}S</Kbd>.</ControlRow>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {/* ── PROJECTS ── */}
+      {sub === 'projects' && (
+        <>
+          <Section title="Projects Dialog">
+            <p className="mb-3">
+              Opened from the nav bar&rsquo;s Projects button. Manages two types of projects: Book Projects and AI Projects.
+            </p>
+          </Section>
+
+          <Section title="Book Projects">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Project List">Shows all book projects. Click a card to select it (pending activation).</ControlRow>
+              <ControlRow name="Project Card">Displays project name, genre, and other metadata. Highlighted border when selected.</ControlRow>
+              <ControlRow name="Create New">Button to create a new book project with metadata fields.</ControlRow>
+              <ControlRow name="Delete">Per-project delete button. Confirms before deleting.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="AI Projects">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Project List">Shows all AI projects. Click to select.</ControlRow>
+              <ControlRow name="Create New">Create a new AI project with a custom system prompt and file catalog.</ControlRow>
+              <ControlRow name="Edit">Edit an existing AI project&rsquo;s system prompt and files.</ControlRow>
+              <ControlRow name="Delete">Per-project delete.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Dialog Footer">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Cancel">Close the dialog without changing the active project.</ControlRow>
+              <ControlRow name="OK">Activate the selected project. Changes the chat context mode to the project&rsquo;s mode.</ControlRow>
+            </div>
+          </Section>
+        </>
+      )}
+
+      {/* ── KEYBOARD SHORTCUTS ── */}
+      {sub === 'keys' && (
+        <>
+          <Section title="Global Shortcuts">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name={<Kbd>Escape</Kbd>}>Close the currently open modal, dialog, popover, or dropdown.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Editor Shortcuts">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name={<Kbd>{'\u2318'}S</Kbd>}>Save the active file to disk.</ControlRow>
+              <ControlRow name={<><Kbd>{'\u2318'}H</Kbd> / <Kbd>{'\u2318'}F</Kbd></>}>Toggle the search &amp; replace bar.</ControlRow>
+              <ControlRow name={<Kbd>{'\u2318'}K</Kbd>}>Open the inline AI editing popup on the current selection.</ControlRow>
+              <ControlRow name={<Kbd>{'\u2318'}B</Kbd>}>Bold the selected text.</ControlRow>
+              <ControlRow name={<Kbd>{'\u2318'}I</Kbd>}>Italicize the selected text.</ControlRow>
+              <ControlRow name={<Kbd>{'\u2318'}U</Kbd>}>Underline the selected text.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Chat Shortcuts">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name={<Kbd>Enter</Kbd>}>Send the current message.</ControlRow>
+              <ControlRow name={<Kbd>Shift+Enter</Kbd>}>Insert a new line without sending.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Search & Replace Shortcuts">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name={<Kbd>Enter</Kbd>}>Jump to the next match.</ControlRow>
+              <ControlRow name={<Kbd>Shift+Enter</Kbd>}>Jump to the previous match.</ControlRow>
+              <ControlRow name={<Kbd>Escape</Kbd>}>Close the search bar.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Slash Commands">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name={<Kbd>/</Kbd>}>Type at the start of an empty line to open the preset prompt menu.</ControlRow>
+              <ControlRow name={<><Kbd>{'\u2191'}</Kbd> / <Kbd>{'\u2193'}</Kbd></>}>Navigate the menu.</ControlRow>
+              <ControlRow name={<Kbd>Enter</Kbd>}>Select the highlighted preset.</ControlRow>
+              <ControlRow name={<Kbd>Escape</Kbd>}>Close the menu without selecting.</ControlRow>
+            </div>
+          </Section>
+        </>
+      )}
+      </div>
     </div>
   );
 }
@@ -221,9 +739,9 @@ function AnalysisTab() {
             curve your book will be compared against.
           </li>
           <li>
-            <strong>Enter your OpenRouter API key</strong> &mdash; Required for AI-assisted scoring. Your
-            key stays in your browser's local storage and is only sent to the OpenRouter API.
-            Get a key at <a href="https://openrouter.ai/keys" className="underline text-purple-200 hover:text-white" target="_blank" rel="noopener noreferrer">openrouter.ai/keys</a>.
+            <strong>Configure an API key</strong> &mdash; Required for AI-assisted scoring. Open
+            <strong> Settings</strong> (gear icon in the nav bar) to add a key for OpenRouter, OpenAI,
+            Anthropic, or Perplexity. Keys stay in your browser and are only sent to the selected provider.
           </li>
         </ol>
       </Section>
@@ -441,6 +959,36 @@ function EditGuideTab() {
         </p>
       </Section>
 
+      <Section title="AI Chapter Revision">
+        <p className="mb-2">
+          Revise entire chapters or batches of files using AI. Click <strong>Revise</strong> in the toolbar
+          to open the revision modal.
+        </p>
+        <ul className="list-disc list-inside space-y-1 text-purple-200">
+          <li><strong>Single or multi-file:</strong> Select specific files or revise all files in the open folder.</li>
+          <li><strong>Custom prompt:</strong> Write revision instructions (tone, style, POV changes, etc.).</li>
+          <li><strong>Streaming output:</strong> Revised text streams into a new tab (filename-rev01) in real time.</li>
+          <li><strong>Pipeline controls:</strong> Pause between files to review, or auto-advance through the batch. Cancel at any time.</li>
+          <li><strong>Progress bar:</strong> Purple status bar shows current file, progress count, and pause/cancel controls.</li>
+        </ul>
+      </Section>
+
+      <Section title="Diff & Merge View">
+        <p className="mb-2">
+          Compare original and revised documents side-by-side with word-level change highlighting.
+          Enable dual-pane mode, select the revision in the right pane, then click <strong>Diff</strong> in the toolbar.
+        </p>
+        <ul className="list-disc list-inside space-y-1 text-purple-200">
+          <li><strong>Smart alignment:</strong> Uses a diff algorithm with fuzzy paragraph matching to find anchors between the two versions, so similar paragraphs line up even when text has been added or removed.</li>
+          <li><strong>Word-level highlighting:</strong> Within each aligned pair, additions are highlighted in green and removals in red with strikethrough.</li>
+          <li><strong>Merge arrows:</strong> Each changed row has gutter arrows &mdash; click <span className="text-green-400">{'\u2190'}</span> to accept the revision into the original, or <span className="text-red-400">{'\u2192'}</span> to push the original into the revision.</li>
+          <li><strong>Bulk actions:</strong> "Accept All" and "Reject All" buttons in the stats bar for wholesale changes.</li>
+          <li><strong>Inline editing:</strong> Click into any paragraph on either side to edit directly. Changes save on blur and the diff recomputes.</li>
+          <li><strong>Stats bar:</strong> Shows character counts for additions/removals, number of changes, and paragraph counts for both sides.</li>
+          <li><strong>Spacer rows:</strong> Paragraphs that exist only on one side show a blank spacer on the other, keeping the grid aligned.</li>
+        </ul>
+      </Section>
+
       <Section title="Tools & Scripts">
         <p className="mb-2">
           Click <strong>Tools</strong> in the toolbar to run built-in scripts, or right-click files/folders
@@ -472,10 +1020,10 @@ function EditGuideTab() {
         </p>
         <ul className="list-disc list-inside space-y-1 text-purple-200">
           <li><strong>Full Context:</strong> Default mode &mdash; the AI sees all story metadata, editor content, and has access to tools.</li>
-          <li><strong>Prompt modes:</strong> Switch to Line Editor, Writing Partner, Critic, or Version Comparator modes via Chat Settings for focused editing assistance.</li>
+          <li><strong>Prompt modes:</strong> Switch to Line Editor, Writing Partner, Critic, or Version Comparator modes via the Chat tab in Settings for focused editing assistance.</li>
           <li><strong>Stop generation:</strong> While the AI is responding, the send button becomes a red stop square. Click it to cancel the response mid-stream.</li>
           <li><strong>System prompt viewer:</strong> Click "Prompt" in the chat header to inspect exactly what context the AI receives in the current mode.</li>
-          <li><strong>Model selector:</strong> Choose from available models in the dropdown. Pricing is shown as input/output cost per million tokens.</li>
+          <li><strong>Provider &amp; model:</strong> The active provider and model are shown in the chat header. Click the badge or open Settings to change them.</li>
         </ul>
       </Section>
     </div>
@@ -488,6 +1036,59 @@ function ChangelogTab() {
       <Section title="Changelog">
         <div className="space-y-6">
           <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.1.0</span>
+              <span className="text-purple-300 text-xs">2026-02-17</span>
+            </div>
+            <h4 className="font-bold text-white mb-2">Diff/Merge View, Multi-Provider API &amp; Non-Fiction Data Layer</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Diff &amp; Merge View</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Side-by-side diff view comparing original and revised documents in dual-pane mode</li>
+                  <li>Smart paragraph alignment using diffArrays with fuzzy matching (40% word overlap threshold)</li>
+                  <li>Word-level change highlighting: green additions, red strikethrough removals</li>
+                  <li>Gutter merge arrows: accept revision ({'\u2190'}) or keep original ({'\u2192'}) per paragraph</li>
+                  <li>Bulk "Accept All" and "Reject All" buttons for wholesale changes</li>
+                  <li>Inline editing: click into any paragraph on either side to edit directly, saves on blur</li>
+                  <li>Stats bar: character additions/removals, change count, paragraph counts</li>
+                  <li>Spacer rows for paragraphs that exist only on one side</li>
+                  <li>Content preserved when exiting diff mode (contentEditable re-sync on toggle)</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Multi-Provider API System</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Unified provider adapter routing to OpenRouter, OpenAI, Anthropic, and Perplexity</li>
+                  <li>Anthropic native protocol support (Messages API, x-api-key auth, SSE streaming)</li>
+                  <li>Dynamic model fetching from all providers with API-backed model lists</li>
+                  <li>Provider cards in Settings with custom dropdown showing pricing per million tokens</li>
+                  <li>Known model metadata enrichment for Anthropic (context length, supported parameters)</li>
+                  <li>Pagination support for Anthropic model list (has_more / after_id)</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Non-Fiction Data Layer</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Non-fiction dimensions: authority, clarity, evidence density, narrative pull, practical value, emotional resonance, intellectual challenge</li>
+                  <li>Non-fiction structures: linear argument, problem-solution, narrative non-fiction, how-to guide, essay collection</li>
+                  <li>Non-fiction genres: self-help, memoir, popular science, business, history, true crime, essay</li>
+                  <li>Engagement pressure engine (non-fiction equivalent of tension)</li>
+                  <li>Genre-specific weight channels aligned to engagement pressure</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Projects</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>New Projects workflow for managing book projects</li>
+                  <li>AI-assisted project metadata editing</li>
+                  <li>Project list with book details and genre tracking</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-purple-500/20 pt-4">
             <div className="flex items-center gap-3 mb-2">
               <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.0.0</span>
               <span className="text-purple-300 text-xs">2026-02-13</span>
@@ -545,7 +1146,7 @@ function ChangelogTab() {
                 <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
                   <li>Stop button: click the red square to cancel AI generation mid-stream</li>
                   <li>Prompt modes: Full Context, Line Editor, Writing Partner, Critic, Version Comparator</li>
-                  <li>Chat settings panel for configuring prompt mode, tools, and temperature</li>
+                  <li>Settings dialog for configuring prompt mode, tools, temperature, and multi-provider API keys</li>
                   <li>AbortController integration for clean stream cancellation</li>
                 </ul>
               </div>
@@ -624,7 +1225,7 @@ function ChangelogTab() {
                   <li>Can modify beats, genre settings, weights, and chapter scores via natural language</li>
                   <li>Streaming responses with action badges showing what was changed</li>
                   <li>"Prompt" button to view the live system prompt sent to the LLM</li>
-                  <li>Uses the same OpenRouter API key and model as the Analysis workflow</li>
+                  <li>Uses the API key and model configured in Settings</li>
                 </ul>
               </div>
               <div>
@@ -680,7 +1281,7 @@ function ChangelogTab() {
                 <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
                   <li>Auto-generated revision checklist from gap analysis with priority sorting</li>
                   <li>Interactive checkboxes with progress bar tracking</li>
-                  <li>AI-enhanced checklist items when OpenRouter API key is available</li>
+                  <li>AI-enhanced checklist items when an API key is configured</li>
                   <li>Before/after projection slider (0&ndash;100%) blending actual toward ideal curves</li>
                   <li>Triple-layer comparison chart: actual (solid), ideal (dashed), projected (dotted)</li>
                   <li>Projected health score recalculated at each slider position</li>
@@ -735,7 +1336,7 @@ function ChangelogTab() {
                 <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Reverse Engineering & Diagnosis Workflow</h5>
                 <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
                   <li>Chapter input: single-chapter paste or bulk split on "Chapter X" markers</li>
-                  <li>OpenRouter API integration for AI-assisted dimension scoring (batched in groups of 5)</li>
+                  <li>Multi-provider API integration (OpenRouter, OpenAI, Anthropic, Perplexity) for AI-assisted dimension scoring (batched in groups of 5)</li>
                   <li>Score review table with per-chapter expandable editing</li>
                   <li>Comparison overlay chart: solid (actual) vs dashed (ideal) lines with gap heat strip</li>
                   <li>Get-Well Plan: health score, priority actions, beat-by-beat diagnosis</li>
@@ -889,7 +1490,7 @@ function StructuresTab() {
     <div className="space-y-4 text-sm text-purple-100 leading-relaxed">
       <Section title="App Structures">
         <p className="mb-4 text-xs text-purple-300">
-          These are the 4 story structures used by the Narrative Context Graph for scaffolding and analysis.
+          These are the 4 story structures used by Arcwright for scaffolding and analysis.
           Each structure defines named beats at specific story percentages, grouped into acts.
         </p>
         <div className="space-y-6">
@@ -1001,6 +1602,7 @@ const weightChannelDescriptions = [
 
 const tabLabels = {
   about: 'About',
+  interface: 'Interface Guide',
   scaffolding: 'Scaffolding Guide',
   analysis: 'Analysis Guide',
   editing: 'Edit Workflow',
@@ -1033,6 +1635,7 @@ export default function HelpPage() {
       {/* Content */}
       <div className="bg-white/10 backdrop-blur rounded-b-lg rounded-tr-lg p-6 border border-purple-500/20 border-t-0">
         {activeTab === 'about' && <AboutTab />}
+        {activeTab === 'interface' && <InterfaceGuideTab />}
         {activeTab === 'scaffolding' && <ScaffoldingTab />}
         {activeTab === 'analysis' && <AnalysisTab />}
         {activeTab === 'editing' && <EditGuideTab />}

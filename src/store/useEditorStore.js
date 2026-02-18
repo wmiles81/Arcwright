@@ -12,6 +12,7 @@ const useEditorStore = create(
       // --- Dual-pane ---
       dualPane: false,
       syncScroll: false,
+      diffMode: false,
       focusedPane: 'primary', // 'primary' | 'secondary'
 
       // --- File system ---
@@ -99,6 +100,7 @@ const useEditorStore = create(
       },
 
       toggleSyncScroll: () => set((s) => ({ syncScroll: !s.syncScroll })),
+      toggleDiffMode: () => set((s) => ({ diffMode: !s.diffMode })),
       setFocusedPane: (pane) => set({ focusedPane: pane }),
 
       // --- Left panel ---
@@ -108,7 +110,14 @@ const useEditorStore = create(
       setEditorTheme: (theme) => set({ editorTheme: theme }),
 
       // --- File system ---
-      setDirectoryHandle: (handle) => set({ directoryHandle: handle }),
+      setDirectoryHandle: (handle) => {
+        set({ directoryHandle: handle });
+        // Persist handle to IDB for cross-session restore
+        import('../services/idbHandleStore').then(({ saveHandle, removeHandle }) => {
+          if (handle) saveHandle('editorDir', handle);
+          else removeHandle('editorDir');
+        });
+      },
       setFileTree: (tree) => set({ fileTree: tree }),
 
       toggleContextPath: (path) => set((s) => {
@@ -204,6 +213,11 @@ const useEditorStore = create(
         editorTheme: state.editorTheme,
         leftPanelTab: state.leftPanelTab,
         contextPaths: state.contextPaths,
+        // Persist tab paths (not content/handles — those reload from disk)
+        _savedTabs: state.tabs.map((t) => ({ id: t.id, title: t.title })),
+        _savedActiveTabId: state.activeTabId,
+        _savedSecondaryTabId: state.secondaryTabId,
+        dualPane: state.dualPane,
       }),
     }
   )

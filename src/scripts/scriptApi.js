@@ -1,6 +1,6 @@
 import useEditorStore from '../store/useEditorStore';
 import useAppStore from '../store/useAppStore';
-import { callClaude } from '../api/claude';
+import { callCompletionSync } from '../api/providerAdapter';
 import { buildFileTree } from '../components/edit/FilePanel';
 
 /**
@@ -110,9 +110,10 @@ export function createScriptContext(options = {}) {
     prompt: (msg, defaultValue) => window.prompt(msg, defaultValue ?? ''),
     confirm: (msg) => window.confirm(msg),
     askAI: async (prompt, systemPrompt) => {
-      const apiKey = useAppStore.getState().apiKey;
-      if (!apiKey) throw new Error('No API key configured. Set one in Settings.');
-      return await callClaude(apiKey, systemPrompt || '', prompt);
+      const app = useAppStore.getState();
+      const provState = app.providers[app.activeProvider] || {};
+      if (!provState.apiKey) throw new Error('No API key configured. Set one in Settings.');
+      return await callCompletionSync(systemPrompt || '', prompt);
     },
 
     // ── Context ──

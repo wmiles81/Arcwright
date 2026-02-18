@@ -1,6 +1,5 @@
 import React from 'react';
 import useAppStore from '../../store/useAppStore';
-import { PROMPT_MODES } from '../../chat/editPrompts';
 
 export default function ChatSettings({ onClose }) {
   const selectedModel = useAppStore((s) => s.selectedModel);
@@ -108,23 +107,6 @@ export default function ChatSettings({ onClose }) {
               onChange={(v) => updateChatSettings({ reasoningEnabled: v })}
               disabled={!supports('reasoning')}
             />
-          </SettingRow>
-
-          {/* Prompt Mode */}
-          <SettingRow
-            label="Prompt Mode"
-            supported={true}
-            hint={PROMPT_MODES.find((m) => m.key === (chatSettings.promptMode || 'full'))?.description}
-          >
-            <select
-              value={chatSettings.promptMode || 'full'}
-              onChange={(e) => updateChatSettings({ promptMode: e.target.value })}
-              className="w-full text-xs bg-white border border-black/20 rounded px-2 py-1.5 text-black outline-none focus:border-black/50 cursor-pointer"
-            >
-              {PROMPT_MODES.map((m) => (
-                <option key={m.key} value={m.key}>{m.name}</option>
-              ))}
-            </select>
           </SettingRow>
 
           {/* Model Info */}

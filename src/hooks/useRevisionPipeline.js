@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import useEditorStore from '../store/useEditorStore';
 import useAppStore from '../store/useAppStore';
-import { callClaudeStreaming } from '../api/chatStreaming';
+import { callCompletion } from '../api/providerAdapter';
 import {
   buildRevisionSystemPrompt,
   buildRevisionUserPrompt,
@@ -190,11 +190,9 @@ export default function useRevisionPipeline() {
       streamAccRef.current = '';
 
       await new Promise((resolve, reject) => {
-        callClaudeStreaming(
-          app.apiKey,
+        callCompletion(
           messages,
           {
-            model: app.selectedModel,
             maxTokens: Math.max(app.chatSettings?.maxTokens || 4096, 8192),
             temperature: 0.7,
           },

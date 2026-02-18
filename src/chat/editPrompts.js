@@ -164,6 +164,41 @@ Specify exactly: which version as the base, which passages to swap in from the o
 };
 
 /**
+ * Built-in AI project presets derived from existing prompt modes.
+ * Read-only — users can duplicate them to create editable copies.
+ */
+export const AI_PROJECT_PRESETS = [
+  {
+    name: 'Line Editor',
+    systemPrompt: EDIT_PROMPTS.editor,
+    files: [],
+    isPreset: true,
+    presetKey: 'editor',
+  },
+  {
+    name: 'Writing Partner',
+    systemPrompt: EDIT_PROMPTS.writer,
+    files: [],
+    isPreset: true,
+    presetKey: 'writer',
+  },
+  {
+    name: 'Critic',
+    systemPrompt: EDIT_PROMPTS.critic,
+    files: [],
+    isPreset: true,
+    presetKey: 'critic',
+  },
+  {
+    name: 'Version Compare',
+    systemPrompt: EDIT_PROMPTS.comparator,
+    files: [],
+    isPreset: true,
+    presetKey: 'comparator',
+  },
+];
+
+/**
  * Build a specialized Edit workflow prompt for the given mode.
  * Returns the full system prompt string, or null for 'off' mode.
  * For 'full' mode, returns null — caller should use the standard buildChatSystemPrompt instead.

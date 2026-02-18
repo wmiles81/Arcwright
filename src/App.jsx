@@ -1,10 +1,14 @@
-import React, { lazy, Suspense, useEffect } from 'react';
+import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AppShell from './components/layout/AppShell';
 import WorkflowSelector from './components/layout/WorkflowSelector';
 import useAppStore from './store/useAppStore';
+import useEditorStore from './store/useEditorStore';
 import useProjectStore from './store/useProjectStore';
-import { fetchOpenRouterModels } from './api/claude';
+import useChatStore from './store/useChatStore';
+import { PROVIDERS, PROVIDER_ORDER } from './api/providers';
+import { fetchModels } from './api/providerAdapter';
+import { loadHandle } from './services/idbHandleStore';
 
 const ScaffoldingWorkflow = lazy(() => import('./components/scaffolding/ScaffoldingWorkflow'));
 const AnalysisWorkflow = lazy(() => import('./components/analysis/AnalysisWorkflow'));
@@ -47,11 +51,6 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
-  const apiKey = useAppStore((s) => s.apiKey);
-  const availableModels = useAppStore((s) => s.availableModels);
-  const setAvailableModels = useAppStore((s) => s.setAvailableModels);
-  const setModelsLoading = useAppStore((s) => s.setModelsLoading);
-
   // Restore .arcwrite/ system folder from IndexedDB on startup
   useEffect(() => {
     useProjectStore.getState().restoreFromIDB().then((restored) => {
@@ -59,14 +58,113 @@ export default function App() {
     });
   }, []);
 
-  // Load OpenRouter model list in background on startup if API key exists
+  // Restore editor directory handle + open tabs from IndexedDB
   useEffect(() => {
-    if (apiKey && availableModels.length === 0) {
-      setModelsLoading(true);
-      fetchOpenRouterModels(apiKey)
-        .then((models) => setAvailableModels(models))
-        .catch(() => {}) // silent fail
-        .finally(() => setModelsLoading(false));
+    (async () => {
+      try {
+        const handle = await loadHandle('editorDir');
+        if (!handle) return;
+
+        const perm = await handle.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') return;
+
+        const editor = useEditorStore.getState();
+        editor.setDirectoryHandle(handle);
+
+        // Rebuild file tree
+        const { buildFileTree } = await import('./components/edit/FilePanel');
+        const tree = await buildFileTree(handle);
+        editor.setFileTree(tree);
+
+        // Restore open tabs from persisted paths
+        const savedTabs = editor._savedTabs;
+        const savedActive = editor._savedActiveTabId;
+        const savedSecondary = editor._savedSecondaryTabId;
+        if (savedTabs && savedTabs.length > 0) {
+          const findHandle = (nodes, targetPath) => {
+            for (const node of nodes) {
+              if (node.path === targetPath) return node.handle;
+              if (node.children) {
+                const found = findHandle(node.children, targetPath);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+
+          for (const tab of savedTabs) {
+            const fileHandle = findHandle(tree, tab.id);
+            if (fileHandle) {
+              try {
+                const file = await fileHandle.getFile();
+                const content = await file.text();
+                editor.openTab(tab.id, tab.title, content, fileHandle);
+              } catch (_) { /* file may have been deleted */ }
+            }
+          }
+
+          // Restore active/secondary tab selection
+          const currentTabs = useEditorStore.getState().tabs;
+          if (savedActive && currentTabs.some((t) => t.id === savedActive)) {
+            editor.setActiveTab(savedActive);
+          }
+          if (savedSecondary && currentTabs.some((t) => t.id === savedSecondary)) {
+            editor.setSecondaryTab(savedSecondary);
+          }
+        }
+      } catch (e) {
+        console.warn('[App] Failed to restore editor state:', e.message);
+      }
+    })();
+  }, []);
+
+  // Auto-save chat history to active project (debounced 2s)
+  const debounceRef = useRef(null);
+  useEffect(() => {
+    let prevMessages = useChatStore.getState().messages;
+
+    const unsub = useChatStore.subscribe((state) => {
+      if (state.messages !== prevMessages && state.messages.length > 0 && !state.isStreaming) {
+        prevMessages = state.messages;
+        clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+          useProjectStore.getState().saveCurrentChatHistory();
+        }, 2000);
+      }
+    });
+
+    const handleBeforeUnload = () => {
+      clearTimeout(debounceRef.current);
+      useProjectStore.getState().saveCurrentChatHistory();
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      unsub();
+      clearTimeout(debounceRef.current);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // Load model lists for all providers that have API keys
+  useEffect(() => {
+    const app = useAppStore.getState();
+    for (const id of PROVIDER_ORDER) {
+      const prov = app.providers[id];
+      if (!prov?.apiKey) continue;
+
+      const config = PROVIDERS[id];
+      if (config.supportsModelFetch && (!prov.availableModels || prov.availableModels.length === 0)) {
+        app.updateProvider(id, { modelsLoading: true });
+        fetchModels(id, prov.apiKey)
+          .then((models) => useAppStore.getState().updateProvider(id, { availableModels: models, modelsLoading: false }))
+          .catch(() => useAppStore.getState().updateProvider(id, { modelsLoading: false }));
+      } else if (!config.supportsModelFetch && config.hardcodedModels) {
+        // Populate hardcoded models if not already set
+        if (!prov.availableModels || prov.availableModels.length === 0) {
+          app.updateProvider(id, { availableModels: config.hardcodedModels });
+        }
+      }
     }
   }, []); // run once on mount
 

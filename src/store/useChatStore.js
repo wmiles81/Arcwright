@@ -33,6 +33,7 @@ const useChatStore = create((set, get) => ({
   },
 
   clearMessages: () => set({ messages: [], error: null }),
+  setMessages: (msgs) => set({ messages: msgs || [], error: null }),
 
   setError: (err) => set({ error: err }),
   setStreaming: (v) => set({ isStreaming: v }),

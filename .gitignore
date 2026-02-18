@@ -5,4 +5,4 @@ dist/
 .env
 .env.*
 .claude/
-context-graph/
+Arcwright-dist/

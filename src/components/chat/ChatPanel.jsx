@@ -2,13 +2,15 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import useChatStore from '../../store/useChatStore';
 import useAppStore from '../../store/useAppStore';
+import useProjectStore from '../../store/useProjectStore';
 import useChatSend from '../../hooks/useChatSend';
 import ChatMessage from './ChatMessage';
-import ChatSettings from './ChatSettings';
 import { stripActionBlocks } from '../../api/chatStreaming';
-import { buildChatSystemPrompt } from '../../chat/contextBuilder';
-import { buildEditModePrompt, PROMPT_MODES } from '../../chat/editPrompts';
+import { buildChatSystemPrompt, buildAiProjectSystemPrompt } from '../../chat/contextBuilder';
+import { buildEditModePrompt } from '../../chat/editPrompts';
 import { modelSupportsTools } from '../../api/claude';
+import { PROVIDERS } from '../../api/providers';
+import { useOpenSettings } from '../layout/AppShell';
 import useEditorStore from '../../store/useEditorStore';
 
 export default function ChatPanel() {
@@ -21,61 +23,62 @@ export default function ChatPanel() {
 
   const [input, setInput] = useState('');
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
   const [systemPromptText, setSystemPromptText] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-  const selectedModel = useAppStore((s) => s.selectedModel);
-  const setSelectedModel = useAppStore((s) => s.setSelectedModel);
-  const availableModels = useAppStore((s) => s.availableModels);
+  const activeProvider = useAppStore((s) => s.activeProvider);
+  const providers = useAppStore((s) => s.providers);
   const chatSettings = useAppStore((s) => s.chatSettings);
   const sendMessage = useChatSend();
   const location = useLocation();
+  const openSettings = useOpenSettings();
 
-  const model = availableModels.find((m) => m.id === selectedModel);
+  const activeAiProject = useProjectStore((s) => s.activeAiProject);
+  const activeBookProject = useProjectStore((s) => s.activeBookProject);
+  const activeMode = useProjectStore((s) => s.activeMode);
+
+  const fileTree = useEditorStore((s) => s.fileTree);
+  const directoryHandle = useEditorStore((s) => s.directoryHandle);
+
+  const providerState = providers[activeProvider] || {};
+  const providerConfig = PROVIDERS[activeProvider];
+  const allModels = providerState.availableModels?.length > 0
+    ? providerState.availableModels
+    : (providerConfig?.hardcodedModels || []);
+  const model = allModels.find((m) => m.id === providerState.selectedModel);
   const toolsActive = chatSettings.toolsEnabled && modelSupportsTools(model);
+  const hasFiles = fileTree && fileTree.length > 0;
 
-  /** Shorten a model ID for display: strip date suffix, keep provider. */
+  /** Shorten a model ID for display: strip date suffix. */
   const shortName = (id) => id.replace(/-\d{8}$/, '');
-
-  /** Format per-M price compactly: 0.40 → ".40", 5.00 → "5", 15.00 → "15" */
-  const compactPrice = (priceStr) => {
-    const p = parseFloat(priceStr) * 1e6;
-    if (!p || isNaN(p)) return '?';
-    if (p < 1) return p.toFixed(2).replace(/^0/, '');
-    if (p % 1 === 0) return p.toFixed(0);
-    return p.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
-  };
-
-  // Pad model names so prices align at right edge (monospace)
-  const maxNameLen = availableModels.reduce((max, m) => Math.max(max, shortName(m.id).length), 0);
-
-  /** Build option label: "provider/model      in/out" with padding */
-  const optionLabel = (m) => {
-    const name = shortName(m.id);
-    if (!m.pricing) return name;
-    const price = `${compactPrice(m.pricing.prompt)}/${compactPrice(m.pricing.completion)}`;
-    const pad = '\u2002'.repeat(Math.max(1, maxNameLen - name.length + 2));
-    return `${name}${pad}${price}`;
-  };
 
   // Rebuild the system prompt each time the user opens the viewer
   const handleToggleSystemPrompt = () => {
     if (!showSystemPrompt) {
-      const promptMode = chatSettings.promptMode || 'full';
-      if (promptMode === 'off') {
-        setSystemPromptText('(No system prompt — plain conversation mode)');
-      } else if (promptMode === 'full') {
-        setSystemPromptText(buildChatSystemPrompt(location.pathname));
+      if (activeAiProject && activeMode === 'ai') {
+        setSystemPromptText(buildAiProjectSystemPrompt(activeAiProject, useEditorStore.getState(), location.pathname));
       } else {
-        const editPrompt = buildEditModePrompt(promptMode, useEditorStore.getState());
-        setSystemPromptText(editPrompt || '(No prompt for this mode)');
+        const promptMode = chatSettings.promptMode || 'full';
+        if (promptMode === 'off') {
+          setSystemPromptText('(No system prompt \u2014 plain conversation mode)');
+        } else if (promptMode === 'full') {
+          setSystemPromptText(buildChatSystemPrompt(location.pathname));
+        } else {
+          const editPrompt = buildEditModePrompt(promptMode, useEditorStore.getState());
+          setSystemPromptText(editPrompt || '(No prompt for this mode)');
+        }
       }
     }
     setShowSystemPrompt(!showSystemPrompt);
   };
 
-  const activeModeName = PROMPT_MODES.find((m) => m.key === (chatSettings.promptMode || 'full'))?.name || 'Full Context';
+  // Display name for the current mode/project
+  const promptLabel = activeMode === 'ai' && activeAiProject
+    ? activeAiProject.name
+    : activeMode === 'book' && activeBookProject
+      ? activeBookProject
+      : 'Full Context';
 
   // Auto-scroll to bottom on new messages or stream updates
   useEffect(() => {
@@ -112,48 +115,23 @@ export default function ChatPanel() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <h2 className="text-sm font-bold text-black shrink-0">AI</h2>
-              {availableModels.length > 0 ? (
-                <select
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="text-[10px] font-mono bg-gray-100 text-gray-600 rounded px-1 py-0.5 border-none outline-none cursor-pointer hover:bg-gray-200 transition-colors min-w-0 truncate"
-                  title={selectedModel}
-                >
-                  {availableModels.map((m) => (
-                    <option key={m.id} value={m.id}>{optionLabel(m)}</option>
-                  ))}
-                </select>
-              ) : (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono truncate max-w-[180px]" title={selectedModel}>
-                  {shortName(selectedModel)}
-                </span>
-              )}
-              {toolsActive && (chatSettings.promptMode || 'full') === 'full' && (
+              <span
+                className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono truncate max-w-[200px] cursor-pointer hover:bg-gray-200 transition-colors"
+                title={`${providerConfig?.name || activeProvider} / ${providerState.selectedModel || 'none'}\nClick to open Settings`}
+                onClick={openSettings}
+              >
+                {providerConfig?.name ? `${providerConfig.name} / ` : ''}{shortName(providerState.selectedModel || '')}
+              </span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-medium shrink-0 max-w-[120px] truncate" title={promptLabel}>
+                {promptLabel}
+              </span>
+              {toolsActive && !activeMode && (
                 <span className="text-[9px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-medium shrink-0">
                   tools
                 </span>
               )}
-              {(chatSettings.promptMode || 'full') !== 'full' && (
-                <span className="text-[9px] px-1 py-0.5 rounded bg-purple-100 text-purple-700 font-medium shrink-0">
-                  {activeModeName}
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <button
-                onClick={() => { setShowSettings(!showSettings); if (!showSettings) setShowSystemPrompt(false); }}
-                className={`px-1.5 py-1 rounded transition-colors ${
-                  showSettings
-                    ? 'bg-black text-white'
-                    : 'text-gray-500 hover:text-black hover:bg-gray-100'
-                }`}
-                title="Chat settings"
-              >
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
-                  <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/>
-                </svg>
-              </button>
               <button
                 onClick={handleToggleSystemPrompt}
                 className={`text-xs px-2 py-1 rounded transition-colors ${
@@ -165,6 +143,19 @@ export default function ChatPanel() {
               >
                 Prompt
               </button>
+              {hasFiles && (
+                <button
+                  onClick={() => { setShowFiles(!showFiles); if (!showFiles) { setShowSystemPrompt(false); } }}
+                  className={`text-xs px-2 py-1 rounded transition-colors ${
+                    showFiles
+                      ? 'bg-black text-white'
+                      : 'text-gray-500 hover:text-black hover:bg-gray-100'
+                  }`}
+                  title="View file tree"
+                >
+                  Files
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (messages.length === 0 || window.confirm('Start a new chat? Current messages will be cleared.')) {
@@ -185,17 +176,12 @@ export default function ChatPanel() {
           </div>
         </div>
 
-        {/* Chat settings panel */}
-        {showSettings && (
-          <ChatSettings onClose={() => setShowSettings(false)} />
-        )}
-
         {/* System prompt viewer */}
         {showSystemPrompt && (
           <div className="border-b border-black/15 bg-gray-50 shrink-0 max-h-[60%] overflow-y-auto">
             <div className="p-3">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-gray-500 uppercase">System Prompt — {activeModeName}</span>
+                <span className="text-xs font-bold text-gray-500 uppercase">System Prompt — {promptLabel}</span>
                 <button
                   onClick={() => setShowSystemPrompt(false)}
                   className="text-xs text-gray-400 hover:text-black"
@@ -210,14 +196,54 @@ export default function ChatPanel() {
           </div>
         )}
 
+        {/* File tree panel */}
+        {showFiles && hasFiles && (
+          <div className="border-b border-black/15 bg-gray-50 shrink-0 max-h-[40%] overflow-y-auto">
+            <div className="p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-gray-500 uppercase">
+                  Files — {directoryHandle?.name || 'Editor'}
+                </span>
+                <button
+                  onClick={() => setShowFiles(false)}
+                  className="text-xs text-gray-400 hover:text-black"
+                >
+                  {'\u2715'}
+                </button>
+              </div>
+              <FileTreeView entries={fileTree} />
+            </div>
+          </div>
+        )}
+
         {/* Messages area */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-white">
           {messages.length === 0 && !isStreaming && (
             <div className="text-center text-gray-400 text-sm mt-8">
-              <p className="mb-2">Ask me about your story.</p>
-              <p className="text-xs text-gray-400">
-                I can read and modify your scaffold beats, genre settings, chapter scores, and more.
-              </p>
+              {activeMode === 'ai' && activeAiProject ? (
+                <>
+                  <p className="mb-2">AI Project: {activeAiProject.name}</p>
+                  <p className="text-xs text-gray-400">
+                    {activeAiProject.files?.length > 0
+                      ? `${activeAiProject.files.length} file(s) in catalog. Ask me anything.`
+                      : 'Custom system prompt active. Ask me anything.'}
+                  </p>
+                </>
+              ) : activeMode === 'book' && activeBookProject ? (
+                <>
+                  <p className="mb-2">Book Project: {activeBookProject}</p>
+                  <p className="text-xs text-gray-400">
+                    Ask me about your story.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mb-2">Ask me about your story.</p>
+                  <p className="text-xs text-gray-400">
+                    I can read and modify your scaffold beats, genre settings, chapter scores, and more.
+                  </p>
+                </>
+              )}
             </div>
           )}
 
@@ -286,5 +312,30 @@ export default function ChatPanel() {
           </div>
         </div>
       </div>
+  );
+}
+
+/** Compact file tree for the chat panel's Files drawer. */
+function FileTreeView({ entries, depth = 0 }) {
+  if (!entries || entries.length === 0) return null;
+  return (
+    <div style={{ paddingLeft: depth > 0 ? 12 : 0 }}>
+      {entries.map((entry) => (
+        <div key={entry.path}>
+          {entry.type === 'dir' ? (
+            <>
+              <div className="text-[11px] text-gray-500 font-medium py-0.5">
+                {'\uD83D\uDCC1'} {entry.name}/
+              </div>
+              <FileTreeView entries={entry.children} depth={depth + 1} />
+            </>
+          ) : entry.type === 'file' ? (
+            <div className="text-[11px] text-gray-700 py-0.5 truncate" title={entry.path}>
+              {entry.name}
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }

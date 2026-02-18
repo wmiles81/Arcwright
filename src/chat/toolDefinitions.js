@@ -301,4 +301,23 @@ export const toolDefinitions = [
       },
     },
   },
+
+  // --- AI Project file access ---
+  {
+    type: 'function',
+    function: {
+      name: 'readProjectFile',
+      description: 'Read the contents of a file. Can read from the AI project file catalog, the editor\'s open directory, or book project files. Use the file path exactly as shown in the Project File Catalog or editor contents. Do NOT prefix paths with "Arcwrite/".',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: {
+            type: 'string',
+            description: 'File path — use exactly as shown in the system prompt catalog or editor contents (e.g., "style-guide.md" or "projects/ai/notes/outline.md"). Do NOT add "Arcwrite/" prefix.',
+          },
+        },
+        required: ['path'],
+      },
+    },
+  },
 ];

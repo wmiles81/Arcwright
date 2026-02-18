@@ -1,11 +1,16 @@
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 /**
- * Stream a chat completion from OpenRouter.
+ * Stream a chat completion via OpenAI-compatible API.
  * Calls onChunk(text) for each content delta, onDone(toolCalls) on completion, onError(err) on failure.
  * toolCalls is an object keyed by index — empty object when no tool calls are present.
+ *
+ * Options._apiUrl and _extraHeaders allow the provider adapter to route to different base URLs.
  */
 export async function callClaudeStreaming(apiKey, messages, options = {}, onChunk, onDone, onError) {
+  const apiUrl = options._apiUrl || DEFAULT_API_URL;
+  const extraHeaders = options._extraHeaders || { 'HTTP-Referer': window.location.origin };
+
   const body = {
     model: options.model || 'anthropic/claude-sonnet-4-5-20250929',
     max_tokens: options.maxTokens || 4096,
@@ -20,12 +25,12 @@ export async function callClaudeStreaming(apiKey, messages, options = {}, onChun
 
   let response;
   try {
-    response = await fetch(OPENROUTER_API_URL, {
+    response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
-        'HTTP-Referer': window.location.origin,
+        ...extraHeaders,
       },
       body: JSON.stringify(body),
       signal: options.signal,
@@ -40,7 +45,7 @@ export async function callClaudeStreaming(apiKey, messages, options = {}, onChun
     const error = await response.json().catch(() => ({}));
     const msg = error.error?.message || `API request failed (${response.status})`;
     if (response.status === 401 || response.status === 403 || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('clerk')) {
-      onError(new Error('API key authentication failed. Please check your OpenRouter API key is valid and has credits remaining.'));
+      onError(new Error('API key authentication failed. Please check your key is valid and has credits remaining.'));
     } else {
       onError(new Error(msg));
     }

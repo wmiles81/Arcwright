@@ -1,12 +1,26 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, createContext, useContext } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import ChatPanel from '../chat/ChatPanel';
 import useChatStore from '../../store/useChatStore';
+import useProjectStore from '../../store/useProjectStore';
+import ProjectsDialog from '../projects/ProjectsDialog';
+import SettingsDialog from '../settings/SettingsDialog';
+
+const SettingsContext = createContext(() => {});
+export const useOpenSettings = () => useContext(SettingsContext);
 
 export default function AppShell() {
   const isOpen = useChatStore((s) => s.isOpen);
   const togglePanel = useChatStore((s) => s.togglePanel);
   const location = useLocation();
+
+  const isInitialized = useProjectStore((s) => s.isInitialized);
+  const activeMode = useProjectStore((s) => s.activeMode);
+  const activeBookProject = useProjectStore((s) => s.activeBookProject);
+  const activeAiProject = useProjectStore((s) => s.activeAiProject);
+
+  const [showProjectsDialog, setShowProjectsDialog] = useState(false);
+  const [showSettingsDialog, setShowSettingsDialog] = useState(false);
 
   // Edit page manages its own chat panel — hide the global one
   const isEditRoute = location.pathname.startsWith('/edit');
@@ -45,14 +59,25 @@ export default function AppShell() {
         : 'text-purple-300 hover:bg-purple-800 hover:text-white'
     }`;
 
+  const activeProjectName = activeMode === 'book' ? activeBookProject : activeMode === 'ai' ? activeAiProject?.name : null;
+
+  const openSettings = useCallback(() => setShowSettingsDialog(true), []);
+
   return (
+    <SettingsContext.Provider value={openSettings}>
     <div className="w-full h-screen flex flex-col bg-gradient-to-br from-slate-900 to-purple-900 text-white overflow-hidden">
       <nav className="bg-slate-900/80 backdrop-blur border-b border-purple-500/30 shrink-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <NavLink to="/" className="text-xl font-bold text-purple-200 hover:text-white transition-colors">
-            Arcwrite
+          <NavLink to="/" className="flex items-center gap-2 text-xl font-bold text-purple-200 hover:text-white transition-colors">
+            <img src="/mascot.png" alt="" className="h-full max-h-[40px] w-auto rounded-md" />
+            Arcwright
           </NavLink>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {activeProjectName && (
+              <span className="text-xs px-2 py-1 rounded bg-purple-600/50 text-purple-200 font-medium max-w-[120px] truncate" title={activeProjectName}>
+                {activeProjectName}
+              </span>
+            )}
             <NavLink to="/scaffold" className={linkClass}>
               Scaffold
             </NavLink>
@@ -62,6 +87,25 @@ export default function AppShell() {
             <NavLink to="/edit" className={linkClass}>
               Edit
             </NavLink>
+            <button
+              onClick={() => isInitialized && setShowProjectsDialog(true)}
+              disabled={!isInitialized}
+              className={`px-4 py-2 rounded font-semibold text-sm transition-colors border border-purple-500/30 ${
+                isInitialized
+                  ? 'text-purple-300 hover:bg-purple-800 hover:text-white cursor-pointer'
+                  : 'text-purple-500/40 cursor-not-allowed'
+              }`}
+              title={isInitialized ? 'Manage projects' : 'Set up Arcwright storage first'}
+            >
+              Projects
+            </button>
+            <button
+              onClick={() => setShowSettingsDialog(true)}
+              className="px-3 py-2 rounded font-semibold text-sm transition-colors border border-purple-500/30 text-purple-300 hover:bg-purple-800 hover:text-white cursor-pointer"
+              title="Settings"
+            >
+              {'\u2699'}
+            </button>
             <NavLink to="/help" className={linkClass}>
               Help
             </NavLink>
@@ -107,6 +151,10 @@ export default function AppShell() {
           </main>
         )}
       </div>
+
+      <ProjectsDialog isOpen={showProjectsDialog} onClose={() => setShowProjectsDialog(false)} />
+      <SettingsDialog isOpen={showSettingsDialog} onClose={() => setShowSettingsDialog(false)} />
     </div>
+    </SettingsContext.Provider>
   );
 }

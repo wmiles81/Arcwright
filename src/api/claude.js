@@ -1,15 +1,18 @@
-const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const OPENROUTER_MODELS_URL = 'https://openrouter.ai/api/v1/models';
 
 const DEFAULT_MODEL = 'anthropic/claude-sonnet-4-5-20250929';
 
 export async function callClaude(apiKey, systemPrompt, userMessage, options = {}) {
-  const response = await fetch(OPENROUTER_API_URL, {
+  const apiUrl = options._apiUrl || DEFAULT_API_URL;
+  const extraHeaders = options._extraHeaders || { 'HTTP-Referer': window.location.origin };
+
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${apiKey}`,
-      'HTTP-Referer': window.location.origin,
+      ...extraHeaders,
     },
     body: JSON.stringify({
       model: options.model || DEFAULT_MODEL,
@@ -23,9 +26,9 @@ export async function callClaude(apiKey, systemPrompt, userMessage, options = {}
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    const msg = error.error?.message || `OpenRouter API request failed (${response.status})`;
+    const msg = error.error?.message || `API request failed (${response.status})`;
     if (response.status === 401 || response.status === 403 || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('clerk')) {
-      throw new Error('API key authentication failed. Please check your OpenRouter API key is valid and has credits remaining.');
+      throw new Error('API key authentication failed. Please check your key is valid and has credits remaining.');
     }
     throw new Error(msg);
   }

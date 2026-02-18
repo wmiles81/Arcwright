@@ -10,6 +10,7 @@ import useSearchReplace from '../../hooks/useSearchReplace';
 import ToolsDropdown from './ToolsDropdown';
 import ScriptOutputPanel from './ScriptOutputPanel';
 import CodePane, { CODE_EXTS } from './CodePane';
+import DiffView from './DiffView';
 
 /** Convert basic markdown to HTML for contentEditable display. */
 function markdownToHtml(content) {
@@ -68,6 +69,8 @@ export default function MarkdownEditor() {
   const updateTabContent = useEditorStore((s) => s.updateTabContent);
   const toggleDualPane = useEditorStore((s) => s.toggleDualPane);
   const toggleSyncScroll = useEditorStore((s) => s.toggleSyncScroll);
+  const diffMode = useEditorStore((s) => s.diffMode);
+  const toggleDiffMode = useEditorStore((s) => s.toggleDiffMode);
   const saveTab = useEditorStore((s) => s.saveTab);
   const renameTab = useEditorStore((s) => s.renameTab);
   const setEditorTheme = useEditorStore((s) => s.setEditorTheme);
@@ -335,16 +338,16 @@ export default function MarkdownEditor() {
     if (tabId) updateTabContent(tabId, el.innerHTML);
   }, [activeTabId, secondaryTabId, updateTabContent]);
 
-  // Content sync: store → DOM on tab switch (skip for code files — CodePane is controlled)
+  // Content sync: store → DOM on tab switch or leaving diff mode
   useEffect(() => {
     if (!primaryRef.current || isCodePrimary) return;
     primaryRef.current.innerHTML = markdownToHtml(activeTab?.content || '');
-  }, [activeTabId, isCodePrimary]);
+  }, [activeTabId, isCodePrimary, diffMode]);
 
   useEffect(() => {
     if (!dualPane || !secondaryRef.current || !secondaryTab || isCodeSecondary) return;
     secondaryRef.current.innerHTML = markdownToHtml(secondaryTab?.content || '');
-  }, [secondaryTabId, dualPane, isCodeSecondary]);
+  }, [secondaryTabId, dualPane, isCodeSecondary, diffMode]);
 
   const handleContentInput = useCallback((ref, tabId) => {
     if (ref?.current && tabId) updateTabContent(tabId, ref.current.innerHTML);
@@ -697,6 +700,21 @@ export default function MarkdownEditor() {
 
           {dualPane && (
             <button
+              onClick={toggleDiffMode}
+              className="text-[10px] px-1.5 py-0.5 rounded transition-colors"
+              style={diffMode
+                ? { background: '#7C3AED', color: '#FFFFFF' }
+                : { color: c.toolbarBtn }
+              }
+              title="Toggle diff view between panes"
+              onMouseEnter={(e) => { if (!diffMode) { e.currentTarget.style.color = c.toolbarBtnHover; e.currentTarget.style.background = c.toolbarBtnHoverBg; } }}
+              onMouseLeave={(e) => { if (!diffMode) { e.currentTarget.style.color = c.toolbarBtn; e.currentTarget.style.background = 'transparent'; } }}
+            >
+              Diff
+            </button>
+          )}
+          {dualPane && (
+            <button
               onClick={toggleSyncScroll}
               className="text-[10px] px-1.5 py-0.5 rounded transition-colors"
               style={syncScroll
@@ -750,7 +768,16 @@ export default function MarkdownEditor() {
         ::highlight(current-match) { background-color: rgba(255, 165, 0, 0.6); }
       `}</style>
 
-      {/* Editor pane(s) */}
+      {/* Editor pane(s) — diff view replaces both panes when active */}
+      {dualPane && diffMode && secondaryTab ? (
+        <DiffView
+          leftContent={activeTab?.content || ''}
+          rightContent={secondaryTab?.content || ''}
+          colors={c}
+          onUpdateLeft={(content) => updateTabContent(activeTabId, content)}
+          onUpdateRight={(content) => updateTabContent(secondaryTabId, content)}
+        />
+      ) : (
       <div ref={editorContainerRef} className="flex-1 flex min-h-0">
         {isCodePrimary ? (
           <CodePane
@@ -842,6 +869,7 @@ export default function MarkdownEditor() {
           </>
         )}
       </div>
+      )}
 
       {/* Status bar with prominent save */}
       <div

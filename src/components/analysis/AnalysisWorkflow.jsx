@@ -4,7 +4,7 @@ import useAppStore from '../../store/useAppStore';
 import useEditorStore from '../../store/useEditorStore';
 import useProjectStore from '../../store/useProjectStore';
 import useClaudeAnalysis from '../../hooks/useClaudeAnalysis';
-import { fetchOpenRouterModels } from '../../api/claude';
+import { PROVIDERS } from '../../api/providers';
 import { buildFileTree } from '../edit/FilePanel';
 import GenreSelector from '../shared/GenreSelector';
 import DimensionToggles from '../shared/DimensionToggles';
@@ -22,37 +22,15 @@ function sanitizeFilename(title) {
 
 export default function AnalysisWorkflow() {
   const {
-    apiKey, setApiKey, chapters, analysisInProgress, selectedGenre,
-    selectedModel, setSelectedModel, availableModels, setAvailableModels,
-    modelsLoading, setModelsLoading,
+    activeProvider, providers, chapters, analysisInProgress, selectedGenre,
   } = useAppStore();
+
+  const provState = providers[activeProvider] || {};
+  const provConfig = PROVIDERS[activeProvider];
+  const hasApiKey = !!provState.apiKey;
 
   const navigate = useNavigate();
   const [exporting, setExporting] = useState(false);
-
-  const loadModels = useCallback(async (key) => {
-    if (!key) return;
-    setModelsLoading(true);
-    try {
-      const models = await fetchOpenRouterModels(key);
-      setAvailableModels(models);
-    } catch {
-      // silent fail — user can still type a model id
-    } finally {
-      setModelsLoading(false);
-    }
-  }, [setAvailableModels, setModelsLoading]);
-
-  const handleApiKeyChange = (e) => {
-    const key = e.target.value;
-    setApiKey(key);
-  };
-
-  const handleApiKeyBlur = () => {
-    if (apiKey && availableModels.length === 0 && !modelsLoading) {
-      loadModels(apiKey);
-    }
-  };
 
   const handleExportToEditor = useCallback(async () => {
     const chaptersWithText = chapters.filter((ch) => ch.text);
@@ -152,58 +130,18 @@ export default function AnalysisWorkflow() {
 
       <GenreSelector />
 
-      {/* API Key & Model Selection */}
-      <div className="bg-white/10 backdrop-blur rounded-lg p-4 mb-6 space-y-3">
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <label className="text-sm font-bold text-purple-300 block mb-1">
-              OpenRouter API Key
-            </label>
-            <input
-              type="password"
-              value={apiKey}
-              onChange={handleApiKeyChange}
-              onBlur={handleApiKeyBlur}
-              placeholder="sk-or-..."
-              className="w-full bg-slate-800 border border-purple-500/50 rounded px-3 py-2 text-sm text-white"
-            />
-          </div>
-          <div className="text-xs text-purple-300 max-w-xs">
-            Your API key is stored locally in your browser. It is sent only to the OpenRouter API. Get a key at{' '}
-            <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="underline text-purple-200 hover:text-white">openrouter.ai/keys</a>.
-          </div>
-        </div>
-
-        {/* Model Selector */}
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <label className="text-sm font-bold text-purple-300 block mb-1">
-              Model
-            </label>
-            {availableModels.length > 0 ? (
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full bg-slate-800 border border-purple-500/50 rounded px-3 py-2 text-sm text-white"
-              >
-                {availableModels.map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
-                ))}
-              </select>
-            ) : (
-              <input
-                type="text"
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                placeholder="anthropic/claude-sonnet-4-5-20250929"
-                className="w-full bg-slate-800 border border-purple-500/50 rounded px-3 py-2 text-sm text-white"
-              />
-            )}
-          </div>
-          <div className="text-xs text-purple-300 max-w-xs">
-            {modelsLoading ? 'Loading models...' : availableModels.length > 0 ? `${availableModels.length} models available` : 'Enter API key to load model list'}
-          </div>
-        </div>
+      {/* Provider Status */}
+      <div className="bg-white/10 backdrop-blur rounded-lg p-3 mb-6 flex items-center gap-3">
+        <span className="text-sm text-purple-300">
+          {hasApiKey
+            ? `Using ${provConfig?.name || activeProvider} / ${provState.selectedModel || 'no model selected'}`
+            : 'No API key configured.'}
+        </span>
+        {!hasApiKey && (
+          <span className="text-xs text-purple-400">
+            Open Settings (gear icon in nav bar) to add one.
+          </span>
+        )}
       </div>
 
       {/* Text Input */}
@@ -214,14 +152,14 @@ export default function AnalysisWorkflow() {
         <div className="mb-6">
           <button
             onClick={analyzeChapters}
-            disabled={analysisInProgress || !apiKey}
+            disabled={analysisInProgress || !hasApiKey}
             className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:opacity-50 py-3 rounded-lg font-bold text-lg"
           >
             {analysisInProgress ? 'Analyzing...' : `Analyze ${chapters.filter((ch) => !ch.status || ch.status === 'pending').length} Chapter(s)`}
           </button>
-          {!apiKey && (
+          {!hasApiKey && (
             <p className="text-xs text-yellow-400 mt-2 text-center">
-              Enter your OpenRouter API key above to enable AI analysis
+              Configure an API key in Settings to enable AI analysis
             </p>
           )}
         </div>

@@ -281,10 +281,15 @@ const useAppStore = create(
       // --- Analysis (Workflow 2) ---
       chapters: [],
       analysisInProgress: false,
-      apiKey: '',
-      selectedModel: 'anthropic/claude-sonnet-4-5-20250929',
-      availableModels: [],
-      modelsLoading: false,
+
+      // --- Multi-provider LLM state ---
+      activeProvider: 'openrouter',
+      providers: {
+        openrouter: { apiKey: '', selectedModel: 'anthropic/claude-sonnet-4-5-20250929', availableModels: [], modelsLoading: false },
+        openai: { apiKey: '', selectedModel: 'gpt-4o', availableModels: [], modelsLoading: false },
+        anthropic: { apiKey: '', selectedModel: 'claude-sonnet-4-5-20250929', availableModels: [], modelsLoading: false },
+        perplexity: { apiKey: '', selectedModel: 'sonar-pro', availableModels: [], modelsLoading: false },
+      },
       chatSettings: {
         temperature: 1,
         maxTokens: 4096,
@@ -298,17 +303,43 @@ const useAppStore = create(
       projectionPercent: 0,
       revisionItems: [],
 
-      setApiKey: (key) => set({ apiKey: key }),
-      setSelectedModel: (model) => set({ selectedModel: model }),
+      setActiveProvider: (id) => set({ activeProvider: id }),
+      updateProvider: (id, updates) => set((s) => ({
+        providers: { ...s.providers, [id]: { ...s.providers[id], ...updates } },
+      })),
 
       /** Sync settings loaded from .arcwrite/ into this store. */
-      syncFromProjectSettings: (settings) => set((s) => ({
-        apiKey: settings.apiKey || s.apiKey,
-        selectedModel: settings.selectedModel || s.selectedModel,
-        chatSettings: { ...s.chatSettings, ...(settings.chatSettings || {}) },
-      })),
-      setAvailableModels: (models) => set({ availableModels: models }),
-      setModelsLoading: (v) => set({ modelsLoading: v }),
+      syncFromProjectSettings: (settings) => set((s) => {
+        const updates = {
+          chatSettings: { ...s.chatSettings, ...(settings.chatSettings || {}) },
+        };
+        // v2 format: providers map
+        if (settings.providers) {
+          const merged = { ...s.providers };
+          for (const [id, provState] of Object.entries(settings.providers)) {
+            if (merged[id]) {
+              merged[id] = {
+                ...merged[id],
+                apiKey: provState.apiKey || merged[id].apiKey,
+                selectedModel: provState.selectedModel || merged[id].selectedModel,
+              };
+            }
+          }
+          updates.providers = merged;
+          if (settings.activeProvider) updates.activeProvider = settings.activeProvider;
+        } else if (settings.apiKey) {
+          // v1 flat format — migrate into openrouter
+          updates.providers = {
+            ...s.providers,
+            openrouter: {
+              ...s.providers.openrouter,
+              apiKey: settings.apiKey || s.providers.openrouter.apiKey,
+              selectedModel: settings.selectedModel || s.providers.openrouter.selectedModel,
+            },
+          };
+        }
+        return updates;
+      }),
 
       addChapter: (chapter) => {
         set((state) => ({ chapters: [...state.chapters, chapter] }));
@@ -360,28 +391,39 @@ const useAppStore = create(
     }),
     {
       name: 'context-graphing-store',
-      partialize: (state) => ({
-        selectedGenre: state.selectedGenre,
-        selectedSubgenre: state.selectedSubgenre,
-        selectedStructure: state.selectedStructure,
-        selectedActStructure: state.selectedActStructure,
-        selectedModifier: state.selectedModifier,
-        selectedPacing: state.selectedPacing,
-        applyCompanions: state.applyCompanions,
-        weights: state.weights,
-        baseWeights: state.baseWeights,
-        blendEnabled: state.blendEnabled,
-        secondaryGenre: state.secondaryGenre,
-        secondarySubgenre: state.secondarySubgenre,
-        blendRatio: state.blendRatio,
-        scaffoldBeats: state.scaffoldBeats,
-        customStructures: state.customStructures,
-        chapters: state.chapters,
-        apiKey: state.apiKey,
-        selectedModel: state.selectedModel,
-        chatSettings: state.chatSettings,
-        revisionItems: state.revisionItems,
-      }),
+      partialize: (state) => {
+        // Persist provider keys, selected models, and cached model lists
+        const providersPersist = {};
+        for (const [id, p] of Object.entries(state.providers)) {
+          providersPersist[id] = {
+            apiKey: p.apiKey,
+            selectedModel: p.selectedModel,
+            availableModels: p.availableModels || [],
+          };
+        }
+        return {
+          selectedGenre: state.selectedGenre,
+          selectedSubgenre: state.selectedSubgenre,
+          selectedStructure: state.selectedStructure,
+          selectedActStructure: state.selectedActStructure,
+          selectedModifier: state.selectedModifier,
+          selectedPacing: state.selectedPacing,
+          applyCompanions: state.applyCompanions,
+          weights: state.weights,
+          baseWeights: state.baseWeights,
+          blendEnabled: state.blendEnabled,
+          secondaryGenre: state.secondaryGenre,
+          secondarySubgenre: state.secondarySubgenre,
+          blendRatio: state.blendRatio,
+          scaffoldBeats: state.scaffoldBeats,
+          customStructures: state.customStructures,
+          chapters: state.chapters,
+          activeProvider: state.activeProvider,
+          providers: providersPersist,
+          chatSettings: state.chatSettings,
+          revisionItems: state.revisionItems,
+        };
+      },
       onRehydrateStorage: () => (state) => {
         if (state) {
           // Migration: default act structure to beat structure if not persisted
@@ -398,6 +440,36 @@ const useAppStore = create(
                 useAppStore.setState({ scaffoldBeats: remapped });
               }
             }
+          }
+          // Migration: flat apiKey/selectedModel → providers.openrouter
+          if (state.apiKey && !state.providers?.openrouter?.apiKey) {
+            const current = useAppStore.getState().providers;
+            useAppStore.setState({
+              activeProvider: 'openrouter',
+              providers: {
+                ...current,
+                openrouter: {
+                  ...current.openrouter,
+                  apiKey: state.apiKey,
+                  selectedModel: state.selectedModel || current.openrouter.selectedModel,
+                },
+              },
+            });
+          }
+          // Merge persisted provider keys/models/cached lists into full provider state
+          if (state.providers) {
+            const defaults = useAppStore.getState().providers;
+            const merged = {};
+            for (const [id, p] of Object.entries(defaults)) {
+              merged[id] = {
+                ...p,
+                apiKey: state.providers[id]?.apiKey || p.apiKey,
+                selectedModel: state.providers[id]?.selectedModel || p.selectedModel,
+                availableModels: state.providers[id]?.availableModels || p.availableModels || [],
+                modelsLoading: false,
+              };
+            }
+            useAppStore.setState({ providers: merged });
           }
         }
       },

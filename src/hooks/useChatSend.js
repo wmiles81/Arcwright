@@ -2,11 +2,14 @@ import { useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import useAppStore from '../store/useAppStore';
 import useChatStore from '../store/useChatStore';
-import { callClaudeStreaming, parseActions, stripActionBlocks } from '../api/chatStreaming';
+import useProjectStore from '../store/useProjectStore';
+import { parseActions, stripActionBlocks } from '../api/chatStreaming';
+import { callCompletion } from '../api/providerAdapter';
 import { executeActions, ACTION_HANDLERS } from '../chat/actionExecutor';
-import { buildChatSystemPrompt } from '../chat/contextBuilder';
+import { buildChatSystemPrompt, buildAiProjectSystemPrompt } from '../chat/contextBuilder';
 import { buildEditModePrompt } from '../chat/editPrompts';
 import { modelSupportsTools } from '../api/claude';
+import { PROVIDERS } from '../api/providers';
 import { toolDefinitions } from '../chat/toolDefinitions';
 import useEditorStore from '../store/useEditorStore';
 
@@ -18,9 +21,10 @@ export default function useChatSend() {
   return useCallback(async (userText) => {
     const chat = useChatStore.getState();
     const app = useAppStore.getState();
+    const provState = app.providers[app.activeProvider] || {};
 
-    if (!app.apiKey) {
-      chat.setError('Set your OpenRouter API key in the Analyze workflow first.');
+    if (!provState.apiKey) {
+      chat.setError('No API key configured. Open Settings to add one.');
       return;
     }
     if (chat.isStreaming) return;
@@ -40,21 +44,36 @@ export default function useChatSend() {
     const abortController = new AbortController();
     chat.setAbortController(abortController);
 
-    // Determine if native tools are available (only in full context mode)
-    const model = app.availableModels.find((m) => m.id === app.selectedModel);
-    const promptMode = app.chatSettings.promptMode || 'full';
-    const useNativeTools = promptMode === 'full' && app.chatSettings.toolsEnabled && modelSupportsTools(model);
+    const provConfig = PROVIDERS[app.activeProvider];
+    const allModels = provState.availableModels?.length > 0
+      ? provState.availableModels
+      : (provConfig?.hardcodedModels || []);
+    const model = allModels.find((m) => m.id === provState.selectedModel);
+    const { activeAiProject, activeMode } = useProjectStore.getState();
 
-    // Build system prompt based on prompt mode
+    // Determine system prompt and tool availability
     let systemPrompt = null;
-    if (promptMode === 'full') {
-      systemPrompt = buildChatSystemPrompt(location.pathname, { nativeToolsActive: useNativeTools });
-    } else if (promptMode !== 'off') {
-      systemPrompt = buildEditModePrompt(promptMode, useEditorStore.getState());
+    let useNativeTools = false;
+
+    if (activeAiProject && activeMode === 'ai') {
+      // AI project active — use its system prompt + inline project knowledge
+      systemPrompt = buildAiProjectSystemPrompt(activeAiProject, useEditorStore.getState(), location.pathname);
+      // Enable tools if model supports them (for readProjectFile + full tools)
+      useNativeTools = app.chatSettings.toolsEnabled && modelSupportsTools(model);
+    } else {
+      // No AI project — use prompt mode (default: full)
+      const promptMode = app.chatSettings.promptMode || 'full';
+      useNativeTools = promptMode === 'full' && app.chatSettings.toolsEnabled && modelSupportsTools(model);
+
+      if (promptMode === 'full') {
+        systemPrompt = buildChatSystemPrompt(location.pathname, { nativeToolsActive: useNativeTools });
+      } else if (promptMode !== 'off') {
+        systemPrompt = buildEditModePrompt(promptMode, useEditorStore.getState());
+      }
     }
 
-    // Debug: log prompt mode and system prompt info
-    console.log('[ChatSend] promptMode:', promptMode, '| systemPrompt:', systemPrompt ? `${systemPrompt.substring(0, 80)}... (${systemPrompt.length} chars)` : 'NONE');
+    // Debug
+    console.log('[ChatSend] mode:', activeMode || 'default', '| systemPrompt:', systemPrompt ? `${systemPrompt.substring(0, 80)}... (${systemPrompt.length} chars)` : 'NONE');
 
     // Get recent conversation history within token budget
     const recentMessages = chat.getRecentMessages(32000);
@@ -69,7 +88,6 @@ export default function useChatSend() {
     ];
 
     const settings = {
-      model: app.selectedModel,
       maxTokens: app.chatSettings.maxTokens,
       temperature: app.chatSettings.temperature,
     };
@@ -85,8 +103,7 @@ export default function useChatSend() {
         fullResponse = '';
 
         const toolCallsResult = await new Promise((resolve) => {
-          callClaudeStreaming(
-            app.apiKey,
+          callCompletion(
             apiMessages,
             { ...settings, tools: toolDefinitions, signal: abortController.signal },
             (chunk) => {
@@ -136,8 +153,7 @@ export default function useChatSend() {
       // --- Fenced-block fallback (existing path) ---
       let fullResponse = '';
 
-      await callClaudeStreaming(
-        app.apiKey,
+      await callCompletion(
         apiMessages,
         { ...settings, signal: abortController.signal },
         (chunk) => {

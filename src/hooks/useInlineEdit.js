@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { callClaudeStreaming } from '../api/chatStreaming';
+import { callCompletion } from '../api/providerAdapter';
 import useAppStore from '../store/useAppStore';
 
 const INLINE_EDIT_SYSTEM_PROMPT = `You are an inline text editor. The user has selected a passage and given you an editing instruction.
@@ -19,9 +19,10 @@ export default function useInlineEdit() {
   const abortRef = useRef(false);
 
   const submitEdit = useCallback((selectedText, userPrompt, isPreset = false) => {
-    const { apiKey, selectedModel, chatSettings } = useAppStore.getState();
-    if (!apiKey) {
-      setErrorMsg('Set your OpenRouter API key in Chat settings first.');
+    const { providers, activeProvider, chatSettings } = useAppStore.getState();
+    const provState = providers[activeProvider] || {};
+    if (!provState.apiKey) {
+      setErrorMsg('No API key configured. Open Settings to add one.');
       setStatus('error');
       return;
     }
@@ -43,11 +44,9 @@ export default function useInlineEdit() {
           },
         ];
 
-    callClaudeStreaming(
-      apiKey,
+    callCompletion(
       messages,
       {
-        model: selectedModel,
         maxTokens: chatSettings.maxTokens || 4096,
         temperature: chatSettings.temperature ?? 0.7,
       },

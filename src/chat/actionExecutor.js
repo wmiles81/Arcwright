@@ -1,6 +1,8 @@
 import useAppStore from '../store/useAppStore';
 import useEditorStore from '../store/useEditorStore';
+import useProjectStore from '../store/useProjectStore';
 import { buildFileTree } from '../components/edit/FilePanel';
+import { readFileByPath } from '../services/arcwriteFS';
 
 export const ACTION_HANDLERS = {
   // --- Scaffold ---
@@ -132,6 +134,87 @@ export const ACTION_HANDLERS = {
 
     const words = content.trim().split(/\s+/).filter(Boolean).length;
     return `Created "${path}" (${words} words) and opened in editor`;
+  },
+
+  // --- AI Project file access ---
+  readProjectFile: async ({ path }) => {
+    if (!path) throw new Error('path is required');
+
+    // Normalize: strip leading "Arcwrite/" prefix (AI models often add it)
+    const cleanPath = path.replace(/^Arcwrite\//i, '');
+
+    // Helper to read and format result
+    const formatResult = (content, label) => {
+      const words = content.trim().split(/\s+/).filter(Boolean).length;
+      return `File "${label}" (${words} words):\n\n${content}`;
+    };
+
+    // Try 0: Check active AI project's file catalog for cached content
+    // The AI may pass a title, path, or filename — match flexibly
+    const { arcwriteHandle, activeAiProject } = useProjectStore.getState();
+    if (activeAiProject?.files) {
+      const match = activeAiProject.files.find((f) => {
+        const q = cleanPath.toLowerCase();
+        return (f.path && f.path.toLowerCase() === q) ||
+               (f.title && f.title.toLowerCase() === q) ||
+               (f.path && f.path.toLowerCase().endsWith('/' + q)) ||
+               (f.title && (f.title.toLowerCase() + '.md') === q) ||
+               (f.path && f.path.split('/').pop().toLowerCase() === q);
+      });
+      if (match) {
+        // Serve from cached content if available
+        if (match.cachedContent) {
+          return formatResult(match.cachedContent, match.title || match.path);
+        }
+        // Otherwise try reading with the stored path
+        if (arcwriteHandle && match.path) {
+          try {
+            const content = await readFileByPath(arcwriteHandle, match.path);
+            return formatResult(content, match.title || match.path);
+          } catch (_) { /* fall through */ }
+        }
+      }
+    }
+
+    // Try 1: Read from Arcwrite storage root
+    if (arcwriteHandle) {
+      try {
+        const content = await readFileByPath(arcwriteHandle, cleanPath);
+        return formatResult(content, cleanPath);
+      } catch (_) { /* fall through */ }
+    }
+
+    // Try 2: Read from the editor's open directory (for book chapter files)
+    const editorHandle = useEditorStore.getState().directoryHandle;
+    if (editorHandle) {
+      try {
+        const content = await readFileByPath(editorHandle, cleanPath);
+        return formatResult(content, cleanPath);
+      } catch (_) { /* fall through */ }
+    }
+
+    // Try 3: Bare filename lookup in editor directory (AI may omit subdirs)
+    if (editorHandle && !cleanPath.includes('/')) {
+      try {
+        // Search one level of subdirectories for the filename
+        for await (const [name, handle] of editorHandle.entries()) {
+          if (handle.kind === 'directory') {
+            try {
+              const fh = await handle.getFileHandle(cleanPath);
+              const file = await fh.getFile();
+              const content = await file.text();
+              return formatResult(content, `${name}/${cleanPath}`);
+            } catch (_) { /* not in this subdir */ }
+          }
+        }
+        // Try root level
+        const fh = await editorHandle.getFileHandle(cleanPath);
+        const file = await fh.getFile();
+        return formatResult(await file.text(), cleanPath);
+      } catch (_) { /* fall through */ }
+    }
+
+    throw new Error(`File not found: ${path}`);
   },
 };
 

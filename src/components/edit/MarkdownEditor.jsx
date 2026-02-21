@@ -26,6 +26,7 @@ function markdownToHtml(content) {
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
   html = html.replace(/^---$/gm, '<hr>');
   html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:6px;margin:8px 0;" />');
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
   const blocks = html.split(/\n\n+/);
   html = blocks.map((b) => {
@@ -73,6 +74,7 @@ export default function MarkdownEditor() {
   const toggleDiffMode = useEditorStore((s) => s.toggleDiffMode);
   const saveTab = useEditorStore((s) => s.saveTab);
   const renameTab = useEditorStore((s) => s.renameTab);
+  const clearAllTabs = useEditorStore((s) => s.clearAllTabs);
   const setEditorTheme = useEditorStore((s) => s.setEditorTheme);
   const setLeftPanelTab = useEditorStore((s) => s.setLeftPanelTab);
   const focusedPane = useEditorStore((s) => s.focusedPane);
@@ -407,70 +409,120 @@ export default function MarkdownEditor() {
     <div className="flex-1 flex flex-col min-h-0 relative" style={{ background: c.bg }}>
       {/* File tabs */}
       <div
-        className="flex items-center shrink-0 overflow-x-auto"
+        className="flex items-center shrink-0"
         style={{ background: c.tabInactiveBg, borderBottom: `1px solid ${c.chromeBorder}` }}
       >
-        {tabs.map((tab) => {
-          const isActive = tab.id === activeTabId;
-          return (
-            <div
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              onAuxClick={(e) => { if (e.button === 1) closeTab(tab.id); }}
-              onDoubleClick={() => startTabRename(tab.id, tab.title)}
-              className="group flex items-center gap-1.5 px-3 py-1.5 text-xs shrink-0 transition-colors cursor-pointer"
-              style={{
-                background: isActive ? c.tabActiveBg : c.tabInactiveBg,
-                color: isActive ? c.tabActiveText : c.tabInactiveText,
-                borderRight: `1px solid ${c.chromeBorder}`,
-              }}
-              onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = c.tabHoverBg; }}
-              onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = c.tabInactiveBg; }}
-            >
-              {renamingTabId === tab.id ? (
-                <input
-                  autoFocus
-                  value={tabRenameValue}
-                  onChange={(e) => setTabRenameValue(e.target.value)}
-                  onBlur={() => commitTabRename(tab.id)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') commitTabRename(tab.id);
-                    if (e.key === 'Escape') setRenamingTabId(null);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="bg-white border border-blue-400 rounded px-1 py-0 text-xs text-black outline-none w-24"
-                />
-              ) : (
-                <span>{tab.title}</span>
-              )}
-              {tab.dirty && <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />}
-              <span
-                onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
-                className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        {/* Left pane tabs — bounded to left pane width when dual-pane is active */}
+        <div
+          className="flex overflow-x-auto"
+          style={dualPane ? { width: `${splitPercent}%`, flexShrink: 0 } : { flex: 1 }}
+        >
+          {tabs.map((tab) => {
+            const isActive = tab.id === activeTabId;
+            return (
+              <div
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                onAuxClick={(e) => { if (e.button === 1) closeTab(tab.id); }}
+                onDoubleClick={() => startTabRename(tab.id, tab.title)}
+                className="group flex items-center gap-1.5 px-3 py-1.5 text-xs shrink-0 transition-colors cursor-pointer"
+                style={{
+                  background: isActive ? c.tabActiveBg : c.tabInactiveBg,
+                  color: isActive ? c.tabActiveText : c.tabInactiveText,
+                  borderRight: `1px solid ${c.chromeBorder}`,
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = c.tabHoverBg; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = c.tabInactiveBg; }}
+              >
+                {renamingTabId === tab.id ? (
+                  <input
+                    autoFocus
+                    value={tabRenameValue}
+                    onChange={(e) => setTabRenameValue(e.target.value)}
+                    onBlur={() => commitTabRename(tab.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commitTabRename(tab.id);
+                      if (e.key === 'Escape') setRenamingTabId(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-white border border-blue-400 rounded px-1 py-0 text-xs text-black outline-none w-24"
+                  />
+                ) : (
+                  <span>{tab.title}</span>
+                )}
+                {tab.dirty && <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />}
+                <span
+                  onClick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
+                  className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ color: c.statusText }}
+                >
+                  {'\u00D7'}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Divider — visual continuation of the pane splitter */}
+        {dualPane && (
+          <div
+            className="self-stretch w-1.5 shrink-0"
+            style={{ background: c.chromeText, opacity: 0.4 }}
+          />
+        )}
+
+        {/* Right pane tab section — starts at left edge of right pane */}
+        {dualPane && (
+          <div className="flex flex-1 min-w-0 items-center overflow-x-auto">
+            {secondaryTab ? (
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs shrink-0"
+                style={{
+                  background: c.tabActiveBg,
+                  color: c.tabActiveText,
+                  borderRight: `1px solid ${c.chromeBorder}`,
+                }}
+              >
+                <span>{secondaryTab.title}</span>
+                {secondaryTab.dirty && <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />}
+              </div>
+            ) : (
+              <div
+                className="flex items-center px-3 py-1.5 text-xs italic shrink-0"
                 style={{ color: c.statusText }}
               >
-                {'\u00D7'}
-              </span>
-            </div>
-          );
-        })}
-
-        {/* Dual-pane secondary selector (right side) */}
-        {dualPane && tabs.length > 1 && (
-          <div className="ml-auto flex items-center gap-1 px-2 shrink-0" style={{ color: c.statusText }}>
-            <span className="text-[10px]">R:</span>
-            <select
-              value={secondaryTabId || ''}
-              onChange={(e) => setSecondaryTab(e.target.value)}
-              className="text-[10px] rounded px-1 py-0.5 border-none outline-none"
-              style={{ background: c.chrome, color: c.chromeText }}
-            >
-              {tabs.filter((t) => t.id !== activeTabId).map((t) => (
-                <option key={t.id} value={t.id}>{t.title}</option>
-              ))}
-            </select>
+                empty
+              </div>
+            )}
+            {tabs.length > 1 && (
+              <div className="flex items-center gap-1 px-2 shrink-0">
+                <select
+                  value={secondaryTabId || ''}
+                  onChange={(e) => setSecondaryTab(e.target.value)}
+                  className="text-[10px] rounded px-1 py-0.5 border-none outline-none"
+                  style={{ background: c.chrome, color: c.chromeText }}
+                >
+                  <option value="" disabled>— pick —</option>
+                  {tabs.filter((t) => t.id !== activeTabId).map((t) => (
+                    <option key={t.id} value={t.id}>{t.title}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         )}
+
+        {/* Clear all tabs — always visible at far right */}
+        <button
+          onClick={clearAllTabs}
+          className="shrink-0 px-2 py-1.5 text-[10px] transition-colors border-l"
+          style={{ color: c.statusText, borderColor: c.chromeBorder, background: c.tabInactiveBg }}
+          title="Close all tabs"
+          onMouseEnter={(e) => { e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.background = c.tabHoverBg; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = c.statusText; e.currentTarget.style.background = c.tabInactiveBg; }}
+        >
+          ×all
+        </button>
       </div>
 
       {/* Revision pipeline status bar */}
@@ -761,6 +813,7 @@ export default function MarkdownEditor() {
         .editor-content h3 { font-size: 1.15em; font-weight: bold; margin: 0.4em 0 0.2em; }
         .editor-content code { background: rgba(128,128,128,0.15); padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
         .editor-content blockquote { border-left: 3px solid ${c.chromeBorder}; padding-left: 12px; margin: 0.4em 0; opacity: 0.85; }
+        .editor-content img { max-width: 100%; border-radius: 6px; margin: 8px 0; display: block; }
         .editor-content a { color: #2563EB; text-decoration: underline; }
         .editor-content hr { border: none; border-top: 1px solid ${c.chromeBorder}; margin: 1em 0; }
         .editor-content ul, .editor-content ol { margin: 0.3em 0; padding-left: 1.5em; }

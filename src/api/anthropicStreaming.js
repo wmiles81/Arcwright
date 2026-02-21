@@ -104,7 +104,7 @@ export async function callAnthropicStreaming(apiKey, messages, options = {}, onC
     });
   } catch (err) {
     if (err.name === 'AbortError') { onDone({}); return; }
-    onError(new Error(`Network error: ${err.message}`));
+    onError(new Error('Could not reach the Anthropic API — check your internet connection and try again.'));
     return;
   }
 
@@ -127,6 +127,8 @@ export async function callAnthropicStreaming(apiKey, messages, options = {}, onC
   const toolUseBlocks = {}; // keyed by content block index
   let currentBlockIndex = null;
   let toolCallCounter = 0;
+  let inputTokens = 0;
+  let outputTokens = 0;
 
   // Output in the same shape as chatStreaming.js: { [index]: { id, type:'function', function:{ name, arguments } } }
   const toolCalls = {};
@@ -151,7 +153,7 @@ export async function callAnthropicStreaming(apiKey, messages, options = {}, onC
 
         if (!trimmed.startsWith('data: ')) continue;
         const data = trimmed.slice(6);
-        if (data === '[DONE]') { onDone(toolCalls); return; }
+        if (data === '[DONE]') { onDone(toolCalls, { promptTokens: inputTokens, completionTokens: outputTokens, totalTokens: inputTokens + outputTokens }); return; }
 
         try {
           const parsed = JSON.parse(data);
@@ -198,11 +200,23 @@ export async function callAnthropicStreaming(apiKey, messages, options = {}, onC
               break;
             }
 
+            case 'message_start':
+              if (parsed.message?.usage?.input_tokens) {
+                inputTokens = parsed.message.usage.input_tokens;
+              }
+              break;
+
+            case 'message_delta':
+              if (parsed.usage?.output_tokens) {
+                outputTokens = parsed.usage.output_tokens;
+              }
+              break;
+
             case 'message_stop':
-              onDone(toolCalls);
+              onDone(toolCalls, { promptTokens: inputTokens, completionTokens: outputTokens, totalTokens: inputTokens + outputTokens });
               return;
 
-            // message_start, message_delta, ping — ignored
+            // ping — ignored
             default:
               break;
           }
@@ -213,10 +227,16 @@ export async function callAnthropicStreaming(apiKey, messages, options = {}, onC
         eventType = null;
       }
     }
-    onDone(toolCalls);
+    const usage = { promptTokens: inputTokens, completionTokens: outputTokens, totalTokens: inputTokens + outputTokens };
+    onDone(toolCalls, usage);
   } catch (err) {
-    if (err.name === 'AbortError') { onDone(toolCalls); return; }
-    onError(new Error(`Stream error: ${err.message}`));
+    const usage = { promptTokens: inputTokens, completionTokens: outputTokens, totalTokens: inputTokens + outputTokens };
+    if (err.name === 'AbortError') { onDone(toolCalls, usage); return; }
+    const isNetworkDrop = err.name === 'TypeError' || /network|fetch/i.test(err.message);
+    onError(new Error(isNetworkDrop
+      ? 'Connection lost mid-response. This can happen when the output is very long or the context is too large. Try again, or reduce context size.'
+      : `Stream error: ${err.message}`
+    ));
   }
 }
 

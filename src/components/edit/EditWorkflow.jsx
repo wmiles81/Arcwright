@@ -1,20 +1,24 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import useEditorStore from '../../store/useEditorStore';
 import useAppStore from '../../store/useAppStore';
+import useSequenceStore from '../../store/useSequenceStore';
 import ChatPanel from '../chat/ChatPanel';
 import FilePanel from './FilePanel';
 import MarkdownEditor from './MarkdownEditor';
+import SequencesPanel from '../sequences/SequencesPanel';
 import { DIMENSION_KEYS } from '../../data/dimensions';
 
 const LEFT_TABS = [
   { key: 'chat', label: 'Chat' },
   { key: 'files', label: 'Files' },
   { key: 'variables', label: 'Variables' },
+  { key: 'sequences', label: 'Sequences' },
 ];
 
 export default function EditWorkflow() {
   const leftPanelTab = useEditorStore((s) => s.leftPanelTab);
   const setLeftPanelTab = useEditorStore((s) => s.setLeftPanelTab);
+  const runningSequence = useSequenceStore((s) => s.runningSequence);
 
   // --- Resizable left panel ---
   const [leftWidth, setLeftWidth] = useState(320);
@@ -52,13 +56,16 @@ export default function EditWorkflow() {
             <button
               key={tab.key}
               onClick={() => setLeftPanelTab(tab.key)}
-              className={`flex-1 px-3 py-2 text-xs font-semibold transition-colors ${
+              className={`flex-1 px-2 py-2 text-xs font-semibold transition-colors flex items-center justify-center gap-1 ${
                 leftPanelTab === tab.key
                   ? 'bg-white text-black border-b-2 border-black'
                   : 'bg-gray-50 text-gray-500 hover:text-black hover:bg-gray-100'
               }`}
             >
               {tab.label}
+              {tab.key === 'sequences' && runningSequence && (
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+              )}
             </button>
           ))}
         </div>
@@ -68,6 +75,7 @@ export default function EditWorkflow() {
           {leftPanelTab === 'chat' && <ChatPanel />}
           {leftPanelTab === 'files' && <FilePanel />}
           {leftPanelTab === 'variables' && <VariablesPanel />}
+          {leftPanelTab === 'sequences' && <SequencesPanel />}
         </div>
       </div>
 

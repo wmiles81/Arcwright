@@ -20,6 +20,11 @@ const DEFAULT_SETTINGS = {
     promptMode: 'full',
   },
   editorTheme: 'light',
+  imageSettings: {
+    provider: '',
+    model: '',
+    defaultSize: '1024x1024',
+  },
 };
 
 /**
@@ -230,4 +235,309 @@ export async function readBookChatHistory(arcwriteHandle, bookName) {
 export async function writeBookChatHistory(arcwriteHandle, bookName, messages) {
   const bookDir = await ensureDir(arcwriteHandle, 'projects', 'books', bookName);
   await writeJsonFile(bookDir, '.chat.json', messages);
+}
+
+/**
+ * Read chat history for an AI project from a dedicated file.
+ * Stored at Arcwrite/projects/ai/.chats/{name}.json — separate from the project
+ * definition JSON so large conversations don't bloat the project file.
+ * Returns [] if not found.
+ */
+export async function readAiChatHistory(arcwriteHandle, projectName) {
+  const chatsDir = await ensureDir(arcwriteHandle, 'projects', 'ai', '.chats');
+  const filename = `${projectName.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
+  return (await readJsonFile(chatsDir, filename)) || [];
+}
+
+/**
+ * Save chat history for an AI project to a dedicated file.
+ * Stored at Arcwrite/projects/ai/.chats/{name}.json.
+ */
+export async function writeAiChatHistory(arcwriteHandle, projectName, messages) {
+  const chatsDir = await ensureDir(arcwriteHandle, 'projects', 'ai', '.chats');
+  const filename = `${projectName.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
+  await writeJsonFile(chatsDir, filename, messages);
+}
+
+// ── Custom Prompts CRUD ──
+
+/**
+ * List custom prompt JSON files in Arcwrite/prompts/.
+ */
+export async function listCustomPrompts(arcwriteHandle) {
+  const promptsDir = await ensureDir(arcwriteHandle, 'prompts');
+  const prompts = [];
+  for await (const [name, handle] of promptsDir.entries()) {
+    if (handle.kind === 'file' && name.endsWith('.json')) {
+      try {
+        const file = await handle.getFile();
+        const text = await file.text();
+        prompts.push(JSON.parse(text));
+      } catch (e) {
+        console.warn(`[arcwriteFS] Failed to parse prompt ${name}:`, e.message);
+      }
+    }
+  }
+  return prompts.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+}
+
+/**
+ * Save a custom prompt JSON file.
+ */
+export async function saveCustomPrompt(arcwriteHandle, prompt) {
+  const promptsDir = await ensureDir(arcwriteHandle, 'prompts');
+  const filename = `${prompt.id}.json`;
+  await writeJsonFile(promptsDir, filename, { ...prompt, updatedAt: Date.now() });
+}
+
+/**
+ * Delete a custom prompt JSON file.
+ */
+export async function deleteCustomPrompt(arcwriteHandle, promptId) {
+  const promptsDir = await ensureDir(arcwriteHandle, 'prompts');
+  const filename = `${promptId}.json`;
+  await promptsDir.removeEntry(filename);
+}
+
+// ── Custom Sequences CRUD ──
+
+/**
+ * List custom sequence JSON files in Arcwrite/sequences/.
+ */
+export async function listCustomSequences(arcwriteHandle) {
+  const sequencesDir = await ensureDir(arcwriteHandle, 'sequences');
+  const sequences = [];
+  for await (const [name, handle] of sequencesDir.entries()) {
+    if (handle.kind === 'file' && name.endsWith('.json')) {
+      try {
+        const file = await handle.getFile();
+        const text = await file.text();
+        sequences.push(JSON.parse(text));
+      } catch (e) {
+        console.warn(`[arcwriteFS] Failed to parse sequence ${name}:`, e.message);
+      }
+    }
+  }
+  return sequences.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+}
+
+/**
+ * Save a custom sequence JSON file.
+ */
+export async function saveCustomSequence(arcwriteHandle, sequence) {
+  const sequencesDir = await ensureDir(arcwriteHandle, 'sequences');
+  const filename = `${sequence.id}.json`;
+  await writeJsonFile(sequencesDir, filename, { ...sequence, updatedAt: Date.now() });
+}
+
+/**
+ * Delete a custom sequence JSON file.
+ */
+export async function deleteCustomSequence(arcwriteHandle, sequenceId) {
+  const sequencesDir = await ensureDir(arcwriteHandle, 'sequences');
+  const filename = `${sequenceId}.json`;
+  await sequencesDir.removeEntry(filename);
+}
+
+// ── Extension Packs ──
+
+/**
+ * Scan Arcwrite/extensions/ for subdirectories containing pack.json manifests.
+ * Returns an array of pack descriptors (manifest + dirHandle).
+ */
+export async function listExtensionPacks(arcwriteHandle) {
+  let extDir;
+  try {
+    extDir = await arcwriteHandle.getDirectoryHandle('extensions');
+  } catch (e) {
+    if (e.name === 'NotFoundError') return [];
+    throw e;
+  }
+  const packs = [];
+  for await (const [name, handle] of extDir.entries()) {
+    if (handle.kind !== 'directory') continue;
+    try {
+      const manifestHandle = await handle.getFileHandle('pack.json');
+      const file = await manifestHandle.getFile();
+      const manifest = JSON.parse(await file.text());
+      packs.push({ ...manifest, id: manifest.id || name, dirHandle: handle });
+    } catch (_) { /* skip dirs without valid pack.json */ }
+  }
+  return packs;
+}
+
+/**
+ * Load all content declared in a pack's includes.
+ * Returns { genres, dimensionRanges, structures, prompts, sequences }.
+ */
+export async function loadPackContent(packDirHandle, includes) {
+  const result = { genres: null, dimensionRanges: null, structures: null, prompts: [], sequences: [] };
+
+  if (includes.genres) {
+    try {
+      const fh = await packDirHandle.getFileHandle(includes.genres);
+      const data = JSON.parse(await (await fh.getFile()).text());
+      if (data._dimensionRanges) {
+        result.dimensionRanges = data._dimensionRanges;
+        delete data._dimensionRanges;
+      }
+      result.genres = data;
+    } catch (_) {}
+  }
+
+  if (includes.structures) {
+    try {
+      const fh = await packDirHandle.getFileHandle(includes.structures);
+      result.structures = JSON.parse(await (await fh.getFile()).text());
+    } catch (_) {}
+  }
+
+  for (const [type, dirName] of [['prompts', includes.prompts], ['sequences', includes.sequences]]) {
+    if (!dirName) continue;
+    try {
+      const dir = await packDirHandle.getDirectoryHandle(dirName.replace(/\/$/, ''));
+      for await (const [fname, fhandle] of dir.entries()) {
+        if (fhandle.kind === 'file' && fname.endsWith('.json')) {
+          try {
+            const parsed = JSON.parse(await (await fhandle.getFile()).text());
+            result[type].push(parsed);
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+  }
+
+  return result;
+}
+
+// ── Artifact Utilities ──
+
+/**
+ * Read the artifact manifest from a book project directory handle.
+ * Returns { files: [...] } or null if no artifacts/ folder or manifest exists.
+ */
+export async function readArtifactManifest(bookProjectHandle) {
+  try {
+    const artifactsDir = await bookProjectHandle.getDirectoryHandle('artifacts');
+    return await readJsonFile(artifactsDir, 'manifest.json');
+  } catch (e) {
+    if (e.name === 'NotFoundError') return null;
+    throw e;
+  }
+}
+
+/**
+ * Write/update the artifact manifest inside a book project.
+ * Creates artifacts/ if it doesn't exist.
+ */
+export async function writeArtifactManifest(bookProjectHandle, manifest) {
+  const artifactsDir = await bookProjectHandle.getDirectoryHandle('artifacts', { create: true });
+  await writeJsonFile(artifactsDir, 'manifest.json', manifest);
+}
+
+// ── Artifacts Utilities ──
+
+const SPE_FILES = [
+  'README.md',
+  'cliche_collider.yaml',
+  'sensory_lenses.yaml',
+  'entropy_profiles.yaml',
+  'character_entropy_budgets.yaml',
+  'npe_to_spe_mappings.yaml',
+  'line_editing_protocol.yaml',
+  'name_collider.yaml',
+  'place_collider.yaml',
+  'female_voice_mechanics.md',
+  'male_voice_mechanics.md',
+];
+
+/**
+ * Provision bundled artifact libraries into Arcwrite/_Artifacts/.
+ * Currently provisions: semantic_physics_engine (11 YAML/MD files).
+ * Idempotent — skips if already present.
+ */
+export async function provisionArtifacts(arcwriteHandle) {
+  try {
+    const artifactsDir = await ensureDir(arcwriteHandle, '_Artifacts');
+    const speDir = await ensureDir(artifactsDir, 'semantic_physics_engine');
+
+    // Skip if already provisioned (README exists)
+    try {
+      await speDir.getFileHandle('README.md');
+      return; // already done
+    } catch (e) {
+      if (e.name !== 'NotFoundError') throw e;
+    }
+
+    for (const filename of SPE_FILES) {
+      try {
+        const res = await fetch(`/artifacts/spe/${filename}`);
+        if (!res.ok) continue;
+        const content = await res.text();
+        const fh = await speDir.getFileHandle(filename, { create: true });
+        const writable = await fh.createWritable();
+        await writable.write(content);
+        await writable.close();
+      } catch (e) {
+        console.warn(`[arcwriteFS] provisionArtifacts: failed to write ${filename}:`, e.message);
+      }
+    }
+    console.log('[arcwriteFS] Artifacts provisioned.');
+  } catch (e) {
+    console.warn('[arcwriteFS] provisionArtifacts failed:', e.message);
+  }
+}
+
+/**
+ * Walk the _Artifacts/ directory tree.
+ * Returns the same format as walkDirectoryTree.
+ */
+export async function walkArtifactsTree(arcwriteHandle) {
+  try {
+    const artifactsDir = await arcwriteHandle.getDirectoryHandle('_Artifacts');
+    return await walkDirectoryTree(artifactsDir);
+  } catch (e) {
+    if (e.name === 'NotFoundError') return [];
+    throw e;
+  }
+}
+
+/**
+ * Read a file from _Artifacts/ by its path (e.g. 'semantic_physics_engine/README.md').
+ */
+export async function readArtifactFile(arcwriteHandle, relativePath) {
+  const parts = relativePath.split('/').filter(Boolean);
+  const filename = parts.pop();
+  let dir = await arcwriteHandle.getDirectoryHandle('_Artifacts');
+  for (const part of parts) {
+    dir = await dir.getDirectoryHandle(part);
+  }
+  const fh = await dir.getFileHandle(filename);
+  const file = await fh.getFile();
+  return await file.text();
+}
+
+// ── Skill Folder Utilities ──
+
+/**
+ * Recursively walk a directory and return a serializable file tree.
+ * Each entry: { name, path, type: 'file'|'dir', children? }.
+ * Skips dotfiles. Sorts dirs-first, then alphabetically.
+ */
+export async function walkDirectoryTree(dirHandle, parentPath = '') {
+  const entries = [];
+  for await (const [name, handle] of dirHandle.entries()) {
+    if (name.startsWith('.')) continue;
+    const path = parentPath ? `${parentPath}/${name}` : name;
+    if (handle.kind === 'directory') {
+      const children = await walkDirectoryTree(handle, path);
+      entries.push({ name, path, type: 'dir', children });
+    } else {
+      entries.push({ name, path, type: 'file' });
+    }
+  }
+  return entries.sort((a, b) => {
+    if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
 }

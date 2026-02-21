@@ -63,6 +63,30 @@ export default function AppShell() {
 
   const openSettings = useCallback(() => setShowSettingsDialog(true), []);
 
+  // Track which pane the mouse is over so Cmd+A can scope selection to it
+  const activePaneRef = useRef(null);
+  const chatPaneRef = useRef(null);
+  const mainPaneRef = useRef(null);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (!(e.metaKey || e.ctrlKey) || e.key !== 'a') return;
+      const active = document.activeElement;
+      // Let native Cmd+A work in inputs, textareas, and contentEditable
+      if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) return;
+      const pane = activePaneRef.current;
+      if (!pane) return;
+      e.preventDefault();
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(pane);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   return (
     <SettingsContext.Provider value={openSettings}>
     <div className="w-full h-screen flex flex-col bg-gradient-to-br from-slate-900 to-purple-900 text-white overflow-hidden">
@@ -128,7 +152,12 @@ export default function AppShell() {
         {/* Chat panel — hidden on edit route */}
         {showGlobalChat && (
           <>
-            <div style={{ width: chatWidth }} className="shrink-0 flex flex-col min-h-0">
+            <div
+              ref={chatPaneRef}
+              onMouseEnter={() => { activePaneRef.current = chatPaneRef.current; }}
+              style={{ width: chatWidth }}
+              className="shrink-0 flex flex-col min-h-0"
+            >
               <ChatPanel />
             </div>
             <div
@@ -140,11 +169,19 @@ export default function AppShell() {
 
         {/* Main content — edit route uses full width with no padding/max-width */}
         {isEditRoute ? (
-          <main className="flex-1 min-w-0 min-h-0">
+          <main
+            ref={mainPaneRef}
+            onMouseEnter={() => { activePaneRef.current = mainPaneRef.current; }}
+            className="flex-1 min-w-0 min-h-0"
+          >
             <Outlet />
           </main>
         ) : (
-          <main className="flex-1 overflow-y-auto p-6 min-w-0">
+          <main
+            ref={mainPaneRef}
+            onMouseEnter={() => { activePaneRef.current = mainPaneRef.current; }}
+            className="flex-1 overflow-y-auto p-6 min-w-0"
+          >
             <div className="max-w-7xl mx-auto">
               <Outlet />
             </div>

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { saveHandle, loadHandle } from '../services/idbHandleStore';
+import { saveHandle, loadHandle, removeHandle } from '../services/idbHandleStore';
 import {
   initArcwrite, readSettings, writeSettings, ensureDir,
   listBookProjects as fsListBookProjects,
@@ -9,6 +9,9 @@ import {
   saveAiProject as fsSaveAiProject,
   deleteAiProject as fsDeleteAiProject,
   readBookChatHistory, writeBookChatHistory,
+  readAiChatHistory, writeAiChatHistory,
+  provisionArtifacts, walkArtifactsTree, readArtifactFile as fsReadArtifactFile,
+  listExtensionPacks, loadPackContent,
 } from '../services/arcwriteFS';
 import useAppStore from './useAppStore';
 import useEditorStore from './useEditorStore';
@@ -60,6 +63,16 @@ const useProjectStore = create((set, get) => ({
   activeAiProject: null,
   activeMode: null, // 'book' | 'ai' | null
 
+  // Skill folder directory handles (restored from IDB on project activation)
+  skillFolderHandles: {}, // { idbKey: FileSystemDirectoryHandle }
+
+  // _Artifacts tree
+  artifactsTree: [],
+
+  // Data packs (loaded from Arcwrite/extensions/)
+  dataPacks: [],
+  dataPacksLoaded: false,
+
   /**
    * Set up Arcwrite storage. Called when user picks a parent folder.
    * Creates "Arcwrite/" inside it, persists only that subfolder handle
@@ -80,6 +93,8 @@ const useProjectStore = create((set, get) => ({
     }
 
     await get().loadProjects();
+    await provisionArtifacts(arcwriteHandle);
+    await get().loadArtifacts();
   },
 
   /**
@@ -110,6 +125,8 @@ const useProjectStore = create((set, get) => ({
         }
 
         await get().loadProjects();
+        await provisionArtifacts(arcwriteHandle);
+        await get().loadArtifacts();
 
         // Restore active project from localStorage
         const saved = loadActiveProject();
@@ -307,16 +324,76 @@ const useProjectStore = create((set, get) => ({
     // Save current chat before switching
     await get().saveCurrentChatHistory();
 
-    // Load this project's chat history
+    // Load this project's chat history from dedicated file.
+    // Falls back to legacy embedded chatHistory and migrates it on first access.
     const { default: useChatStore } = await import('./useChatStore');
-    useChatStore.getState().setMessages(project.chatHistory || []);
+    const { arcwriteHandle } = get();
+    let chatHistory = [];
+    if (arcwriteHandle) {
+      try {
+        chatHistory = await readAiChatHistory(arcwriteHandle, project.name);
+        // Migration: if dedicated file is empty but project JSON has embedded history, migrate it
+        if (chatHistory.length === 0 && project.chatHistory?.length > 0) {
+          chatHistory = project.chatHistory;
+          await writeAiChatHistory(arcwriteHandle, project.name, chatHistory);
+          // Strip from project JSON to keep it lean
+          const cleaned = { ...project };
+          delete cleaned.chatHistory;
+          await fsSaveAiProject(arcwriteHandle, { ...cleaned, updatedAt: Date.now() });
+        }
+      } catch (e) {
+        console.warn('[ProjectStore] Could not load AI chat history:', e.message);
+        chatHistory = project.chatHistory || [];
+      }
+    } else {
+      chatHistory = project.chatHistory || [];
+    }
+    useChatStore.getState().setMessages(chatHistory);
 
     set({
       activeAiProject: project,
       activeBookProject: null,
       activeMode: 'ai',
+      skillFolderHandles: {},
     });
     saveActiveProject('ai', project.name);
+
+    // Restore skill folder handles from IDB
+    if (project.files) {
+      const handles = {};
+      for (const f of project.files) {
+        if (f.type === 'folder' && f.idbKey) {
+          try {
+            const handle = await loadHandle(f.idbKey);
+            if (!handle) continue;
+            const perm = await handle.queryPermission({ mode: 'read' });
+            if (perm === 'granted') {
+              handles[f.idbKey] = handle;
+            }
+          } catch (e) {
+            console.warn('[ProjectStore] Failed to restore skill folder handle:', f.idbKey, e.message);
+          }
+        }
+      }
+      if (Object.keys(handles).length > 0) {
+        set({ skillFolderHandles: handles });
+      }
+    }
+  },
+
+  /** Re-grant permission for a skill folder (requires user gesture). */
+  reconnectSkillFolder: async (idbKey) => {
+    try {
+      const handle = await loadHandle(idbKey);
+      if (!handle) return false;
+      const perm = await handle.requestPermission({ mode: 'read' });
+      if (perm !== 'granted') return false;
+      set((s) => ({ skillFolderHandles: { ...s.skillFolderHandles, [idbKey]: handle } }));
+      return true;
+    } catch (e) {
+      console.warn('[ProjectStore] reconnectSkillFolder failed:', e.message);
+      return false;
+    }
   },
 
   /** Deactivate all projects (return to default Full Context). */
@@ -332,6 +409,21 @@ const useProjectStore = create((set, get) => ({
     saveActiveProject(null, null);
   },
 
+  /** Clear chat history on disk for the active project (writes [] explicitly). */
+  clearProjectHistory: async () => {
+    const { arcwriteHandle, activeBookProject, activeAiProject, activeMode } = get();
+    if (!arcwriteHandle) return;
+    try {
+      if (activeMode === 'book' && activeBookProject) {
+        await writeBookChatHistory(arcwriteHandle, activeBookProject, []);
+      } else if (activeMode === 'ai' && activeAiProject) {
+        await writeAiChatHistory(arcwriteHandle, activeAiProject.name, []);
+      }
+    } catch (e) {
+      console.warn('[ProjectStore] clearProjectHistory failed:', e.message);
+    }
+  },
+
   /** Save current chat history to the active project's storage. */
   saveCurrentChatHistory: async () => {
     const { arcwriteHandle, activeBookProject, activeAiProject, activeMode } = get();
@@ -345,9 +437,8 @@ const useProjectStore = create((set, get) => ({
       if (activeMode === 'book' && activeBookProject) {
         await writeBookChatHistory(arcwriteHandle, activeBookProject, messages);
       } else if (activeMode === 'ai' && activeAiProject) {
-        const updated = { ...activeAiProject, chatHistory: messages, updatedAt: Date.now() };
-        await fsSaveAiProject(arcwriteHandle, updated);
-        set({ activeAiProject: updated });
+        // Store history in a dedicated file — never embed in the project JSON
+        await writeAiChatHistory(arcwriteHandle, activeAiProject.name, messages);
       }
     } catch (e) {
       console.warn('[ProjectStore] saveCurrentChatHistory failed:', e.message);
@@ -399,13 +490,65 @@ const useProjectStore = create((set, get) => ({
     await get().loadProjects();
   },
 
+  /** Load the _Artifacts/ directory tree. */
+  loadArtifacts: async () => {
+    const { arcwriteHandle } = get();
+    if (!arcwriteHandle) return;
+    try {
+      const tree = await walkArtifactsTree(arcwriteHandle);
+      set({ artifactsTree: tree });
+    } catch (e) {
+      console.warn('[ProjectStore] loadArtifacts failed:', e.message);
+    }
+  },
+
+  /** Read a file from _Artifacts/ by path (e.g. 'semantic_physics_engine/README.md'). */
+  readArtifactFile: async (path) => {
+    const { arcwriteHandle } = get();
+    if (!arcwriteHandle) return null;
+    return await fsReadArtifactFile(arcwriteHandle, path);
+  },
+
+  /** Load extension packs from Arcwrite/extensions/. */
+  loadDataPacks: async () => {
+    const { arcwriteHandle } = get();
+    if (!arcwriteHandle) return;
+    try {
+      const packList = await listExtensionPacks(arcwriteHandle);
+      const loaded = [];
+      for (const pack of packList) {
+        const content = await loadPackContent(pack.dirHandle, pack.includes || {});
+        loaded.push({
+          id: pack.id, name: pack.name, version: pack.version,
+          description: pack.description, author: pack.author,
+          enabled: true, content,
+        });
+      }
+      set({ dataPacks: loaded, dataPacksLoaded: true });
+    } catch (e) {
+      console.warn('[ProjectStore] loadDataPacks failed:', e.message);
+      set({ dataPacksLoaded: true });
+    }
+  },
+
   /** Delete an AI project. */
   deleteAiProject: async (name) => {
-    const { arcwriteHandle, activeAiProject } = get();
+    const { arcwriteHandle, activeAiProject, aiProjects } = get();
     if (!arcwriteHandle) return;
+
+    // Clean up skill folder handles from IDB
+    const project = aiProjects.find((p) => p.name === name);
+    if (project?.files) {
+      for (const f of project.files) {
+        if (f.type === 'folder' && f.idbKey) {
+          try { await removeHandle(f.idbKey); } catch (_) { /* ignore */ }
+        }
+      }
+    }
+
     await fsDeleteAiProject(arcwriteHandle, name);
     if (activeAiProject?.name === name) {
-      set({ activeAiProject: null, activeMode: null });
+      set({ activeAiProject: null, activeMode: null, skillFolderHandles: {} });
     }
     await get().loadProjects();
   },

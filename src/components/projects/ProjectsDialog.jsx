@@ -4,13 +4,14 @@ import useProjectStore from '../../store/useProjectStore';
 import { getTheme } from '../edit/editorThemes';
 import BookProjectList from './BookProjectList';
 import AiProjectList from './AiProjectList';
+import ArtifactsPanel from './ArtifactsPanel';
 
 export default function ProjectsDialog({ isOpen, onClose }) {
   const editorTheme = useEditorStore((s) => s.editorTheme);
   const t = getTheme(editorTheme);
   const c = t.colors;
 
-  const [activeTab, setActiveTab] = useState('books'); // 'books' | 'ai'
+  const [activeTab, setActiveTab] = useState('books'); // 'books' | 'ai' | 'artifacts'
 
   // Track what the user has selected but not yet committed
   const [pendingBookProject, setPendingBookProject] = useState(null);
@@ -125,25 +126,32 @@ export default function ProjectsDialog({ isOpen, onClose }) {
             <button style={tabStyle(activeTab === 'ai')} onClick={() => setActiveTab('ai')}>
               AI Projects
             </button>
+            <button style={tabStyle(activeTab === 'artifacts')} onClick={() => setActiveTab('artifacts')}>
+              Artifacts
+            </button>
           </div>
         </div>
 
         {/* Body */}
-        <div style={{ padding: 20, overflowY: 'auto', flex: 1, minHeight: 200 }}>
-          {activeTab === 'books' ? (
+        <div style={{ padding: 20, overflowY: activeTab === 'artifacts' ? 'hidden' : 'auto', flex: 1, minHeight: 200 }}>
+          {activeTab === 'books' && (
             <BookProjectList
               selected={pendingBookProject}
               onSelect={setPendingBookProject}
               colors={c}
               isDark={isDark}
             />
-          ) : (
+          )}
+          {activeTab === 'ai' && (
             <AiProjectList
               selected={pendingAiProject}
               onSelect={setPendingAiProject}
               colors={c}
               isDark={isDark}
             />
+          )}
+          {activeTab === 'artifacts' && (
+            <ArtifactsPanel colors={c} isDark={isDark} />
           )}
         </div>
 
@@ -170,23 +178,25 @@ export default function ProjectsDialog({ isOpen, onClose }) {
               cursor: 'pointer',
             }}
           >
-            Cancel
+            {activeTab === 'artifacts' ? 'Close' : 'Cancel'}
           </button>
-          <button
-            onClick={handleOk}
-            style={{
-              background: '#7C3AED',
-              color: '#fff',
-              border: 'none',
-              padding: '6px 16px',
-              borderRadius: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            OK
-          </button>
+          {activeTab !== 'artifacts' && (
+            <button
+              onClick={handleOk}
+              style={{
+                background: '#7C3AED',
+                color: '#fff',
+                border: 'none',
+                padding: '6px 16px',
+                borderRadius: 6,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              OK
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import ChatActionBadge from './ChatActionBadge';
+import { getBlobUrl } from '../../services/blobRegistry';
 
 export default function ChatMessage({ message, onCopy, onRegenerate, onEdit }) {
   const isUser = message.role === 'user';
@@ -26,6 +27,11 @@ export default function ChatMessage({ message, onCopy, onRegenerate, onEdit }) {
         <div className="whitespace-pre-wrap break-words leading-relaxed">
           {formatText(message.content)}
         </div>
+
+        {/* Image artifact preview */}
+        {message.imageArtifact && (
+          <ImagePreview artifact={message.imageArtifact} />
+        )}
 
         {/* Attached files indicator */}
         {message.attachments && message.attachments.length > 0 && (
@@ -62,6 +68,15 @@ export default function ChatMessage({ message, onCopy, onRegenerate, onEdit }) {
           ))}
         </div>
       )}
+
+      {/* Token usage for assistant messages */}
+      {!isUser && message.usage && (
+        <div className="mt-1">
+          <span className="text-[9px] text-gray-400 font-mono tabular-nums">
+            {message.usage.promptTokens?.toLocaleString()}in · {message.usage.completionTokens?.toLocaleString()}out
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -75,6 +90,30 @@ function ActionButton({ icon, title, onClick }) {
     >
       {icon}
     </button>
+  );
+}
+
+function ImagePreview({ artifact }) {
+  const blobUrl = artifact.blobUrl || getBlobUrl(artifact.path);
+  if (!blobUrl) return null;
+
+  return (
+    <div className="mt-2">
+      <img
+        src={blobUrl}
+        alt={artifact.filename}
+        className="max-w-full rounded-lg border border-black/10"
+        style={{ maxHeight: 400 }}
+      />
+      <div className="text-[10px] text-gray-400 mt-1">
+        {artifact.filename}
+        {artifact.prompt && (
+          <span className="ml-2 italic">
+            {artifact.prompt.length > 80 ? artifact.prompt.substring(0, 80) + '...' : artifact.prompt}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 

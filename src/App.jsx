@@ -6,9 +6,17 @@ import useAppStore from './store/useAppStore';
 import useEditorStore from './store/useEditorStore';
 import useProjectStore from './store/useProjectStore';
 import useChatStore from './store/useChatStore';
+import usePromptStore from './store/usePromptStore';
+import useSequenceStore from './store/useSequenceStore';
 import { PROVIDERS, PROVIDER_ORDER } from './api/providers';
 import { fetchModels } from './api/providerAdapter';
 import { loadHandle } from './services/idbHandleStore';
+import { genreSystem, genreDimensionRanges } from './data/genreSystem';
+import { plotStructures, allStructures } from './data/plotStructures';
+
+// ── Trial expiration ─────────────────────────────────────────────────────────
+// Set at build time. After this date the app shows an expiration screen.
+const TRIAL_EXPIRES = new Date('2026-04-20T00:00:00Z').getTime(); // 2 months from today
 
 const ScaffoldingWorkflow = lazy(() => import('./components/scaffolding/ScaffoldingWorkflow'));
 const AnalysisWorkflow = lazy(() => import('./components/analysis/AnalysisWorkflow'));
@@ -50,11 +58,64 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function applyDataPacks() {
+  const packs = useProjectStore.getState().dataPacks;
+  for (const pack of packs) {
+    if (!pack.enabled) continue;
+    const c = pack.content;
+    if (c.genres) Object.assign(genreSystem, c.genres);
+    if (c.dimensionRanges) Object.assign(genreDimensionRanges, c.dimensionRanges);
+    if (c.structures) {
+      Object.assign(plotStructures, c.structures);
+      Object.assign(allStructures, c.structures);
+    }
+    if (c.prompts?.length) {
+      const tagged = c.prompts.map((p) => ({ ...p, _packId: pack.id }));
+      usePromptStore.getState().addPackPrompts(tagged);
+    }
+    if (c.sequences?.length) {
+      const tagged = c.sequences.map((s) => ({ ...s, _packId: pack.id }));
+      useSequenceStore.getState().addPackSequences(tagged);
+    }
+  }
+}
+
+function TrialExpired() {
+  const expDate = new Date(TRIAL_EXPIRES).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-purple-900 text-white p-8">
+      <div className="max-w-md text-center space-y-4">
+        <div className="text-5xl mb-2">&#128220;</div>
+        <h1 className="text-2xl font-bold">Build Expired</h1>
+        <p className="text-purple-200 text-sm leading-relaxed">
+          This build of Arcwright expired on <span className="font-semibold text-white">{expDate}</span>.
+          Please obtain a newer version to continue.
+        </p>
+        <p className="text-purple-300/60 text-xs">
+          Expired builds are retired to prevent use of outdated models and features.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  // Trial expiration check
+  if (Date.now() > TRIAL_EXPIRES) return <TrialExpired />;
+
   // Restore .arcwrite/ system folder from IndexedDB on startup
   useEffect(() => {
-    useProjectStore.getState().restoreFromIDB().then((restored) => {
-      if (restored) console.log('[App] Restored .arcwrite/ from IndexedDB');
+    useProjectStore.getState().restoreFromIDB().then(async (restored) => {
+      if (restored) {
+        console.log('[App] Restored .arcwrite/ from IndexedDB');
+        // Load custom prompts and sequences after project store is initialized
+        usePromptStore.getState().loadPrompts();
+        useSequenceStore.getState().loadSequences();
+
+        // Load and apply extension data packs
+        await useProjectStore.getState().loadDataPacks();
+        applyDataPacks();
+      }
     });
   }, []);
 

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { callCompletion } from '../api/providerAdapter';
 import useAppStore from '../store/useAppStore';
+import useProjectStore from '../store/useProjectStore';
 
 const INLINE_EDIT_SYSTEM_PROMPT = `You are an inline text editor. The user has selected a passage and given you an editing instruction.
 
@@ -18,7 +19,7 @@ export default function useInlineEdit() {
   const [errorMsg, setErrorMsg] = useState('');
   const abortRef = useRef(false);
 
-  const submitEdit = useCallback((selectedText, userPrompt, isPreset = false) => {
+  const submitEdit = useCallback((selectedText, userPrompt, isPreset = false, modelOverride = null) => {
     const { providers, activeProvider, chatSettings } = useAppStore.getState();
     const provState = providers[activeProvider] || {};
     if (!provState.apiKey) {
@@ -32,24 +33,41 @@ export default function useInlineEdit() {
     setErrorMsg('');
     abortRef.current = false;
 
-    // Preset prompts contain their own full instructions — send them directly.
-    // Regular inline edits use the system prompt + structured message format.
-    const messages = isPreset
-      ? [{ role: 'user', content: userPrompt }]
-      : [
-          { role: 'system', content: INLINE_EDIT_SYSTEM_PROMPT },
-          {
-            role: 'user',
-            content: `## Selected Text\n${selectedText}\n\n## Instruction\n${userPrompt}`,
-          },
-        ];
+    // Preset prompts contain their own full instructions as the user message.
+    // If an AI project is active, include its system prompt so the LLM knows its role.
+    // Regular inline edits use the inline edit system prompt + structured message format.
+    let messages;
+    if (isPreset) {
+      const { activeAiProject, activeMode } = useProjectStore.getState();
+      const sysPrompt = (activeMode === 'ai' && activeAiProject?.systemPrompt)
+        ? activeAiProject.systemPrompt
+        : null;
+      messages = [
+        ...(sysPrompt ? [{ role: 'system', content: sysPrompt }] : []),
+        { role: 'user', content: userPrompt },
+      ];
+    } else {
+      messages = [
+        { role: 'system', content: INLINE_EDIT_SYSTEM_PROMPT },
+        {
+          role: 'user',
+          content: `## Selected Text\n${selectedText}\n\n## Instruction\n${userPrompt}`,
+        },
+      ];
+    }
+
+    // Build options, including model override if specified
+    const completionOptions = {
+      maxTokens: chatSettings.maxTokens || 4096,
+      temperature: chatSettings.temperature ?? 0.7,
+    };
+    if (modelOverride) {
+      completionOptions.model = modelOverride;
+    }
 
     callCompletion(
       messages,
-      {
-        maxTokens: chatSettings.maxTokens || 4096,
-        temperature: chatSettings.temperature ?? 0.7,
-      },
+      completionOptions,
       (chunk) => {
         if (abortRef.current) return;
         setResponse((prev) => prev + chunk);

@@ -296,10 +296,25 @@ const useAppStore = create(
         toolsEnabled: true,
         reasoningEnabled: false,
         promptMode: 'full',
+        activeVoicePath: null,
+        activeVoiceContent: '',
+        activeNarratorGender: null,       // null | 'female' | 'male'
+        activeGenderMechanicsContent: '', // loaded from Arcwrite/gender-mechanics/<gender>.md
       },
       updateChatSettings: (updates) => set((s) => ({
         chatSettings: { ...s.chatSettings, ...updates },
       })),
+
+      // --- Image generation settings ---
+      imageSettings: {
+        provider: '',           // provider id — user picks from configured providers
+        model: '',              // free-text model id — user types any model
+        defaultSize: '1024x1024',
+      },
+      updateImageSettings: (updates) => set((s) => ({
+        imageSettings: { ...s.imageSettings, ...updates },
+      })),
+
       projectionPercent: 0,
       revisionItems: [],
 
@@ -313,6 +328,9 @@ const useAppStore = create(
         const updates = {
           chatSettings: { ...s.chatSettings, ...(settings.chatSettings || {}) },
         };
+        if (settings.imageSettings) {
+          updates.imageSettings = { ...s.imageSettings, ...settings.imageSettings };
+        }
         // v2 format: providers map
         if (settings.providers) {
           const merged = { ...s.providers };
@@ -421,6 +439,7 @@ const useAppStore = create(
           activeProvider: state.activeProvider,
           providers: providersPersist,
           chatSettings: state.chatSettings,
+          imageSettings: state.imageSettings,
           revisionItems: state.revisionItems,
         };
       },

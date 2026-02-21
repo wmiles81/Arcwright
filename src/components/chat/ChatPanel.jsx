@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import useChatStore from '../../store/useChatStore';
 import useAppStore from '../../store/useAppStore';
@@ -7,11 +7,13 @@ import useChatSend from '../../hooks/useChatSend';
 import ChatMessage from './ChatMessage';
 import { stripActionBlocks } from '../../api/chatStreaming';
 import { buildChatSystemPrompt, buildAiProjectSystemPrompt } from '../../chat/contextBuilder';
-import { buildEditModePrompt } from '../../chat/editPrompts';
+import { buildEditModePrompt, AI_PROJECT_PRESETS } from '../../chat/editPrompts';
 import { modelSupportsTools } from '../../api/claude';
 import { PROVIDERS } from '../../api/providers';
 import { useOpenSettings } from '../layout/AppShell';
 import useEditorStore from '../../store/useEditorStore';
+import useSequenceStore from '../../store/useSequenceStore';
+import { ACTION_HANDLERS } from '../../chat/actionExecutor';
 
 export default function ChatPanel() {
   const isOpen = useChatStore((s) => s.isOpen);
@@ -22,11 +24,16 @@ export default function ChatPanel() {
   const clearMessages = useChatStore((s) => s.clearMessages);
   const truncateAfter = useChatStore((s) => s.truncateAfter);
   const truncateFrom = useChatStore((s) => s.truncateFrom);
+  const trimToLast = useChatStore((s) => s.trimToLast);
 
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState([]);
+  const [slashMenuOpen, setSlashMenuOpen] = useState(false);
+  const [slashQuery, setSlashQuery] = useState('');
+  const [slashIndex, setSlashIndex] = useState(0);
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
+  const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [systemPromptText, setSystemPromptText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const messagesEndRef = useRef(null);
@@ -42,9 +49,12 @@ export default function ChatPanel() {
   const activeAiProject = useProjectStore((s) => s.activeAiProject);
   const activeBookProject = useProjectStore((s) => s.activeBookProject);
   const activeMode = useProjectStore((s) => s.activeMode);
+  const aiProjects = useProjectStore((s) => s.aiProjects);
+  const dropdownRef = useRef(null);
 
   const fileTree = useEditorStore((s) => s.fileTree);
   const directoryHandle = useEditorStore((s) => s.directoryHandle);
+  const sequences = useSequenceStore((s) => s.customSequences);
 
   const providerState = providers[activeProvider] || {};
   const providerConfig = PROVIDERS[activeProvider];
@@ -57,6 +67,33 @@ export default function ChatPanel() {
 
   /** Shorten a model ID for display: strip date suffix. */
   const shortName = (id) => id.replace(/-\d{8}$/, '');
+
+  // Slash-command: sequences filtered by typed query
+  const filteredSequences = slashMenuOpen
+    ? sequences.filter((s) => !slashQuery || s.name.toLowerCase().includes(slashQuery.toLowerCase()))
+    : [];
+
+  const handleSlashSelect = useCallback(async (seq) => {
+    setInput('');
+    setSlashMenuOpen(false);
+    setSlashQuery('');
+    useChatStore.getState().addMessage({
+      id: `slash_seq_${Date.now()}`,
+      role: 'user',
+      content: `/run "${seq.name}"`,
+      timestamp: Date.now(),
+    });
+    try {
+      await ACTION_HANDLERS.runNamedSequence({ sequenceId: seq.id });
+    } catch (e) {
+      useChatStore.getState().addMessage({
+        id: `slash_seq_err_${Date.now()}`,
+        role: 'assistant',
+        content: `Error running "${seq.name}": ${e.message}`,
+        timestamp: Date.now(),
+      });
+    }
+  }, [sequences]);
 
   // Rebuild the system prompt each time the user opens the viewer
   const handleToggleSystemPrompt = () => {
@@ -97,6 +134,18 @@ export default function ChatPanel() {
     }
   }, [isOpen]);
 
+  // Close dropdown on click outside
+  useEffect(() => {
+    if (!showProjectDropdown) return;
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowProjectDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showProjectDropdown]);
+
   const abortStream = useChatStore((s) => s.abortStream);
 
   // Handle file attachment
@@ -135,6 +184,8 @@ export default function ChatPanel() {
     const text = input.trim();
     if ((!text && attachments.length === 0) || isStreaming) return;
 
+    setSlashMenuOpen(false);
+
     // Build message content with attachments
     let messageContent = text;
     if (attachments.length > 0) {
@@ -151,6 +202,27 @@ export default function ChatPanel() {
   };
 
   const handleKeyDown = (e) => {
+    if (slashMenuOpen && filteredSequences.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSlashIndex((i) => Math.min(i + 1, filteredSequences.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSlashIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleSlashSelect(filteredSequences[slashIndex]);
+        return;
+      }
+      if (e.key === 'Escape') {
+        setSlashMenuOpen(false);
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -206,9 +278,75 @@ export default function ChatPanel() {
               >
                 {providerConfig?.name ? `${providerConfig.name} / ` : ''}{shortName(providerState.selectedModel || '')}
               </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-medium shrink-0 max-w-[120px] truncate" title={promptLabel}>
-                {promptLabel}
-              </span>
+              <div className="relative shrink-0" ref={dropdownRef}>
+                <button
+                  onClick={() => setShowProjectDropdown(!showProjectDropdown)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 font-medium max-w-[120px] truncate hover:bg-purple-200 transition-colors cursor-pointer"
+                  title={`${promptLabel}\nClick to switch AI project`}
+                >
+                  {promptLabel} <span className="text-[8px] opacity-60">{showProjectDropdown ? '\u25B2' : '\u25BC'}</span>
+                </button>
+                {showProjectDropdown && (
+                  <div className="absolute top-full left-0 mt-1 w-52 bg-white border border-black/15 rounded-lg shadow-lg z-50 py-1 max-h-64 overflow-y-auto">
+                    {/* Full Context (default, no AI project) */}
+                    <button
+                      onClick={() => {
+                        useProjectStore.getState().deactivateProject();
+                        setShowProjectDropdown(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 transition-colors ${
+                        !activeMode || activeMode === 'book' ? 'font-semibold text-purple-700 bg-purple-50' : 'text-gray-700'
+                      }`}
+                    >
+                      Full Context
+                    </button>
+                    {/* Presets */}
+                    {AI_PROJECT_PRESETS.length > 0 && (
+                      <div className="border-t border-black/5 mt-1 pt-1">
+                        <div className="px-3 py-0.5 text-[9px] text-gray-400 uppercase font-semibold">Presets</div>
+                        {AI_PROJECT_PRESETS.map((p) => (
+                          <button
+                            key={`preset_${p.presetKey}`}
+                            onClick={() => {
+                              useProjectStore.getState().activateAiProject(p);
+                              setShowProjectDropdown(false);
+                            }}
+                            className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 transition-colors ${
+                              activeMode === 'ai' && activeAiProject?.isPreset && activeAiProject?.presetKey === p.presetKey
+                                ? 'font-semibold text-purple-700 bg-purple-50'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {/* User AI projects */}
+                    {aiProjects.length > 0 && (
+                      <div className="border-t border-black/5 mt-1 pt-1">
+                        <div className="px-3 py-0.5 text-[9px] text-gray-400 uppercase font-semibold">Projects</div>
+                        {aiProjects.map((p) => (
+                          <button
+                            key={p.name}
+                            onClick={() => {
+                              useProjectStore.getState().activateAiProject(p);
+                              setShowProjectDropdown(false);
+                            }}
+                            className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-gray-50 transition-colors ${
+                              activeMode === 'ai' && !activeAiProject?.isPreset && activeAiProject?.name === p.name
+                                ? 'font-semibold text-purple-700 bg-purple-50'
+                                : 'text-gray-700'
+                            }`}
+                          >
+                            {p.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
               {toolsActive && !activeMode && (
                 <span className="text-[9px] px-1 py-0.5 rounded bg-green-100 text-green-700 font-medium shrink-0">
                   tools
@@ -244,6 +382,7 @@ export default function ChatPanel() {
                 onClick={() => {
                   if (messages.length === 0 || window.confirm('Start a new chat? Current messages will be cleared.')) {
                     clearMessages();
+                    useProjectStore.getState().clearProjectHistory().catch(() => {});
                   }
                 }}
                 className="text-gray-500 hover:text-black px-1.5 py-1 rounded hover:bg-gray-100 transition-colors"
@@ -394,13 +533,83 @@ export default function ChatPanel() {
           </div>
         )}
 
+        {/* Context stats bar — shown when history is long enough to manage */}
+        {messages.length >= 6 && (() => {
+          const totalChars = messages.reduce((sum, m) => sum + (m.content || '').length, 0);
+          const trimOptions = [10, 20, 50].filter((n) => messages.length > n);
+          if (trimOptions.length === 0 && totalChars < 8000) return null;
+          return (
+            <div className="px-3 py-1 border-t border-black/10 bg-gray-50 flex items-center justify-between shrink-0">
+              <span className="text-[9px] text-gray-400 font-mono">
+                {messages.length} msgs · ~{totalChars >= 1000 ? `${Math.round(totalChars / 1000)}K` : totalChars} chars
+              </span>
+              {trimOptions.length > 0 && (
+                <div className="flex items-center gap-0.5">
+                  <span className="text-[9px] text-gray-400 mr-1">keep last</span>
+                  {trimOptions.map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => {
+                        if (window.confirm(`Keep only the last ${n} messages? Older messages will be removed from this session.`)) {
+                          trimToLast(n);
+                          useProjectStore.getState().saveCurrentChatHistory().catch(() => {});
+                        }
+                      }}
+                      className="text-[9px] px-1.5 py-0.5 rounded hover:bg-gray-200 text-gray-500 transition-colors"
+                      title={`Keep last ${n} messages`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Input area */}
         <div className="p-3 border-t border-black/15 shrink-0 bg-white">
           <div className="relative">
+            {/* Slash-command sequence picker */}
+            {slashMenuOpen && filteredSequences.length > 0 && (
+              <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-black/15 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
+                <div className="px-2.5 py-1 text-[9px] font-bold text-gray-400 uppercase border-b border-black/5">
+                  Sequences
+                </div>
+                {filteredSequences.map((seq, idx) => (
+                  <button
+                    key={seq.id}
+                    onMouseDown={(e) => { e.preventDefault(); handleSlashSelect(seq); }}
+                    onMouseEnter={() => setSlashIndex(idx)}
+                    className={`w-full text-left px-2.5 py-1.5 text-xs flex items-baseline gap-2 transition-colors ${
+                      idx === slashIndex ? 'bg-purple-50 text-purple-700' : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <span className="font-medium shrink-0">{seq.name}</span>
+                    {seq.description && (
+                      <span className="text-gray-400 text-[10px] truncate">{seq.description}</span>
+                    )}
+                    <span className="text-gray-400 text-[10px] shrink-0 ml-auto">
+                      {seq.steps?.length || 0} steps
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
             <textarea
               ref={inputRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setInput(val);
+                if (val.startsWith('/') && !val.includes(' ') && sequences.length > 0) {
+                  setSlashQuery(val.slice(1));
+                  setSlashMenuOpen(true);
+                  setSlashIndex(0);
+                } else {
+                  setSlashMenuOpen(false);
+                }
+              }}
               onKeyDown={handleKeyDown}
               placeholder={editingMessageId ? 'Edit your message...' : 'Ask about your story...'}
               rows={2}
@@ -442,8 +651,10 @@ export default function ChatPanel() {
             )}
           </div>
           {editingMessageId && (
-            <div className="mt-1 text-[10px] text-purple-600 font-medium">
-              Editing message • <button onClick={() => { setEditingMessageId(null); setInput(''); }} className="underline hover:text-purple-800">Cancel</button>
+            <div className="mt-1 min-h-[14px]">
+              <span className="text-[10px] text-purple-600 font-medium">
+                Editing message • <button onClick={() => { setEditingMessageId(null); setInput(''); }} className="underline hover:text-purple-800">Cancel</button>
+              </span>
             </div>
           )}
         </div>

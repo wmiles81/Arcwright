@@ -68,6 +68,40 @@ function findNode(tree, path) {
   return null;
 }
 
+/** Write the green-dotted file paths to .contextinclude in the root directory. */
+async function writeContextInclude(directoryHandle, contextPaths) {
+  try {
+    const fileHandle = await directoryHandle.getFileHandle('.contextinclude', { create: true });
+    const writable = await fileHandle.createWritable();
+    await writable.write(Object.keys(contextPaths).join('\n'));
+    await writable.close();
+  } catch (e) {
+    console.warn('[FilePanel] Failed to write .contextinclude:', e);
+  }
+}
+
+/** Read .contextinclude and return { paths, content } to restore green-dot state. */
+async function loadContextInclude(dirHandle, fileTree) {
+  const result = { paths: {}, content: {} };
+  try {
+    const fileHandle = await dirHandle.getFileHandle('.contextinclude');
+    const file = await fileHandle.getFile();
+    const text = await file.text();
+    const filePaths = text.split('\n').map((p) => p.trim()).filter(Boolean);
+    await Promise.all(filePaths.map(async (path) => {
+      result.paths[path] = true;
+      const node = findNode(fileTree, path);
+      if (node?.handle && node.type === 'file') {
+        try {
+          const f = await node.handle.getFile();
+          result.content[path] = await f.text();
+        } catch { /* file may have moved */ }
+      }
+    }));
+  } catch { /* .contextinclude doesn't exist yet */ }
+  return result;
+}
+
 /** Collect all file paths (non-dir) from a tree node recursively. */
 function collectFilePaths(node) {
   if (node.type === 'file' || node.type === 'other') return [node.path];
@@ -136,17 +170,48 @@ export default function FilePanel() {
   const contextPaths = useEditorStore((s) => s.contextPaths);
   const toggleContextPath = useEditorStore((s) => s.toggleContextPath);
   const setContextPaths = useEditorStore((s) => s.setContextPaths);
+  const setContextContent = useEditorStore((s) => s.setContextContent);
   const selectedPaths = useEditorStore((s) => s.selectedPaths);
   const selectPath = useEditorStore((s) => s.selectPath);
   const selectRange = useEditorStore((s) => s.selectRange);
   const clearSelection = useEditorStore((s) => s.clearSelection);
   const updateTabPath = useEditorStore((s) => s.updateTabPath);
 
-  const handleToggleFolderContext = useCallback((node) => {
+  const handleToggleContext = useCallback(async (node) => {
+    const isAdding = !contextPaths[node.path];
+    toggleContextPath(node.path);
+    if (isAdding && node.type === 'file' && node.handle) {
+      try {
+        const f = await node.handle.getFile();
+        setContextContent(node.path, await f.text());
+      } catch (e) {
+        console.warn('[FilePanel] Could not read file for context:', e);
+      }
+    }
+    if (directoryHandle) {
+      await writeContextInclude(directoryHandle, useEditorStore.getState().contextPaths);
+    }
+  }, [contextPaths, toggleContextPath, setContextContent, directoryHandle]);
+
+  const handleToggleFolderContext = useCallback(async (node) => {
     const paths = collectFilePaths(node);
     const allIn = paths.length > 0 && paths.every((p) => contextPaths[p]);
     setContextPaths(paths, !allIn);
-  }, [contextPaths, setContextPaths]);
+    if (!allIn && directoryHandle) {
+      await Promise.all(paths.map(async (path) => {
+        const fileNode = findNode(fileTree, path);
+        if (fileNode?.handle && fileNode.type === 'file') {
+          try {
+            const f = await fileNode.handle.getFile();
+            setContextContent(path, await f.text());
+          } catch { /* skip */ }
+        }
+      }));
+    }
+    if (directoryHandle) {
+      await writeContextInclude(directoryHandle, useEditorStore.getState().contextPaths);
+    }
+  }, [contextPaths, setContextPaths, setContextContent, directoryHandle, fileTree]);
 
   const [renamingPath, setRenamingPath] = useState(null);
   const [renameValue, setRenameValue] = useState('');
@@ -265,6 +330,9 @@ export default function FilePanel() {
       setDirectoryHandle(handle);
       const tree = await buildFileTree(handle);
       setFileTree(tree);
+      // Restore green-dot context from .contextinclude (clear stale state first)
+      const { paths, content } = await loadContextInclude(handle, tree);
+      useEditorStore.setState({ contextPaths: paths, contextContent: content });
     } catch (e) {
       if (e.name !== 'AbortError') console.error('Failed to open folder:', e);
     }
@@ -547,7 +615,7 @@ export default function FilePanel() {
             onStartRename={startRename}
             onCommitRename={commitRename}
             contextPaths={contextPaths}
-            onToggleContext={toggleContextPath}
+            onToggleContext={handleToggleContext}
             onToggleFolderContext={handleToggleFolderContext}
             onContextMenu={handleContextMenu}
             selectedPaths={selectedPaths}
@@ -638,7 +706,7 @@ function TreeNode({ node, depth, onToggle, onFileClick, onNewFile, onNewFolder, 
         <span className="truncate">{node.name}</span>
         <ContextDot
           active={inContext}
-          onClick={() => onToggleContext(node.path)}
+          onClick={() => onToggleContext(node)}
           title={inContext ? 'In AI context (click to remove)' : 'Not in AI context (click to add)'}
         />
       </div>
@@ -769,7 +837,7 @@ function TreeNode({ node, depth, onToggle, onFileClick, onNewFile, onNewFolder, 
       )}
       <ContextDot
         active={inContext}
-        onClick={() => onToggleContext(node.path)}
+        onClick={() => onToggleContext(node)}
         title={inContext ? 'In AI context (click to remove)' : 'Not in AI context (click to add)'}
       />
     </div>

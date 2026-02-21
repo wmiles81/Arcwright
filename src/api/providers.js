@@ -17,6 +17,7 @@ export const PROVIDERS = {
     defaultModel: 'anthropic/claude-sonnet-4-5-20250929',
     extraHeaders: () => ({ 'HTTP-Referer': window.location.origin }),
     supportsModelFetch: true,
+    supportsStreamOptions: true,
   },
   openai: {
     id: 'openai',
@@ -31,6 +32,7 @@ export const PROVIDERS = {
     defaultModel: 'gpt-4o',
     extraHeaders: () => ({}),
     supportsModelFetch: true,
+    supportsStreamOptions: true,
     modelFilter: (m) => /^(gpt-|o[1-9]|chatgpt-)/.test(m.id),
   },
   anthropic: {

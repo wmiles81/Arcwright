@@ -4,8 +4,9 @@ import useEditorStore from '../../store/useEditorStore';
 import useProjectStore from '../../store/useProjectStore';
 import { getTheme, lightThemes, darkThemes } from '../edit/editorThemes';
 import { PROVIDERS, PROVIDER_ORDER } from '../../api/providers';
-import { fetchModels } from '../../api/providerAdapter';
+import { fetchModels, fetchImageModels } from '../../api/providerAdapter';
 import ProviderCard from './ProviderCard';
+import VoiceTab from './VoiceTab';
 
 export default function SettingsDialog({ isOpen, onClose }) {
   const editorTheme = useEditorStore((s) => s.editorTheme);
@@ -19,6 +20,7 @@ export default function SettingsDialog({ isOpen, onClose }) {
   const [localProviders, setLocalProviders] = useState({});
   const [localChatSettings, setLocalChatSettings] = useState({});
   const [localEditorTheme, setLocalEditorTheme] = useState('light');
+  const [localImageSettings, setLocalImageSettings] = useState({});
 
   // Sync from store when dialog opens
   useEffect(() => {
@@ -29,6 +31,7 @@ export default function SettingsDialog({ isOpen, onClose }) {
       setLocalProviders(JSON.parse(JSON.stringify(app.providers)));
       setLocalChatSettings({ ...app.chatSettings });
       setLocalEditorTheme(editor.editorTheme);
+      setLocalImageSettings({ ...app.imageSettings });
     }
   }, [isOpen]);
 
@@ -70,8 +73,12 @@ export default function SettingsDialog({ isOpen, onClose }) {
       app.updateProvider(id, prov);
     }
 
-    // Commit chat settings
-    app.updateChatSettings(localChatSettings);
+    // Commit chat settings — preserve voice/gender fields since VoiceTab manages them independently
+    const { activeVoicePath, activeVoiceContent, activeNarratorGender, activeGenderMechanicsContent } = useAppStore.getState().chatSettings;
+    app.updateChatSettings({ ...localChatSettings, activeVoicePath, activeVoiceContent, activeNarratorGender, activeGenderMechanicsContent });
+
+    // Commit image settings
+    app.updateImageSettings(localImageSettings);
 
     // Commit editor theme
     if (localEditorTheme !== useEditorStore.getState().editorTheme) {
@@ -92,8 +99,9 @@ export default function SettingsDialog({ isOpen, onClose }) {
       await proj.updateSettings({
         activeProvider: localActiveProvider,
         providers: diskProviders,
-        chatSettings: localChatSettings,
+        chatSettings: { ...localChatSettings, activeVoicePath, activeVoiceContent, activeNarratorGender, activeGenderMechanicsContent },
         editorTheme: localEditorTheme,
+        imageSettings: localImageSettings,
       });
     }
 
@@ -183,6 +191,15 @@ export default function SettingsDialog({ isOpen, onClose }) {
             <button style={tabStyle(activeTab === 'appearance')} onClick={() => setActiveTab('appearance')}>
               Appearance
             </button>
+            <button style={tabStyle(activeTab === 'voice')} onClick={() => setActiveTab('voice')}>
+              Voice
+            </button>
+            <button style={tabStyle(activeTab === 'image')} onClick={() => setActiveTab('image')}>
+              Image
+            </button>
+            <button style={tabStyle(activeTab === 'packs')} onClick={() => setActiveTab('packs')}>
+              Packs
+            </button>
           </div>
         </div>
 
@@ -214,6 +231,20 @@ export default function SettingsDialog({ isOpen, onClose }) {
               onSelect={setLocalEditorTheme}
               colors={c}
             />
+          )}
+          {activeTab === 'voice' && (
+            <VoiceTab colors={c} />
+          )}
+          {activeTab === 'image' && (
+            <ImageTab
+              imageSettings={localImageSettings}
+              onUpdate={(u) => setLocalImageSettings((prev) => ({ ...prev, ...u }))}
+              localProviders={localProviders}
+              colors={c}
+            />
+          )}
+          {activeTab === 'packs' && (
+            <PacksTab colors={c} />
           )}
         </div>
 
@@ -485,6 +516,386 @@ function AppearanceTab({ selectedTheme, onSelect, colors: c }) {
       {renderGroup('Light Themes', lightThemes)}
       {renderGroup('Dark Themes', darkThemes)}
     </>
+  );
+}
+
+// ── Tab: Packs ──
+
+function PacksTab({ colors: c }) {
+  const dataPacks = useProjectStore((s) => s.dataPacks);
+  const dataPacksLoaded = useProjectStore((s) => s.dataPacksLoaded);
+  const isInitialized = useProjectStore((s) => s.isInitialized);
+
+  if (!isInitialized) {
+    return (
+      <div style={{ fontSize: 13, color: c.chromeText, textAlign: 'center', padding: 32 }}>
+        Connect an Arcwrite folder to use data packs.
+      </div>
+    );
+  }
+
+  if (!dataPacksLoaded) {
+    return (
+      <div style={{ fontSize: 13, color: c.chromeText, textAlign: 'center', padding: 32 }}>
+        Loading packs...
+      </div>
+    );
+  }
+
+  if (dataPacks.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: 32 }}>
+        <div style={{ fontSize: 28, marginBottom: 8 }}>&#128230;</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: c.text, marginBottom: 6 }}>No Data Packs Installed</div>
+        <div style={{ fontSize: 12, color: c.chromeText, lineHeight: 1.5, maxWidth: 360, margin: '0 auto' }}>
+          Place pack folders in <code style={{ background: c.bg, padding: '1px 4px', borderRadius: 3, fontSize: 11 }}>Arcwrite/extensions/</code> to
+          extend Arcwright with custom genres, plot structures, prompts, and sequences.
+        </div>
+        <div style={{ fontSize: 11, color: c.chromeText, marginTop: 12, opacity: 0.7 }}>
+          Each pack needs a <code style={{ fontSize: 10 }}>pack.json</code> manifest.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ fontSize: 12, color: c.chromeText, marginBottom: 4 }}>
+        {dataPacks.length} pack{dataPacks.length !== 1 ? 's' : ''} loaded from <code style={{ background: c.bg, padding: '1px 4px', borderRadius: 3, fontSize: 11 }}>Arcwrite/extensions/</code>
+      </div>
+      {dataPacks.map((pack) => {
+        const content = pack.content || {};
+        const genreCount = content.genres ? Object.keys(content.genres).length : 0;
+        const structureCount = content.structures ? Object.keys(content.structures).length : 0;
+        const promptCount = content.prompts?.length || 0;
+        const sequenceCount = content.sequences?.length || 0;
+        const parts = [];
+        if (genreCount) parts.push(`${genreCount} genre${genreCount !== 1 ? 's' : ''}`);
+        if (structureCount) parts.push(`${structureCount} structure${structureCount !== 1 ? 's' : ''}`);
+        if (promptCount) parts.push(`${promptCount} prompt${promptCount !== 1 ? 's' : ''}`);
+        if (sequenceCount) parts.push(`${sequenceCount} sequence${sequenceCount !== 1 ? 's' : ''}`);
+
+        return (
+          <div
+            key={pack.id}
+            style={{
+              background: c.bg,
+              border: `1px solid ${c.chromeBorder}`,
+              borderRadius: 8,
+              padding: '12px 16px',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{pack.name}</div>
+                {pack.author && (
+                  <div style={{ fontSize: 11, color: c.chromeText, marginTop: 1 }}>by {pack.author}</div>
+                )}
+              </div>
+              {pack.version && (
+                <span style={{
+                  fontSize: 10,
+                  color: c.chromeText,
+                  background: c.chrome,
+                  border: `1px solid ${c.chromeBorder}`,
+                  borderRadius: 4,
+                  padding: '1px 6px',
+                  fontFamily: 'monospace',
+                }}>
+                  v{pack.version}
+                </span>
+              )}
+            </div>
+            {pack.description && (
+              <div style={{ fontSize: 12, color: c.chromeText, marginTop: 6, lineHeight: 1.4 }}>
+                {pack.description}
+              </div>
+            )}
+            {parts.length > 0 && (
+              <div style={{ fontSize: 11, color: '#7C3AED', marginTop: 8, fontWeight: 500 }}>
+                {parts.join(' \u00B7 ')}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Tab: Image ──
+
+function ImageTab({ imageSettings, onUpdate, localProviders, colors: c }) {
+  const configuredProviders = PROVIDER_ORDER.filter((id) => localProviders[id]?.apiKey);
+
+  const [imageModels, setImageModels] = useState([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState('');
+  const [showBrowser, setShowBrowser] = useState(false);
+  const [modelFilter, setModelFilter] = useState('');
+
+  const handleBrowse = async () => {
+    const pid = imageSettings.provider;
+    if (!pid) return;
+    const apiKey = localProviders[pid]?.apiKey;
+    if (!apiKey) return;
+
+    setModelsLoading(true);
+    setModelsError('');
+    setShowBrowser(true);
+    try {
+      const models = await fetchImageModels(pid, apiKey);
+      setImageModels(models);
+      if (models.length === 0) setModelsError('No image models found for this provider.');
+    } catch (err) {
+      setModelsError(err.message);
+      setImageModels([]);
+    } finally {
+      setModelsLoading(false);
+    }
+  };
+
+  const handleSelectModel = (modelId) => {
+    onUpdate({ model: modelId });
+    setShowBrowser(false);
+    setModelFilter('');
+  };
+
+  // Reset browser when provider changes
+  const prevProvider = React.useRef(imageSettings.provider);
+  useEffect(() => {
+    if (imageSettings.provider !== prevProvider.current) {
+      prevProvider.current = imageSettings.provider;
+      setShowBrowser(false);
+      setImageModels([]);
+      setModelFilter('');
+    }
+  }, [imageSettings.provider]);
+
+  const filteredModels = modelFilter
+    ? imageModels.filter((m) =>
+        m.id.toLowerCase().includes(modelFilter.toLowerCase()) ||
+        (m.name && m.name.toLowerCase().includes(modelFilter.toLowerCase()))
+      )
+    : imageModels;
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <div style={{ fontSize: 12, color: c.chromeText, marginBottom: 14, lineHeight: 1.5 }}>
+        Configure which provider and model to use for image generation.
+        Select a provider, then browse available image models or type a model ID directly.
+      </div>
+
+      {/* Provider selector */}
+      <SettingRow label="Provider" supported={true} hint="Which provider to route image generation calls to" colors={c}>
+        <select
+          value={imageSettings.provider || ''}
+          onChange={(e) => onUpdate({ provider: e.target.value })}
+          style={{
+            width: '100%',
+            padding: '6px 10px',
+            fontSize: 13,
+            background: c.bg,
+            color: c.text,
+            border: `1px solid ${c.chromeBorder}`,
+            borderRadius: 6,
+            outline: 'none',
+          }}
+        >
+          <option value="">Select a provider</option>
+          {configuredProviders.map((id) => (
+            <option key={id} value={id}>
+              {PROVIDERS[id].name}
+            </option>
+          ))}
+        </select>
+      </SettingRow>
+
+      {/* Model ID — free text input + Browse button */}
+      <SettingRow label="Model" supported={true} hint="Type a model ID or browse available image models from your provider" colors={c}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <input
+            type="text"
+            value={imageSettings.model || ''}
+            onChange={(e) => onUpdate({ model: e.target.value })}
+            placeholder="e.g., dall-e-3 or black-forest-labs/flux-1.1-pro"
+            style={{
+              flex: 1,
+              padding: '6px 10px',
+              fontSize: 13,
+              fontFamily: 'monospace',
+              background: c.bg,
+              color: c.text,
+              border: `1px solid ${c.chromeBorder}`,
+              borderRadius: 6,
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          <button
+            onClick={handleBrowse}
+            disabled={!imageSettings.provider || modelsLoading}
+            style={{
+              padding: '6px 12px',
+              fontSize: 12,
+              fontWeight: 600,
+              background: imageSettings.provider ? '#7C3AED' : c.chrome,
+              color: imageSettings.provider ? '#fff' : c.chromeText,
+              border: imageSettings.provider ? 'none' : `1px solid ${c.chromeBorder}`,
+              borderRadius: 6,
+              cursor: imageSettings.provider ? 'pointer' : 'not-allowed',
+              opacity: modelsLoading ? 0.6 : 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {modelsLoading ? 'Loading...' : 'Browse'}
+          </button>
+        </div>
+      </SettingRow>
+
+      {/* Model browser panel */}
+      {showBrowser && (
+        <div style={{
+          marginBottom: 14,
+          border: `1px solid ${c.chromeBorder}`,
+          borderRadius: 8,
+          background: c.bg,
+          overflow: 'hidden',
+        }}>
+          {/* Search filter */}
+          <div style={{ padding: '8px 10px', borderBottom: `1px solid ${c.chromeBorder}` }}>
+            <input
+              type="text"
+              value={modelFilter}
+              onChange={(e) => setModelFilter(e.target.value)}
+              placeholder="Filter models..."
+              autoFocus
+              style={{
+                width: '100%',
+                padding: '5px 8px',
+                fontSize: 12,
+                background: c.chrome,
+                color: c.text,
+                border: `1px solid ${c.chromeBorder}`,
+                borderRadius: 4,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          {/* Model list */}
+          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
+            {modelsLoading && (
+              <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: c.chromeText }}>
+                Fetching image models...
+              </div>
+            )}
+            {modelsError && (
+              <div style={{ padding: 12, fontSize: 11, color: '#DC2626' }}>{modelsError}</div>
+            )}
+            {!modelsLoading && filteredModels.length === 0 && !modelsError && (
+              <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: c.chromeText }}>
+                {modelFilter ? 'No matching models.' : 'No image models found.'}
+              </div>
+            )}
+            {filteredModels.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => handleSelectModel(m.id)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  textAlign: 'left',
+                  padding: '8px 12px',
+                  fontSize: 12,
+                  background: m.id === imageSettings.model ? 'rgba(124,58,237,0.1)' : 'transparent',
+                  color: c.text,
+                  border: 'none',
+                  borderBottom: `1px solid ${c.chromeBorder}`,
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = m.id === imageSettings.model ? 'rgba(124,58,237,0.1)' : 'transparent'; }}
+              >
+                <div style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 600 }}>{m.id}</div>
+                {m.name && m.name !== m.id && (
+                  <div style={{ fontSize: 10, color: c.chromeText, marginTop: 1 }}>{m.name}</div>
+                )}
+                {m.pricing?.image && (
+                  <div style={{ fontSize: 10, color: c.chromeText, marginTop: 1 }}>
+                    ${parseFloat(m.pricing.image).toFixed(3)}/image
+                  </div>
+                )}
+                {!m.pricing?.image && m.pricing?.prompt && (
+                  <div style={{ fontSize: 10, color: c.chromeText, marginTop: 1 }}>
+                    ${(parseFloat(m.pricing.prompt) * 1e6).toFixed(2)}/M input
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Footer with count */}
+          {!modelsLoading && imageModels.length > 0 && (
+            <div style={{
+              padding: '6px 12px',
+              borderTop: `1px solid ${c.chromeBorder}`,
+              fontSize: 10,
+              color: c.chromeText,
+              display: 'flex',
+              justifyContent: 'space-between',
+            }}>
+              <span>{filteredModels.length} of {imageModels.length} image model{imageModels.length !== 1 ? 's' : ''}</span>
+              <button
+                onClick={() => { setShowBrowser(false); setModelFilter(''); }}
+                style={{ background: 'none', border: 'none', color: c.chromeText, cursor: 'pointer', fontSize: 10, textDecoration: 'underline' }}
+              >
+                Close
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Default size */}
+      <SettingRow label="Default Size" supported={true} hint="Default image dimensions (can be overridden per request)" colors={c}>
+        <select
+          value={imageSettings.defaultSize || '1024x1024'}
+          onChange={(e) => onUpdate({ defaultSize: e.target.value })}
+          style={{
+            padding: '6px 10px',
+            fontSize: 13,
+            background: c.bg,
+            color: c.text,
+            border: `1px solid ${c.chromeBorder}`,
+            borderRadius: 6,
+            outline: 'none',
+          }}
+        >
+          <option value="1024x1024">1024 x 1024 (Square)</option>
+          <option value="1792x1024">1792 x 1024 (Landscape)</option>
+          <option value="1024x1792">1024 x 1792 (Portrait)</option>
+          <option value="512x512">512 x 512 (Small)</option>
+        </select>
+      </SettingRow>
+
+      {/* Status */}
+      {imageSettings.provider && imageSettings.model && (
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${c.chromeBorder}`, fontSize: 11, color: c.chromeText }}>
+          Ready:{' '}
+          <strong style={{ color: c.text }}>{PROVIDERS[imageSettings.provider]?.name}</strong>
+          {' / '}
+          <code style={{ fontSize: 11 }}>{imageSettings.model}</code>
+        </div>
+      )}
+
+      {!imageSettings.provider && (
+        <div style={{ marginTop: 12, padding: 12, background: 'rgba(234,179,8,0.1)', borderRadius: 6, fontSize: 11, color: '#92400E' }}>
+          No provider selected. Add an API key to a provider in the Providers tab first, then select it here.
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -120,6 +120,20 @@ export default function AiProjectList({ selected, onSelect, colors: c, isDark })
                     Preset
                   </span>
                 )}
+                {!p._isPreset && p.files && p.files.some((f) => f.type === 'folder' && (f.includeMode === 'skill' || f.cachedContent)) && (
+                  <span style={{
+                    fontSize: 9,
+                    padding: '1px 5px',
+                    borderRadius: 3,
+                    background: isDark ? 'rgba(16,185,129,0.3)' : 'rgba(16,185,129,0.15)',
+                    color: '#10B981',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}>
+                    Skill
+                  </span>
+                )}
                 {!p._isPreset && p.files && p.files.length > 0 && (
                   <span style={{ fontSize: 10, color: c.chromeText }}>
                     {p.files.length} file{p.files.length !== 1 ? 's' : ''}

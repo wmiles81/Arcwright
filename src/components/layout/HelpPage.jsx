@@ -5,7 +5,7 @@ import { plotStructures, referenceStructures } from '../../data/plotStructures';
 import { genreSystem } from '../../data/genreSystem';
 import ActStructuresTab from './ActStructuresTab';
 
-const tabs = ['about', 'interface', 'scaffolding', 'analysis', 'editing', 'structures', 'actStructures', 'dimensions', 'changelog'];
+const tabs = ['about', 'interface', 'scaffolding', 'analysis', 'editing', 'sequences', 'dataPacks', 'structures', 'actStructures', 'dimensions', 'changelog'];
 
 function Tab({ id, label, active, onClick }) {
   return (
@@ -76,7 +76,8 @@ function AboutTab() {
               A full writing environment with file browser, markdown editor, <strong>inline AI editing</strong>,
               and <strong>AI chapter revision pipeline</strong>. Open a folder, edit files, use dual-pane mode
               with <strong>side-by-side diff/merge view</strong> to compare and cherry-pick revisions
-              paragraph-by-paragraph. Run scripts to split chapters, clean up formatting, and more.
+              paragraph-by-paragraph. Design <strong>named sequences</strong> — reusable prompt pipelines
+              that chain steps together and write output to disk. Run scripts to split chapters, clean up formatting, and more.
             </p>
           </div>
           <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
@@ -96,6 +97,12 @@ function AboutTab() {
           read all your current data (beats, scores, genre settings), and can <strong>modify fields
           directly</strong> via natural language commands like "set trust to 8 on the first beat"
           or "change genre to Science Fiction."
+        </p>
+        <p className="mt-2">
+          The assistant can also <strong>generate images</strong> when an image provider and model
+          are configured in <strong>Settings &rarr; Image</strong>. Generated images are saved
+          to the <code className="text-purple-200 bg-slate-700/50 px-1 rounded">artifacts/</code> folder
+          and displayed inline in chat messages and in the editor when referenced via markdown image syntax.
         </p>
         <p className="mt-2">
           Requires an API key &mdash; configure one in <strong>Settings</strong> (gear icon in the nav bar).
@@ -235,7 +242,7 @@ function InterfaceGuideTab() {
       {sub === 'settings' && (
         <>
           <Section title="Settings Dialog">
-            <p className="mb-3">Opened via the gear icon in the nav bar. Three tabs: Providers, Chat, and Appearance.</p>
+            <p className="mb-3">Opened via the gear icon in the nav bar. Six tabs: Providers, Chat, Appearance, Voice, Image, and Packs.</p>
           </Section>
 
           <Section title="Providers Tab">
@@ -260,9 +267,40 @@ function InterfaceGuideTab() {
             </div>
           </Section>
 
+          <Section title="Voice Tab">
+            <p className="mb-2">Configure voice guides and narrator gender mechanics that are injected into every AI prompt.</p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Voice Guide">Dropdown listing all <code className="text-purple-200 bg-slate-700/50 px-1 rounded">.md</code> files in <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/voices/</code>. Selecting one loads the file and appends it to every system prompt as a style reference. The AI writes in the voice established by that guide.</ControlRow>
+              <ControlRow name="Active Indicator">Shows the loaded voice file path. The guide content is injected into every AI call until cleared.</ControlRow>
+              <ControlRow name="Narrator Gender">Three buttons: None / Female narrator / Male narrator. Selecting a gender loads the corresponding mechanics file from <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/gender-mechanics/female.md</code> or <code className="text-purple-200 bg-slate-700/50 px-1 rounded">male.md</code>. This content is appended <em>after</em> the voice guide as a supplemental layer &mdash; it doesn&rsquo;t replace the voice guide.</ControlRow>
+              <ControlRow name="Gender Mechanics Files">Must be placed manually at <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/gender-mechanics/female.md</code> and <code className="text-purple-200 bg-slate-700/50 px-1 rounded">male.md</code>. An error is shown if the file is missing when you select a gender.</ControlRow>
+            </div>
+          </Section>
+
           <Section title="Appearance Tab">
             <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
               <ControlRow name="Theme Picker">Grid of color swatches organized into Light and Dark sections. Click any swatch to apply that theme globally. The selected theme has a purple border.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Image Tab">
+            <p className="mb-2">Configure AI image generation. Works with OpenRouter (via chat completions), OpenAI (DALL-E), and other providers that support image output.</p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Provider">Dropdown showing only providers with an API key configured. Selects which provider routes image generation requests.</ControlRow>
+              <ControlRow name="Model">Free-text input for the model ID. Type any image model your provider supports (e.g., <code className="text-purple-200 bg-slate-700/50 px-1 rounded">openai/dall-e-3</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">black-forest-labs/flux-1.1-pro</code>).</ControlRow>
+              <ControlRow name="Browse Button">Fetches image-capable models from the selected provider and displays them in a searchable list. Click a model to fill in the model ID field. Shows per-image or per-token pricing when available.</ControlRow>
+              <ControlRow name="Model Browser">Searchable panel with a filter input. Shows model ID, display name, and pricing. The count footer shows filtered vs total results. Close to dismiss.</ControlRow>
+              <ControlRow name="Default Size">Dropdown for default image dimensions: 1024&times;1024 (Square), 1792&times;1024 (Landscape), 1024&times;1792 (Portrait), or 512&times;512 (Small). Can be overridden per generation request.</ControlRow>
+              <ControlRow name="Status Line">Shows &ldquo;Ready: Provider / model-id&rdquo; when configured. Shows a warning when no provider is selected.</ControlRow>
+            </div>
+          </Section>
+
+          <Section title="Packs Tab">
+            <p className="mb-2">View installed data packs from <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/extensions/</code>.</p>
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Pack Cards">Each installed pack displays its name, author, version, description, and content summary (genres, structures, prompts, sequences).</ControlRow>
+              <ControlRow name="Pack Count">Header showing total installed packs and the extensions directory path.</ControlRow>
+              <ControlRow name="Empty State">Instructions for installing packs when none are present.</ControlRow>
             </div>
           </Section>
         </>
@@ -343,13 +381,14 @@ function InterfaceGuideTab() {
 
           <Section title="Message Area & Input">
             <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-              <ControlRow name="Message Area">Scrollable area showing the conversation. User messages appear right-aligned; AI responses left-aligned with markdown rendering.</ControlRow>
+              <ControlRow name="Message Area">Scrollable area showing the conversation. User messages appear right-aligned; AI responses left-aligned with markdown rendering. Generated images appear inline below the message text.</ControlRow>
               <ControlRow name="Streaming Indicator">A blinking cursor animation while the AI is generating a response.</ControlRow>
               <ControlRow name="Loading Dots">Three bouncing dots appear while waiting for the first chunk of a streaming response.</ControlRow>
               <ControlRow name="Error Display">Red background box showing error details if an API call fails.</ControlRow>
               <ControlRow name="Text Input">Multi-line textarea. Press <Kbd>Enter</Kbd> to send, <Kbd>Shift+Enter</Kbd> for a new line.</ControlRow>
               <ControlRow name={<>{'\u2191'} Send Button</>}>Bottom-right of the input. Disabled when empty. Sends the message.</ControlRow>
               <ControlRow name={<>{'\u25A0'} Stop Button</>}>Replaces the send button while the AI is responding. Click to abort generation mid-stream.</ControlRow>
+              <ControlRow name="/ Sequence Picker">Type <Kbd>/</Kbd> in the chat input without a space to open a floating sequence picker showing all saved named sequences. Arrow keys navigate the list, Enter or click runs the highlighted sequence immediately. Escape or typing a space closes the menu.</ControlRow>
             </div>
           </Section>
         </>
@@ -566,6 +605,15 @@ function InterfaceGuideTab() {
             </div>
           </Section>
 
+          <Section title="Left Panel Tabs">
+            <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+              <ControlRow name="Chat Tab">AI chat panel for conversational editing, orchestration, and app state modification via tools.</ControlRow>
+              <ControlRow name="Files Tab">File browser tree for the open folder. Same as the File Panel described above.</ControlRow>
+              <ControlRow name="Variables Tab">Read-only view of analyzed chapter dimension scores and scaffold beat values. Useful as a reference while writing.</ControlRow>
+              <ControlRow name="Sequences Tab">Named sequence manager. Build, edit, and run reusable multi-step prompt pipelines. A pulsing purple dot appears on the tab when a sequence is actively running.</ControlRow>
+            </div>
+          </Section>
+
           <Section title="Status Bar">
             <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
               <ControlRow name="File Name">Active file name on the left.</ControlRow>
@@ -637,6 +685,10 @@ function InterfaceGuideTab() {
             <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
               <ControlRow name={<Kbd>Enter</Kbd>}>Send the current message.</ControlRow>
               <ControlRow name={<Kbd>Shift+Enter</Kbd>}>Insert a new line without sending.</ControlRow>
+              <ControlRow name={<Kbd>/</Kbd>}>Type at the start of the chat input (no space after) to open the sequence picker. Shows all saved named sequences filtered by what you type.</ControlRow>
+              <ControlRow name={<><Kbd>{'\u2191'}</Kbd> / <Kbd>{'\u2193'}</Kbd></>}>Navigate the sequence picker list.</ControlRow>
+              <ControlRow name={<Kbd>Enter</Kbd>}>Run the highlighted sequence (when picker is open).</ControlRow>
+              <ControlRow name={<Kbd>Escape</Kbd>}>Close the sequence picker without running.</ControlRow>
             </div>
           </Section>
 
@@ -1026,6 +1078,712 @@ function EditGuideTab() {
           <li><strong>Provider &amp; model:</strong> The active provider and model are shown in the chat header. Click the badge or open Settings to change them.</li>
         </ul>
       </Section>
+
+      <Section title="Named Sequences">
+        <p>
+          Named Sequences are reusable multi-step prompt pipelines with support for loops, conditionals, chaining, and file output.
+          See the dedicated <strong>Sequences</strong> tab for comprehensive documentation including step types, loop iteration,
+          conditional branching, template variables, ASCII diagrams, and worked examples.
+        </p>
+      </Section>
+    </div>
+  );
+}
+
+function DiagramBox({ children }) {
+  return (
+    <pre className="bg-slate-900/80 border border-purple-500/30 rounded-lg p-4 text-[11px] leading-relaxed text-purple-200 font-mono overflow-x-auto whitespace-pre">
+      {children}
+    </pre>
+  );
+}
+
+function SequencesTab() {
+  return (
+    <div className="space-y-4 text-sm text-purple-100 leading-relaxed">
+      <Section title="What Are Named Sequences?">
+        <p>
+          Named Sequences are reusable multi-step AI prompt pipelines you design once and run any time.
+          They automate repetitive writing workflows &mdash; generating outlines, writing chapters in series,
+          running quality checks, and producing final drafts &mdash; all without manual intervention between steps.
+        </p>
+        <p className="mt-2">
+          Each sequence is a list of <strong>steps</strong>. Steps come in three types:
+          <strong> Action</strong> (run a prompt), <strong>Loop</strong> (repeat steps), and
+          <strong> Condition</strong> (branch on AI evaluation). Steps can chain their output forward,
+          write results to files, and use template variables for dynamic content.
+        </p>
+      </Section>
+
+      <Section title="Quick Start: Your First Sequence">
+        <ol className="list-decimal list-inside space-y-2">
+          <li>
+            Navigate to the <strong>Edit</strong> workflow and open the <strong>Sequences</strong> tab in the left panel.
+          </li>
+          <li>
+            Click <strong>+ New Sequence</strong>. Give it a name (e.g., &ldquo;Chapter Outline&rdquo;).
+          </li>
+          <li>
+            Click <strong>+ Add Step</strong>. Leave the type as <strong>Action</strong>.
+          </li>
+          <li>
+            Choose <strong>Inline Template</strong> and type your prompt, e.g.:<br />
+            <code className="text-purple-200 bg-slate-700/50 px-1 rounded text-xs">Write a detailed chapter outline for a fantasy novel with 12 chapters.</code>
+          </li>
+          <li>
+            Set <strong>Output File</strong> to <code className="text-purple-200 bg-slate-700/50 px-1 rounded text-xs">outline.md</code> to save the result to disk.
+          </li>
+          <li>
+            Click <strong>Save</strong>, then click the <strong>{'\u25B6'}</strong> play button to run it.
+          </li>
+        </ol>
+      </Section>
+
+      <Section title="The Three Step Types">
+        <div className="space-y-4">
+          {/* Action */}
+          <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
+            <h4 className="font-bold text-white mb-2">Action Steps</h4>
+            <p className="text-xs text-purple-200 mb-3">
+              The workhorse of sequences. An action step sends a prompt to the AI and optionally writes the response to a file.
+            </p>
+            <div className="space-y-0.5">
+              <ControlRow name="Prompt Source">Choose <strong>Inline Template</strong> (write the prompt directly) or <strong>Prompt Tool</strong> (select a saved prompt from the Prompts panel).</ControlRow>
+              <ControlRow name="Output File">Optional. A file path relative to the open folder (e.g., <code className="text-purple-200 bg-slate-700/50 px-1 rounded text-xs">chapters/ch01.md</code>). If set, the AI response is written to this file.</ControlRow>
+              <ControlRow name="Chain">Toggle. When enabled, this step&rsquo;s output is passed as context into the next step under a &ldquo;Context from previous step&rdquo; heading.</ControlRow>
+              <ControlRow name="Model Override">Optional. Run this specific step with a different model than your default (e.g., a cheaper model for simple tasks).</ControlRow>
+            </div>
+          </div>
+
+          {/* Loop */}
+          <div className="bg-slate-800/50 rounded p-4 border border-blue-500/20">
+            <h4 className="font-bold text-blue-300 mb-2">Loop Steps</h4>
+            <p className="text-xs text-purple-200 mb-3">
+              Repeat a set of body steps multiple times. Use loops to write series of chapters, generate variations,
+              or iterate until a quality threshold is met.
+            </p>
+            <div className="space-y-0.5">
+              <ControlRow name="Fixed Count">Set a number (e.g., 5) and the body runs exactly that many times.</ControlRow>
+              <ControlRow name="Exit Condition">Instead of a fixed count, provide a template that the AI evaluates after each iteration. If the AI responds &ldquo;STOP&rdquo;, the loop ends. If &ldquo;CONTINUE&rdquo;, it keeps going.</ControlRow>
+              <ControlRow name="Max Iterations">Safety cap for exit-condition loops (default: 20). Prevents runaway loops.</ControlRow>
+              <ControlRow name="Body Steps">The steps that run on each iteration. Can include Action and Condition steps (no nested loops).</ControlRow>
+              <ControlRow name="Chain">When enabled on the loop, the final iteration&rsquo;s output is passed as context to the next top-level step.</ControlRow>
+            </div>
+            <div className="mt-3">
+              <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-2">Loop Variables</h5>
+              <div className="space-y-1 text-xs">
+                <div className="flex gap-3">
+                  <code className="text-blue-300 bg-slate-700/50 px-1 rounded w-40 flex-shrink-0">{'##'}</code>
+                  <span className="text-purple-200">In output file names, replaced with the zero-padded iteration number (01, 02, 03&hellip;). E.g., <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Chapter_##.md</code> {'\u2192'} <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Chapter_01.md</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Chapter_02.md</code>, etc.</span>
+                </div>
+                <div className="flex gap-3">
+                  <code className="text-blue-300 bg-slate-700/50 px-1 rounded w-40 flex-shrink-0">{'{{loop_index}}'}</code>
+                  <span className="text-purple-200">Zero-based iteration number (0, 1, 2&hellip;) available in templates.</span>
+                </div>
+                <div className="flex gap-3">
+                  <code className="text-blue-300 bg-slate-700/50 px-1 rounded w-40 flex-shrink-0">{'{{loop_count}}'}</code>
+                  <span className="text-purple-200">Total iteration count (for fixed-count loops). Null for exit-condition loops.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Condition */}
+          <div className="bg-slate-800/50 rounded p-4 border border-amber-500/20">
+            <h4 className="font-bold text-amber-300 mb-2">Condition Steps</h4>
+            <p className="text-xs text-purple-200 mb-3">
+              Ask the AI a YES/NO question based on the current context. The answer determines what happens next:
+              continue the sequence, end it early, or retry the previous step.
+            </p>
+            <div className="space-y-0.5">
+              <ControlRow name="Question Template">The prompt sent to the AI. It should be phrased as a yes/no question. Use <code className="text-purple-200 bg-slate-700/50 px-1 rounded text-xs">{'{{chained_context}}'}</code> to reference the output from the previous step.</ControlRow>
+              <ControlRow name="If YES">What to do when the AI answers YES: <strong>Continue</strong> to the next step, or <strong>End</strong> the sequence.</ControlRow>
+              <ControlRow name="If NO">What to do when the AI answers NO: <strong>Continue</strong>, <strong>End</strong>, or <strong>Retry</strong> the previous step.</ControlRow>
+              <ControlRow name="Max Retries">When &ldquo;If NO&rdquo; is set to Retry, this caps how many times the previous step can be re-run (default: 3). After max retries, the sequence continues.</ControlRow>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="How Steps Flow Together">
+        <p className="mb-3 text-xs text-purple-300">
+          Steps execute top-to-bottom. Chain passes context forward. Conditions can redirect flow.
+        </p>
+        <DiagramBox>{`
+  Sequence: "Write & Verify Chapters"
+  ============================================================
+
+  STEP 1: Action (Inline Template)           [chain: ON]
+  ┌─────────────────────────────────────────────────────────┐
+  │  "Write a detailed outline for a 5-chapter story..."   │
+  │  Output File: outline.md                               │
+  │  ────────────────────────────────────                   │
+  │  Result: outline text ──────────────────┐               │
+  └─────────────────────────────────────────┼───────────────┘
+                                            │ chained context
+                                            ▼
+  STEP 2: Loop (Fixed Count: 5)             [chain: ON]
+  ┌─────────────────────────────────────────────────────────┐
+  │  Iteration 1:                                          │
+  │  ┌───────────────────────────────────────────────────┐  │
+  │  │ Body Step A: Action                               │  │
+  │  │ "Write chapter {{loop_index}} based on outline"   │  │
+  │  │ Output: chapters/Chapter_##.md                    │  │
+  │  │ → chapters/Chapter_01.md  (1,200 words)           │  │
+  │  └───────────────────────────────────────────────────┘  │
+  │                                                        │
+  │  Iteration 2:                                          │
+  │  ┌───────────────────────────────────────────────────┐  │
+  │  │ → chapters/Chapter_02.md  (1,150 words)           │  │
+  │  └───────────────────────────────────────────────────┘  │
+  │  ... iterations 3, 4, 5                                │
+  │                                                        │
+  │  Final output ──────────────────────────┐               │
+  └─────────────────────────────────────────┼───────────────┘
+                                            │ chained context
+                                            ▼
+  STEP 3: Condition
+  ┌─────────────────────────────────────────────────────────┐
+  │  "Does this chapter feel complete and                   │
+  │   well-paced? Answer YES or NO."                       │
+  │                                                        │
+  │  If YES → Continue to Step 4                           │
+  │  If NO  → Retry Step 2 (max 2 retries)                 │
+  └─────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+  STEP 4: Action
+  ┌─────────────────────────────────────────────────────────┐
+  │  "Write a synopsis summarizing all chapters."           │
+  │  Output File: synopsis.md                              │
+  └─────────────────────────────────────────────────────────┘
+
+  ============================================================
+        `}</DiagramBox>
+      </Section>
+
+      <Section title="Template Variables Reference">
+        <p className="mb-3 text-xs text-purple-300">
+          These placeholders can be used in any inline template or prompt tool template.
+        </p>
+        <div className="bg-slate-800/50 rounded p-4 space-y-1 text-xs">
+          <div className="flex gap-3 py-1.5 border-b border-purple-500/10">
+            <code className="text-purple-300 bg-slate-700/50 px-1 rounded w-48 flex-shrink-0 font-semibold">{'{{chained_context}}'}</code>
+            <span className="text-purple-200">Output from the previous step (when chain is enabled). This is the primary way to pass information between steps.</span>
+          </div>
+          <div className="flex gap-3 py-1.5 border-b border-purple-500/10">
+            <code className="text-purple-300 bg-slate-700/50 px-1 rounded w-48 flex-shrink-0 font-semibold">{'{{loop_index}}'}</code>
+            <span className="text-purple-200">Current iteration number (0-based) inside a loop body. Use for &ldquo;Write chapter {'{{loop_index}}'}&rdquo;.</span>
+          </div>
+          <div className="flex gap-3 py-1.5 border-b border-purple-500/10">
+            <code className="text-purple-300 bg-slate-700/50 px-1 rounded w-48 flex-shrink-0 font-semibold">{'{{loop_count}}'}</code>
+            <span className="text-purple-200">Total number of iterations (fixed-count loops only). Null for exit-condition loops.</span>
+          </div>
+          <div className="flex gap-3 py-1.5 border-b border-purple-500/10">
+            <code className="text-purple-300 bg-slate-700/50 px-1 rounded w-48 flex-shrink-0 font-semibold">{'{{user_input}}'}</code>
+            <span className="text-purple-200">If the sequence was launched with user input (e.g., from the chat / picker), the typed value is available here.</span>
+          </div>
+          <div className="flex gap-3 py-1.5">
+            <code className="text-purple-300 bg-slate-700/50 px-1 rounded w-48 flex-shrink-0 font-semibold">{'##'}</code>
+            <span className="text-purple-200">In <strong>output file names only</strong>: replaced with zero-padded iteration index (01, 02, ...). Not a template variable &mdash; only works in the Output File field inside a loop body.</span>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Loop Deep-Dive">
+        <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-2">Fixed-Count Loop</h5>
+        <p className="text-xs text-purple-200 mb-3">
+          Set a specific number and the body runs that many times. Ideal when you know exactly how many outputs you need.
+        </p>
+        <DiagramBox>{`
+  Loop: "Write 5 Chapters" (count: 5)
+  ┌──────────────────────────────────────────────┐
+  │  iter 0 → Chapter_01.md   (## = 01)         │
+  │  iter 1 → Chapter_02.md   (## = 02)         │
+  │  iter 2 → Chapter_03.md   (## = 03)         │
+  │  iter 3 → Chapter_04.md   (## = 04)         │
+  │  iter 4 → Chapter_05.md   (## = 05)         │
+  └──────────────────────────────────────────────┘
+  {{loop_index}} = 0,1,2,3,4    {{loop_count}} = 5
+        `}</DiagramBox>
+
+        <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-2 mt-4">Exit-Condition Loop</h5>
+        <p className="text-xs text-purple-200 mb-3">
+          Instead of a fixed count, you provide an exit template &mdash; a prompt the AI evaluates after each iteration.
+          If the AI responds with &ldquo;STOP&rdquo;, the loop ends. If &ldquo;CONTINUE&rdquo;, it keeps going. A max-iterations
+          cap (default: 20) prevents runaway loops.
+        </p>
+        <DiagramBox>{`
+  Loop: "Generate ideas until satisfied"
+  Exit template: "Review the ideas so far. Are there
+                  at least 10 strong, distinct ideas?
+                  Answer CONTINUE or STOP."
+  Max iterations: 20
+  ┌──────────────────────────────────────────────┐
+  │  iter 0 → body runs → AI says "CONTINUE"    │
+  │  iter 1 → body runs → AI says "CONTINUE"    │
+  │  iter 2 → body runs → AI says "CONTINUE"    │
+  │  iter 3 → body runs → AI says "STOP"        │
+  │           ↓                                  │
+  │  Loop exits after 4 iterations               │
+  └──────────────────────────────────────────────┘
+        `}</DiagramBox>
+      </Section>
+
+      <Section title="Condition Deep-Dive">
+        <p className="text-xs text-purple-200 mb-3">
+          Condition steps evaluate quality, check completeness, or gate progression. The AI answers
+          YES or NO and the sequence follows the configured path.
+        </p>
+        <DiagramBox>{`
+  Condition: "Is the draft publication-ready?"
+  ┌──────────────────────────────────────────────┐
+  │  Template: "Review the following draft.      │
+  │  Is it publication-ready? Answer YES or NO." │
+  │                                              │
+  │  AI answers → YES                            │
+  │    ifYes: continue ──→ next step             │
+  │                                              │
+  │  AI answers → NO                             │
+  │    ifNo: retry ──→ re-run previous step      │
+  │    (up to maxRetries: 3)                     │
+  │                                              │
+  │  After 3 retries with NO → continues anyway  │
+  └──────────────────────────────────────────────┘
+
+  Possible ifYes / ifNo values:
+  ┌────────────┬──────────────────────────────────┐
+  │  continue  │  Proceed to the next step        │
+  │  end       │  Stop the sequence immediately   │
+  │  retry     │  Re-run the PREVIOUS step        │
+  │            │  (ifNo only, up to maxRetries)    │
+  └────────────┴──────────────────────────────────┘
+        `}</DiagramBox>
+      </Section>
+
+      <Section title="Three Ways to Run a Sequence">
+        <div className="space-y-3">
+          <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
+            <h5 className="font-semibold text-white text-xs uppercase tracking-wider mb-1">1. From the Sequences Panel</h5>
+            <p className="text-xs text-purple-200">
+              Click the <strong>{'\u25B6'}</strong> play button next to any saved sequence. A running view replaces
+              the editor list, showing real-time progress with spinners, checkmarks, output file paths, and word counts.
+              Loop iterations expand inline showing per-iteration details.
+            </p>
+          </div>
+          <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
+            <h5 className="font-semibold text-white text-xs uppercase tracking-wider mb-1">2. From the Chat Input (/ Picker)</h5>
+            <p className="text-xs text-purple-200">
+              Type <Kbd>/</Kbd> at the start of the chat input (no space after) to open a floating sequence picker.
+              Arrow keys navigate the list, Enter or click runs the highlighted sequence. Type to filter by name.
+              Escape closes the picker.
+            </p>
+          </div>
+          <div className="bg-slate-800/50 rounded p-4 border border-purple-500/20">
+            <h5 className="font-semibold text-white text-xs uppercase tracking-wider mb-1">3. Via AI Chat Tools</h5>
+            <p className="text-xs text-purple-200">
+              Ask the AI to run a sequence by name. It uses the <code className="text-purple-200 bg-slate-700/50 px-1 rounded">listSequences</code> tool
+              to find available sequences, then <code className="text-purple-200 bg-slate-700/50 px-1 rounded">runNamedSequence</code> to execute one.
+              You can also ask the AI to build a one-off pipeline using <code className="text-purple-200 bg-slate-700/50 px-1 rounded">runSequence</code> without saving it first.
+            </p>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Running View">
+        <p className="text-xs text-purple-200 mb-3">
+          While a sequence is running, the Sequences panel shows a live status view. A pulsing purple dot appears on the
+          Sequences tab badge, visible even when you&rsquo;re on another panel.
+        </p>
+        <DiagramBox>{`
+  Running: "Write & Verify Chapters"
+  ──────────────────────────────────────────────
+  ✓  Write outline              → outline.md (450 words)
+  ↻  Write chapters             (iteration 3 / 5)
+       ✓  Iteration 1  → Chapter_01.md  (1,200 words)
+       ✓  Iteration 2  → Chapter_02.md  (1,150 words)
+       ↻  Iteration 3  (running...)
+       ○  Iteration 4
+       ○  Iteration 5
+  ○  Quality check
+  ○  Write synopsis
+  ──────────────────────────────────────────────
+  ✓ = done    ↻ = running    ○ = pending    ✗ = error
+        `}</DiagramBox>
+      </Section>
+
+      <Section title="Worked Example: Chapter Writing Pipeline">
+        <p className="text-xs text-purple-200 mb-3">
+          Here&rsquo;s a complete sequence that generates an outline, writes chapters in a loop,
+          quality-checks each one, and produces a final synopsis.
+        </p>
+        <div className="bg-slate-800/50 rounded p-4 text-xs space-y-3">
+          <div>
+            <h5 className="font-semibold text-purple-300 mb-1">Step 1: Generate Outline (Action)</h5>
+            <ul className="list-disc list-inside text-purple-200 space-y-0.5">
+              <li>Type: Action, Inline Template</li>
+              <li>Template: <em>&ldquo;Write a detailed chapter-by-chapter outline for a 5-chapter fantasy story about a reluctant healer who discovers she can raise the dead.&rdquo;</em></li>
+              <li>Output File: <code className="bg-slate-700/50 px-1 rounded">outline.md</code></li>
+              <li>Chain: <strong>ON</strong> (passes outline to next step)</li>
+            </ul>
+          </div>
+          <div>
+            <h5 className="font-semibold text-blue-300 mb-1">Step 2: Write Chapters (Loop, count: 5)</h5>
+            <ul className="list-disc list-inside text-purple-200 space-y-0.5">
+              <li>Type: Loop, Fixed Count = 5</li>
+              <li>Chain: <strong>ON</strong></li>
+              <li>Body Step A (Action):</li>
+              <li className="ml-4">Template: <em>&ldquo;Using the outline provided, write chapter {'{{loop_index}}'} (chapter {'{{loop_index}}'} of {'{{loop_count}}'}).
+                Write 1,500&ndash;2,000 words. Match the tone and pacing described in the outline.&rdquo;</em></li>
+              <li className="ml-4">Output File: <code className="bg-slate-700/50 px-1 rounded">chapters/Chapter_##.md</code></li>
+            </ul>
+          </div>
+          <div>
+            <h5 className="font-semibold text-amber-300 mb-1">Step 3: Quality Check (Condition)</h5>
+            <ul className="list-disc list-inside text-purple-200 space-y-0.5">
+              <li>Type: Condition</li>
+              <li>Template: <em>&ldquo;Review the final chapter. Does it provide a satisfying conclusion? Answer YES or NO.&rdquo;</em></li>
+              <li>If YES: Continue</li>
+              <li>If NO: Retry (max 2 retries)</li>
+            </ul>
+          </div>
+          <div>
+            <h5 className="font-semibold text-purple-300 mb-1">Step 4: Synopsis (Action)</h5>
+            <ul className="list-disc list-inside text-purple-200 space-y-0.5">
+              <li>Type: Action, Inline Template</li>
+              <li>Template: <em>&ldquo;Write a 200-word synopsis of the complete story.&rdquo;</em></li>
+              <li>Output File: <code className="bg-slate-700/50 px-1 rounded">synopsis.md</code></li>
+            </ul>
+          </div>
+        </div>
+      </Section>
+
+      <Section title="Sequence Editor UI Reference">
+        <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+          <ControlRow name="+ New Sequence">Create a new blank sequence with name and description fields.</ControlRow>
+          <ControlRow name="Name / Description">Text fields at the top of the editor. Name is required.</ControlRow>
+          <ControlRow name="+ Add Step">Append a new step to the sequence. Defaults to Action type.</ControlRow>
+          <ControlRow name="Type Selector">Three buttons at the top of each step: Action | Loop | Condition. Click to switch.</ControlRow>
+          <ControlRow name="Step Label">Optional display name for the step (shown in the running view).</ControlRow>
+          <ControlRow name="Inline / Prompt Tool Toggle">For Action steps: switch between writing a template directly or selecting a saved Prompt Tool.</ControlRow>
+          <ControlRow name={<>{'\u2191'} / {'\u2193'} Arrows</>}>Reorder steps within the sequence.</ControlRow>
+          <ControlRow name={<>{'\u00D7'} Remove</>}>Delete a step from the sequence.</ControlRow>
+          <ControlRow name="Save / Cancel">Save commits the sequence to disk as JSON. Cancel discards changes.</ControlRow>
+          <ControlRow name={<>{'\u25B6'} Play</>}>Run the sequence. Only available when a sequence is saved.</ControlRow>
+          <ControlRow name="Edit / Delete">Per-sequence actions in the list view.</ControlRow>
+        </div>
+      </Section>
+
+      <Section title="Tips & Best Practices">
+        <ul className="list-disc list-inside space-y-1 text-purple-200 text-xs">
+          <li><strong>Chain sparingly:</strong> Only chain when the next step actually needs the previous output. Unnecessary chaining bloats context and increases costs.</li>
+          <li><strong>Use ## for loop file output:</strong> Always use <code className="bg-slate-700/50 px-1 rounded">##</code> in output file names inside loops to generate unique files per iteration.</li>
+          <li><strong>Condition + Retry for quality:</strong> Place a condition step after an important action step with &ldquo;If NO &rarr; Retry&rdquo; to automatically re-run if quality is insufficient.</li>
+          <li><strong>Model overrides for cost control:</strong> Use a cheaper model for simple steps (outlines, lists) and a more capable model for creative writing steps.</li>
+          <li><strong>Exit-condition loops for open-ended tasks:</strong> When you don&rsquo;t know how many iterations you need, use an exit condition instead of a fixed count. Set a reasonable max-iterations cap.</li>
+          <li><strong>Prompt Tools for reuse:</strong> If you use the same template across multiple sequences, save it as a Prompt Tool in the Prompts panel and reference it by name.</li>
+          <li><strong>Storage:</strong> Sequences are saved as individual JSON files in <code className="bg-slate-700/50 px-1 rounded">Arcwrite/sequences/</code>. You can share them by copying these files.</li>
+        </ul>
+      </Section>
+    </div>
+  );
+}
+
+function DataPacksTab() {
+  return (
+    <div className="space-y-4 text-sm text-purple-100 leading-relaxed">
+      <Section title="What Are Data Packs?">
+        <p>
+          Data Packs are extension bundles that add new genres, plot structures, prompts, and sequences
+          to Arcwright without modifying any code. A data pack is simply a folder with a
+          <code className="text-purple-200 bg-slate-700/50 px-1 rounded"> pack.json</code> manifest and
+          optional content files. Drop it into <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/extensions/</code> and
+          it&rsquo;s loaded automatically on startup.
+        </p>
+        <p className="mt-2">
+          This is the first tier of Arcwright&rsquo;s extensibility system: declarative data only, no code execution.
+          Packs are safe to share &mdash; they contain only JSON definitions.
+        </p>
+      </Section>
+
+      <Section title="Folder Structure">
+        <DiagramBox>{`
+  Arcwrite/
+  └── extensions/
+      ├── horror-pack/                   ← one pack
+      │   ├── pack.json                  ← manifest (required)
+      │   ├── genres.json                ← genre definitions
+      │   ├── structures.json            ← plot structure definitions
+      │   ├── prompts/                   ← prompt files
+      │   │   ├── horror-outline.json
+      │   │   └── monster-design.json
+      │   └── sequences/                 ← sequence files
+      │       └── horror-pipeline.json
+      │
+      └── romance-expansion/             ← another pack
+          ├── pack.json
+          ├── genres.json
+          └── prompts/
+              └── meet-cute-generator.json
+        `}</DiagramBox>
+        <p className="mt-2 text-xs text-purple-300">
+          Each pack is a subfolder of <code className="bg-slate-700/50 px-1 rounded">Arcwrite/extensions/</code>.
+          The only required file is <code className="bg-slate-700/50 px-1 rounded">pack.json</code>.
+          All other content files are optional &mdash; include only what your pack provides.
+        </p>
+      </Section>
+
+      <Section title="Step-by-Step: Creating a Data Pack">
+        <ol className="list-decimal list-inside space-y-3">
+          <li>
+            <strong>Create the folder</strong> &mdash; Inside your <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/extensions/</code> directory,
+            create a new folder for your pack (e.g., <code className="text-purple-200 bg-slate-700/50 px-1 rounded">my-pack</code>).
+          </li>
+          <li>
+            <strong>Create pack.json</strong> &mdash; This is the manifest that identifies your pack and declares what content it includes:
+            <DiagramBox>{`
+  {
+    "name": "Horror Pack",
+    "id": "horror-pack",
+    "version": "1.0.0",
+    "description": "Genres, structures, and prompts for horror fiction.",
+    "author": "Jane Doe",
+    "includes": {
+      "genres": "genres.json",
+      "structures": "structures.json",
+      "prompts": "prompts/",
+      "sequences": "sequences/"
+    }
+  }
+            `}</DiagramBox>
+            <p className="text-xs text-purple-300 mt-1">
+              All <code className="bg-slate-700/50 px-1 rounded">includes</code> keys are optional. Only list content types your pack actually provides.
+            </p>
+          </li>
+          <li>
+            <strong>Add content files</strong> (see format specifications below).
+          </li>
+          <li>
+            <strong>Reload the app</strong> &mdash; Data packs are loaded on startup. Refresh the page to pick up new or changed packs.
+          </li>
+          <li>
+            <strong>Verify</strong> &mdash; Open <strong>Settings {'\u2192'} Packs</strong> to see your pack listed with its content summary.
+          </li>
+        </ol>
+      </Section>
+
+      <Section title="pack.json Manifest Reference">
+        <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+          <ControlRow name="name">Display name shown in the Packs tab. Required.</ControlRow>
+          <ControlRow name="id">Unique identifier. Defaults to the folder name if omitted. Used to tag pack content internally.</ControlRow>
+          <ControlRow name="version">Semantic version string (e.g., &ldquo;1.0.0&rdquo;). Optional but recommended.</ControlRow>
+          <ControlRow name="description">Short description shown in the Packs tab. Optional.</ControlRow>
+          <ControlRow name="author">Author name. Optional.</ControlRow>
+          <ControlRow name="includes.genres">Path to a JSON file with genre definitions (relative to the pack folder).</ControlRow>
+          <ControlRow name="includes.structures">Path to a JSON file with plot structure definitions.</ControlRow>
+          <ControlRow name="includes.prompts">Path to a directory containing prompt JSON files.</ControlRow>
+          <ControlRow name="includes.sequences">Path to a directory containing sequence JSON files.</ControlRow>
+        </div>
+      </Section>
+
+      <Section title="Content Format: genres.json">
+        <p className="text-xs text-purple-200 mb-3">
+          Genre definitions follow the same shape as Arcwright&rsquo;s built-in genres. Each top-level key is a genre ID.
+          The optional <code className="bg-slate-700/50 px-1 rounded">_dimensionRanges</code> key defines expected dimension ranges per genre.
+        </p>
+        <DiagramBox>{`
+  {
+    "_dimensionRanges": {
+      "horror": {
+        "intimacy": [0, 3],
+        "danger": [4, 10],
+        "mystery": [3, 9],
+        "stakes": [5, 10],
+        ...all 11 dimensions
+      }
+    },
+    "horror": {
+      "name": "Horror",
+      "structure": "horrorArc",       ← key into plotStructures
+      "subgenres": {
+        "slasher": {
+          "name": "Slasher",
+          "weights": {
+            "infoAsym": 1.2,
+            "stakes": 1.8,
+            "misalignment": 0.8,
+            "powerDiff": 0.9,
+            "vulnerabilityTrust": 1.5,
+            "desireIntimacy": 0.3,
+            "proximityTrust": 1.1,
+            "danger": 1.8,
+            "mystery": 1.2
+          },
+          "requirements": {
+            "finalTension": [6, 10]
+          },
+          "modifiers": ["Cabin", "Summer Camp", "Urban"]
+        }
+      }
+    }
+  }
+        `}</DiagramBox>
+        <ul className="list-disc list-inside space-y-1 text-purple-200 text-xs mt-3">
+          <li><strong>structure</strong> must be a key that exists in <code className="bg-slate-700/50 px-1 rounded">plotStructures</code> (built-in or from a pack&rsquo;s structures.json).</li>
+          <li><strong>weights</strong> use the 9 tension engine channels: infoAsym, stakes, misalignment, powerDiff, vulnerabilityTrust, desireIntimacy, proximityTrust, danger, mystery.</li>
+          <li><strong>requirements</strong> define pass/fail ranges for the genre&rsquo;s validation (optional).</li>
+          <li><strong>modifiers</strong> are flavor tags shown in the UI (optional).</li>
+        </ul>
+      </Section>
+
+      <Section title="Content Format: structures.json">
+        <p className="text-xs text-purple-200 mb-3">
+          Plot structures define the act divisions and named beats of a narrative framework.
+        </p>
+        <DiagramBox>{`
+  {
+    "horrorArc": {
+      "name": "Horror Arc",
+      "description": "Classic horror progression...",
+      "acts": [
+        {
+          "name": "Normalcy",
+          "range": [0, 25],
+          "beats": ["setup", "warning"]
+        },
+        {
+          "name": "Escalation",
+          "range": [25, 75],
+          "beats": ["firstEncounter", "isolation", "revelation"]
+        },
+        {
+          "name": "Confrontation",
+          "range": [75, 100],
+          "beats": ["finalStand", "aftermath"]
+        }
+      ],
+      "beats": {
+        "setup": {
+          "name": "Setup",
+          "range": [0, 10],
+          "color": "#64748b"
+        },
+        "warning": {
+          "name": "Warning Signs",
+          "range": [10, 25],
+          "color": "#fb923c"
+        },
+        ...more beats
+      }
+    }
+  }
+        `}</DiagramBox>
+        <ul className="list-disc list-inside space-y-1 text-purple-200 text-xs mt-3">
+          <li><strong>acts</strong> define the macro divisions with percentage ranges that must tile 0&ndash;100%.</li>
+          <li><strong>beats</strong> define named moments within acts with percentage ranges and display colors.</li>
+          <li>Beat keys in the <code className="bg-slate-700/50 px-1 rounded">beats</code> field must match the beat names referenced in <code className="bg-slate-700/50 px-1 rounded">acts[].beats</code>.</li>
+        </ul>
+      </Section>
+
+      <Section title="Content Format: Prompts &amp; Sequences">
+        <p className="text-xs text-purple-200 mb-3">
+          Pack prompts and sequences use the exact same JSON format as user-created ones. Place each as a
+          separate <code className="bg-slate-700/50 px-1 rounded">.json</code> file in the
+          <code className="bg-slate-700/50 px-1 rounded"> prompts/</code> or
+          <code className="bg-slate-700/50 px-1 rounded"> sequences/</code> directory.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-2">Prompt File</h5>
+            <DiagramBox>{`
+  {
+    "id": "horror-outline",
+    "title": "Horror Outline",
+    "template": "Write a horror
+      outline with {{user_input}}
+      chapters...",
+    "description": "Generates a
+      horror story outline."
+  }
+            `}</DiagramBox>
+          </div>
+          <div>
+            <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-2">Sequence File</h5>
+            <DiagramBox>{`
+  {
+    "id": "horror-pipeline",
+    "name": "Horror Pipeline",
+    "description": "Full horror
+      story generation.",
+    "steps": [
+      {
+        "id": "step_1",
+        "type": "action",
+        "template": "...",
+        "outputFile": "outline.md",
+        "chain": true
+      }
+    ]
+  }
+            `}</DiagramBox>
+          </div>
+        </div>
+        <p className="text-xs text-purple-300 mt-3">
+          Pack-provided prompts and sequences appear in the UI with a small badge indicating their source pack.
+          They are <strong>read-only</strong> &mdash; users cannot edit or delete pack content (edit the pack files directly instead).
+        </p>
+      </Section>
+
+      <Section title="Viewing Installed Packs">
+        <p className="text-xs text-purple-200 mb-2">
+          Open <strong>Settings {'\u2192'} Packs</strong> tab to see all loaded data packs.
+        </p>
+        <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+          <ControlRow name="Pack Card">Shows the pack name, version badge, author, and description.</ControlRow>
+          <ControlRow name="Content Summary">Purple text below each card showing what the pack provides (e.g., &ldquo;3 genres &middot; 1 structure &middot; 5 prompts&rdquo;).</ControlRow>
+          <ControlRow name="Empty State">When no packs are installed, the tab shows instructions for where to place pack folders.</ControlRow>
+        </div>
+      </Section>
+
+      <Section title="How Packs Are Loaded">
+        <DiagramBox>{`
+  App Startup
+  ─────────────────────────────────────────────────────
+  1. restoreFromIDB()
+     └─ Load Arcwrite/ handle from IndexedDB
+     └─ Read settings, load projects
+
+  2. loadPrompts() + loadSequences()
+     └─ Load user-created prompts and sequences
+
+  3. loadDataPacks()                          ← NEW
+     └─ Scan Arcwrite/extensions/ for subdirs
+     └─ Read pack.json from each subdirectory
+     └─ Load genres.json, structures.json,
+        prompts/*.json, sequences/*.json
+
+  4. applyDataPacks()                         ← NEW
+     └─ Merge genres into genreSystem
+     └─ Merge structures into plotStructures
+     └─ Inject pack prompts (tagged with _packId)
+     └─ Inject pack sequences (tagged with _packId)
+  ─────────────────────────────────────────────────────
+  Pack content is merged AT RUNTIME — built-in data
+  files are never modified. Removing a pack folder
+  and reloading removes its content cleanly.
+        `}</DiagramBox>
+      </Section>
+
+      <Section title="Tips &amp; Limitations">
+        <ul className="list-disc list-inside space-y-1 text-purple-200 text-xs">
+          <li><strong>No code execution:</strong> Data packs are JSON only. They cannot add UI components, tools, or custom logic.</li>
+          <li><strong>Reload required:</strong> Packs are loaded on startup. After adding, removing, or modifying a pack, refresh the page.</li>
+          <li><strong>ID conflicts:</strong> If two packs define the same genre key, the last one loaded wins. Use unique keys.</li>
+          <li><strong>Structure references:</strong> If your genre references a custom structure (e.g., <code className="bg-slate-700/50 px-1 rounded">&ldquo;structure&rdquo;: &ldquo;horrorArc&rdquo;</code>), that structure must exist &mdash; either built-in or defined in the same pack&rsquo;s <code className="bg-slate-700/50 px-1 rounded">structures.json</code>.</li>
+          <li><strong>Sharing packs:</strong> Zip the pack folder and share the archive. Recipients unzip it into their <code className="bg-slate-700/50 px-1 rounded">Arcwrite/extensions/</code> directory.</li>
+          <li><strong>Dimensions are fixed:</strong> Packs cannot add new narrative dimensions (the 11 dimensions are hardcoded). They can only define weights and ranges for existing dimensions.</li>
+        </ul>
+      </Section>
     </div>
   );
 }
@@ -1036,6 +1794,132 @@ function ChangelogTab() {
       <Section title="Changelog">
         <div className="space-y-6">
           <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.4.0</span>
+              <span className="text-purple-300 text-xs">2026-02-20</span>
+            </div>
+            <h4 className="font-bold text-white mb-2">AI Image Generation &amp; Model Browser</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Image Generation</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Open provider system &mdash; works with OpenRouter (Flux, Seedream, Gemini Image, etc.), OpenAI (DALL-E), and other image-capable providers</li>
+                  <li>AI <code className="text-purple-200 bg-slate-700/50 px-1 rounded">generateImage</code> tool &mdash; the chat assistant can generate images via natural language and save them as PNG artifacts</li>
+                  <li>Images appear inline in chat messages with filename and prompt preview</li>
+                  <li>Generated images saved to <code className="text-purple-200 bg-slate-700/50 px-1 rounded">artifacts/</code> folder with manifest tracking (type: &lsquo;image&rsquo;)</li>
+                  <li>Editor supports <code className="text-purple-200 bg-slate-700/50 px-1 rounded">![alt](url)</code> markdown image syntax &mdash; renders inline in the contentEditable editor</li>
+                  <li>Blob URL registry for session-scoped image rendering without persistent URLs</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Image Model Browser</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Browse button in Settings &rarr; Image fetches image-capable models from the selected provider</li>
+                  <li>Uses provider-specific discovery endpoints to find all available image models</li>
+                  <li>Searchable model list with model ID, display name, and per-image or per-token pricing</li>
+                  <li>Click any model to populate the model ID field</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Settings &amp; Documentation</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>New Image tab in Settings with provider selector, model input/browser, and default size</li>
+                  <li>Interface Guide updated with Image tab and Packs tab documentation</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-purple-500/20 pt-4">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.3.0</span>
+              <span className="text-purple-300 text-xs">2026-02-20</span>
+            </div>
+            <h4 className="font-bold text-white mb-2">Loops, Conditionals, Data Packs &amp; Trial Expiration</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Sequence Loops &amp; Conditionals</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Three step types: Action (existing), Loop (new), and Condition (new)</li>
+                  <li>Loop steps repeat a body of sub-steps a fixed number of times or until an AI exit condition returns STOP</li>
+                  <li>Condition steps evaluate AI YES/NO responses with configurable outcomes: continue, end, or retry previous step</li>
+                  <li><code>##</code> substitution in loop body output files &mdash; replaced with zero-padded iteration index (01, 02, ...)</li>
+                  <li>Template variables <code>{'{{loop_index}}'}</code> and <code>{'{{loop_count}}'}</code> available inside loop body prompts</li>
+                  <li>Retry logic: condition with &ldquo;If NO &rarr; Retry&rdquo; re-runs the previous step up to maxRetries times</li>
+                  <li>Running view shows loop iteration progress with expandable sub-rows and condition decision text</li>
+                  <li>Type selector UI (Action | Loop | Condition) on each step in the sequence editor</li>
+                  <li>Nested loop prevention: body steps cannot contain another loop (depth=1 limit)</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Data Packs (Extension System)</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>JSON-based extension bundles in <code>Arcwrite/extensions/</code> for adding genres, structures, prompts, and sequences</li>
+                  <li>Each pack is a folder with a <code>pack.json</code> manifest and optional content files</li>
+                  <li>Pack genres merged into genreSystem at runtime via Object.assign</li>
+                  <li>Pack structures merged into plotStructures and allStructures</li>
+                  <li>Pack prompts and sequences injected into stores with _packId tags (read-only in UI)</li>
+                  <li>New &ldquo;Packs&rdquo; tab in Settings showing installed packs with content summaries</li>
+                  <li>Graceful fallback when no extensions/ folder exists</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Trial Expiration</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Build-time trial expiration constant prevents use of outdated builds</li>
+                  <li>Expired builds show a clear expiration screen with the date and instructions</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Documentation</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Comprehensive Sequences tab in Help with step types, loop/condition deep-dives, ASCII diagrams, worked examples, and UI reference</li>
+                  <li>Data Packs tab in Help with folder structure, manifest format, content specifications, and step-by-step pack creation guide</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-purple-500/20 pt-4">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.2.0</span>
+              <span className="text-purple-300 text-xs">2026-02-20</span>
+            </div>
+            <h4 className="font-bold text-white mb-2">Named Sequences, Voice Guide &amp; Prompt Tools</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Named Sequences</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>New Sequences tab in the Edit workflow left panel for designing reusable multi-step prompt pipelines</li>
+                  <li>Steps reference saved Prompt Tools or inline templates with optional output file paths and per-step model overrides</li>
+                  <li>Chain flag passes step output as context into the next step</li>
+                  <li>/ slash-command in chat input opens a floating sequence picker &mdash; arrow keys navigate, Enter runs immediately</li>
+                  <li>Pulsing purple dot on the Sequences tab badge while any sequence is actively running</li>
+                  <li>Running view shows per-step progress: spinner &rarr; &#x2713;/&#x2717;, output file path, and word count</li>
+                  <li>AI tools: listSequences and runNamedSequence for orchestrated pipeline execution via chat</li>
+                  <li>Sequences stored as JSON files in Arcwrite/sequences/ inside the open folder</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Voice Guide &amp; Narrator Gender</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>New Voice tab in Settings &mdash; select a .md file from Arcwrite/voices/ to inject a style guide into every AI prompt</li>
+                  <li>Narrator Gender overlay: None / Female / Male buttons load mechanics files from Arcwrite/gender-mechanics/</li>
+                  <li>Gender mechanics append after the voice guide as a supplemental layer, stacking rather than replacing</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Prompt Tools</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Custom Prompt Tools stored in Arcwrite/prompts/ and available as presets in the inline AI popup</li>
+                  <li>runSequence action: AI-constructed one-off pipelines via chat without needing a saved named sequence</li>
+                  <li>getCustomPrompts tool for AI to discover available Prompt Tools before using them in sequences</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-purple-500/20 pt-4">
             <div className="flex items-center gap-3 mb-2">
               <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.1.0</span>
               <span className="text-purple-300 text-xs">2026-02-17</span>
@@ -1606,6 +2490,8 @@ const tabLabels = {
   scaffolding: 'Scaffolding Guide',
   analysis: 'Analysis Guide',
   editing: 'Edit Workflow',
+  sequences: 'Sequences',
+  dataPacks: 'Data Packs',
   structures: 'Story Structures',
   actStructures: 'Act Structures Survey',
   dimensions: 'Dimensions Reference',
@@ -1639,6 +2525,8 @@ export default function HelpPage() {
         {activeTab === 'scaffolding' && <ScaffoldingTab />}
         {activeTab === 'analysis' && <AnalysisTab />}
         {activeTab === 'editing' && <EditGuideTab />}
+        {activeTab === 'sequences' && <SequencesTab />}
+        {activeTab === 'dataPacks' && <DataPacksTab />}
         {activeTab === 'structures' && <StructuresTab />}
         {activeTab === 'actStructures' && <ActStructuresTab />}
         {activeTab === 'dimensions' && <DimensionsTab />}

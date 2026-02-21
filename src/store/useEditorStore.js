@@ -19,6 +19,7 @@ const useEditorStore = create(
       directoryHandle: null,
       fileTree: [],        // [{ name, path, handle, type: 'file'|'dir', children?, expanded? }]
       contextPaths: {},    // { [filePath]: true } — files included in AI context
+      contextContent: {}, // { [filePath]: string } — cached content of green-dotted files
       selectedPaths: {},   // { [filePath]: true } — multi-selection for drag-and-drop
       lastSelectedPath: null, // for shift-click range selection
 
@@ -63,6 +64,16 @@ const useEditorStore = create(
 
       setActiveTab: (id) => set({ activeTabId: id }),
       setSecondaryTab: (id) => set({ secondaryTabId: id }),
+
+      clearAllTabs: () => {
+        const { tabs } = get();
+        const dirty = tabs.filter((t) => t.dirty);
+        if (dirty.length > 0) {
+          const names = dirty.map((t) => `"${t.title}"`).join(', ');
+          if (!window.confirm(`${dirty.length} unsaved file${dirty.length > 1 ? 's' : ''}: ${names}. Close all tabs anyway?`)) return;
+        }
+        set({ tabs: [], activeTabId: null, secondaryTabId: null, dualPane: false });
+      },
 
       updateTabContent: (id, content) => {
         set((s) => ({
@@ -121,17 +132,26 @@ const useEditorStore = create(
       setFileTree: (tree) => set({ fileTree: tree }),
 
       toggleContextPath: (path) => set((s) => {
-        const next = { ...s.contextPaths };
-        if (next[path]) delete next[path];
-        else next[path] = true;
-        return { contextPaths: next };
+        const nextPaths = { ...s.contextPaths };
+        const nextContent = { ...s.contextContent };
+        if (nextPaths[path]) { delete nextPaths[path]; delete nextContent[path]; }
+        else nextPaths[path] = true;
+        return { contextPaths: nextPaths, contextContent: nextContent };
       }),
 
       setContextPaths: (paths, enabled) => set((s) => {
-        const next = { ...s.contextPaths };
-        paths.forEach((p) => { if (enabled) next[p] = true; else delete next[p]; });
-        return { contextPaths: next };
+        const nextPaths = { ...s.contextPaths };
+        const nextContent = { ...s.contextContent };
+        paths.forEach((p) => {
+          if (enabled) nextPaths[p] = true;
+          else { delete nextPaths[p]; delete nextContent[p]; }
+        });
+        return { contextPaths: nextPaths, contextContent: nextContent };
       }),
+
+      setContextContent: (path, content) => set((s) => ({
+        contextContent: { ...s.contextContent, [path]: content },
+      })),
 
       toggleTreeNode: (path) => {
         const toggle = (nodes) =>

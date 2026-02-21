@@ -16,13 +16,14 @@ const useChatStore = create((set, get) => ({
 
   updateStreamBuffer: (text) => set({ streamBuffer: text }),
 
-  finalizeStream: (displayText, actionResults = []) => {
+  finalizeStream: (displayText, actionResults = [], usage = null) => {
     const msg = {
       id: `msg_${Date.now()}_a`,
       role: 'assistant',
       content: displayText,
       timestamp: Date.now(),
       actions: actionResults,
+      ...(usage && { usage }),
     };
     set((s) => ({
       messages: [...s.messages, msg],
@@ -41,6 +42,11 @@ const useChatStore = create((set, get) => ({
     if (idx === -1) return s;
     return { messages: s.messages.slice(0, idx + 1) };
   }),
+
+  // Keep only the most recent N messages (for context management)
+  trimToLast: (count) => set((s) => ({
+    messages: s.messages.length > count ? s.messages.slice(-count) : s.messages,
+  })),
 
   // Remove a message and all messages after it (for edit - removes the message being edited too)
   truncateFrom: (messageId) => set((s) => {

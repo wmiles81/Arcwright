@@ -2,7 +2,9 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import useInlineEdit from '../../hooks/useInlineEdit';
 import useInlineEditStore from '../../store/useInlineEditStore';
 import useEditorStore from '../../store/useEditorStore';
+import usePromptStore from '../../store/usePromptStore';
 import defaultPrompts from '../../data/defaultPrompts';
+import PromptEditorDialog from '../prompts/PromptEditorDialog';
 
 /**
  * Compute popup position: below the anchor, clamped within the viewport.
@@ -191,12 +193,14 @@ function InlineEditPanel({
   const promptHistory = useInlineEditStore((s) => s.promptHistory);
   const lastPrompt = useInlineEditStore((s) => s.lastPrompt);
   const addPrompt = useInlineEditStore((s) => s.addPrompt);
+  const customPrompts = usePromptStore((s) => s.customPrompts);
 
   const [prompt, setPrompt] = useState(initialPreset?.title || '');
   const [showHistory, setShowHistory] = useState(false);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [activePreset, setActivePreset] = useState(initialPreset || null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
+  const [showPromptEditor, setShowPromptEditor] = useState(false);
 
   const popupRef = useRef(null);
   const inputRef = useRef(null);
@@ -243,10 +247,13 @@ function InlineEditPanel({
     onClose();
   }, [status, cancel, onClose]);
 
-  // Filter dropdown items (presets + history)
+  // Filter dropdown items (custom prompts + default presets + history)
   const filterText = showHistory && prompt.startsWith('/')
     ? prompt.slice(1).toLowerCase()
     : '';
+  const filteredCustom = showHistory
+    ? customPrompts.filter((p) => p.title.toLowerCase().includes(filterText))
+    : [];
   const filteredPresets = showHistory
     ? defaultPrompts.filter((p) => p.title.toLowerCase().includes(filterText))
     : [];
@@ -254,6 +261,7 @@ function InlineEditPanel({
     ? promptHistory.filter((p) => p.toLowerCase().includes(filterText))
     : [];
   const dropdownItems = [
+    ...filteredCustom.map((p) => ({ type: 'custom', id: p.id, label: p.title, data: p })),
     ...filteredPresets.map((p) => ({ type: 'preset', id: p.id, label: p.title, data: p })),
     ...filteredHistory.map((h, i) => ({ type: 'history', id: `h-${i}`, label: h, data: h })),
   ];
@@ -280,7 +288,8 @@ function InlineEditPanel({
         userInput,
         selectedDocuments,
       });
-      submitEdit(selectedText, resolved, true);
+      // Pass model override if the preset has one
+      submitEdit(selectedText, resolved, true, activePreset.modelOverride || null);
     } else {
       submitEdit(selectedText, text);
     }
@@ -334,9 +343,12 @@ function InlineEditPanel({
       if (e.key === 'Enter' && historyIndex >= 0) {
         e.preventDefault();
         const item = dropdownItems[historyIndex];
-        if (item.type === 'preset') {
+        if (item.type === 'preset' || item.type === 'custom') {
           setActivePreset(item.data);
           setPrompt(item.data.title);
+        } else if (item.type === 'manage') {
+          setShowPromptEditor(true);
+          setShowHistory(false);
         } else {
           setPrompt(item.data);
         }
@@ -468,8 +480,8 @@ function InlineEditPanel({
           disabled={status === 'streaming'}
         />
 
-        {/* Prompt dropdown (presets + history) */}
-        {showHistory && dropdownItems.length > 0 && (
+        {/* Prompt dropdown (custom + presets + history) */}
+        {showHistory && (dropdownItems.length > 0 || true) && (
           <div
             style={{
               position: 'absolute',
@@ -482,12 +494,68 @@ function InlineEditPanel({
               border: `1px solid ${c.chromeBorder}`,
               borderRadius: '4px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-              maxHeight: '240px',
+              maxHeight: '280px',
               overflowY: 'auto',
             }}
           >
+            {filteredCustom.length > 0 && (
+              <div style={{ padding: '4px 10px 2px', fontSize: '9px', fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Custom Prompts
+              </div>
+            )}
+            {filteredCustom.map((prompt) => {
+              const idx = dropdownItems.findIndex((d) => d.id === prompt.id);
+              return (
+                <div
+                  key={prompt.id}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setActivePreset(prompt);
+                    setPrompt(prompt.title);
+                    setShowHistory(false);
+                    setHistoryIndex(-1);
+                    inputRef.current?.focus();
+                  }}
+                  style={{
+                    padding: '5px 10px',
+                    fontSize: '11px',
+                    color: c.text,
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    background: idx === historyIndex
+                      ? (isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)')
+                      : 'transparent',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+                  }}
+                  onMouseLeave={(e) => {
+                    if (idx !== historyIndex) e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  {prompt.title}
+                  {prompt.modelOverride && (
+                    <span style={{ fontSize: '8px', color: '#7C3AED', opacity: 0.8 }}>
+                      {prompt.modelOverride.split('/').pop()}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
             {filteredPresets.length > 0 && (
-              <div style={{ padding: '4px 10px 2px', fontSize: '9px', fontWeight: 700, color: c.statusText, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{
+                padding: '4px 10px 2px',
+                fontSize: '9px',
+                fontWeight: 700,
+                color: c.statusText,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                borderTop: filteredCustom.length > 0 ? `1px solid ${c.chromeBorder}` : 'none',
+                marginTop: filteredCustom.length > 0 ? 4 : 0,
+              }}>
                 Presets
               </div>
             )}
@@ -533,14 +601,14 @@ function InlineEditPanel({
                 color: c.statusText,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
-                borderTop: filteredPresets.length > 0 ? `1px solid ${c.chromeBorder}` : 'none',
-                marginTop: filteredPresets.length > 0 ? 4 : 0,
+                borderTop: (filteredCustom.length > 0 || filteredPresets.length > 0) ? `1px solid ${c.chromeBorder}` : 'none',
+                marginTop: (filteredCustom.length > 0 || filteredPresets.length > 0) ? 4 : 0,
               }}>
                 History
               </div>
             )}
             {filteredHistory.map((item, i) => {
-              const idx = filteredPresets.length + i;
+              const idx = filteredCustom.length + filteredPresets.length + i;
               return (
                 <div
                   key={`h-${i}`}
@@ -565,6 +633,34 @@ function InlineEditPanel({
                 </div>
               );
             })}
+            {/* Manage Prompts option */}
+            <div
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setShowHistory(false);
+                setShowPromptEditor(true);
+              }}
+              style={{
+                padding: '6px 10px',
+                fontSize: '11px',
+                color: '#7C3AED',
+                cursor: 'pointer',
+                fontWeight: 600,
+                borderTop: `1px solid ${c.chromeBorder}`,
+                marginTop: 4,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = isDark ? 'rgba(124,58,237,0.15)' : 'rgba(124,58,237,0.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              {'\u2699'} Manage Prompts...
+            </div>
           </div>
         )}
       </div>
@@ -692,6 +788,12 @@ function InlineEditPanel({
           50% { opacity: 0; }
         }
       `}</style>
+
+      {/* Prompt Editor Dialog */}
+      <PromptEditorDialog
+        isOpen={showPromptEditor}
+        onClose={() => setShowPromptEditor(false)}
+      />
     </div>
   );
 }

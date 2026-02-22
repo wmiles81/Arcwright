@@ -52,7 +52,8 @@ export default function SettingsDialog({ isOpen, onClose }) {
 
   const handleRefreshModels = useCallback(async (providerId) => {
     const prov = localProviders[providerId];
-    if (!prov?.apiKey) return;
+    const config = PROVIDERS[providerId];
+    if (!prov?.apiKey && config?.requiresApiKey !== false) return;
 
     handleProviderUpdate(providerId, { modelsLoading: true });
     try {
@@ -638,7 +639,7 @@ function ImageTab({ imageSettings, onUpdate, localProviders, colors: c }) {
     const pid = imageSettings.provider;
     if (!pid) return;
     const apiKey = localProviders[pid]?.apiKey;
-    if (!apiKey) return;
+    if (!apiKey && PROVIDERS[pid]?.requiresApiKey !== false) return;
 
     setModelsLoading(true);
     setModelsError('');

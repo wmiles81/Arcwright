@@ -246,13 +246,14 @@ function InterfaceGuideTab() {
           </Section>
 
           <Section title="Providers Tab">
-            <p className="mb-2">Configure API keys and select models for each supported provider.</p>
+            <p className="mb-2">Configure API keys and select models for each supported provider. Includes both cloud APIs and local LLM servers.</p>
             <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-              <ControlRow name="Active Provider">Dropdown at the top. Only providers with a saved API key appear. Determines which API is used for all AI features.</ControlRow>
-              <ControlRow name="Provider Cards">One card per provider (OpenRouter, OpenAI, Anthropic, Perplexity). Each shows the provider name and logo.</ControlRow>
+              <ControlRow name="Active Provider">Dropdown at the top. Cloud providers appear when an API key is saved; local providers appear automatically. Determines which API is used for all AI features.</ControlRow>
+              <ControlRow name="Cloud Provider Cards">OpenRouter, OpenAI, Anthropic, Perplexity. Each card has an API key input (password field with show/hide) and a model dropdown with pricing.</ControlRow>
+              <ControlRow name="Local Provider Cards">Ollama, LM Studio, Jan.ai, LocalAI. No API key required — each card shows CORS setup instructions instead. Click ↻ to fetch models from the running local server.</ControlRow>
               <ControlRow name="API Key Input">Password field with show/hide toggle. Keys are stored locally in your browser and sent only to the selected provider.</ControlRow>
               <ControlRow name="Model Dropdown">Custom dropdown showing all available models. Each entry displays the model name and pricing (input/output cost per million tokens) when available.</ControlRow>
-              <ControlRow name="Refresh Models">Button to re-fetch the model list from the provider&rsquo;s API. Shows a spinner while loading.</ControlRow>
+              <ControlRow name="Refresh Models">Button (↻) to re-fetch the model list from the provider&rsquo;s API or local server. Shows a spinner while loading. For local providers, enabled without an API key.</ControlRow>
             </div>
           </Section>
 
@@ -1794,6 +1795,35 @@ function ChangelogTab() {
       <Section title="Changelog">
         <div className="space-y-6">
           <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.5.0</span>
+              <span className="text-purple-300 text-xs">2026-02-21</span>
+            </div>
+            <h4 className="font-bold text-white mb-2">Local LLM Support</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Local Providers</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Four local LLM providers added: Ollama, LM Studio, Jan.ai, and LocalAI</li>
+                  <li>No API key required — local servers use the OpenAI-compatible REST protocol on localhost</li>
+                  <li>Each provider card shows CORS setup instructions instead of an API key field</li>
+                  <li>Refresh button (↻) enabled without a key — fetches models from the running local server</li>
+                  <li>Local providers appear in the Active Provider dropdown alongside cloud providers</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Default Ports</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Ollama: <code className="text-purple-200 bg-slate-700/50 px-1 rounded">localhost:11434</code> — run with <code className="text-purple-200 bg-slate-700/50 px-1 rounded">OLLAMA_ORIGINS=http://localhost:5173 ollama serve</code></li>
+                  <li>LM Studio: <code className="text-purple-200 bg-slate-700/50 px-1 rounded">localhost:1234</code> — enable Local Server and allow CORS in Developer settings</li>
+                  <li>Jan.ai: <code className="text-purple-200 bg-slate-700/50 px-1 rounded">localhost:1337</code> — Settings &rarr; Advanced &rarr; CORS &rarr; add <code className="text-purple-200 bg-slate-700/50 px-1 rounded">http://localhost:5173</code></li>
+                  <li>LocalAI: <code className="text-purple-200 bg-slate-700/50 px-1 rounded">localhost:8080</code> — CORS enabled by default</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-purple-500/20 pt-4">
             <div className="flex items-center gap-3 mb-2">
               <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.4.0</span>
               <span className="text-purple-300 text-xs">2026-02-20</span>

@@ -23,6 +23,7 @@ export default function ProviderCard({
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const { apiKey, selectedModel, availableModels, modelsLoading } = providerState;
+  const isLocal = config.requiresApiKey === false;
 
   const models = availableModels?.length > 0 ? availableModels : (config.hardcodedModels || []);
   const selectedModelObj = models.find((m) => m.id === selectedModel);
@@ -79,54 +80,71 @@ export default function ProviderCard({
         </span>
       </div>
 
-      {/* API Key */}
+      {/* API Key / Local setup */}
       <div style={{ marginBottom: 8 }}>
-        <label style={{ fontSize: 11, color: c.chromeText, display: 'block', marginBottom: 3 }}>
-          API Key
-          {config.keyUrl && (
-            <a
-              href={config.keyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ marginLeft: 6, fontSize: 10, color: '#7C3AED' }}
-            >
-              Get key
-            </a>
-          )}
-        </label>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <input
-            type={showKey ? 'text' : 'password'}
-            value={apiKey}
-            onChange={(e) => onUpdate({ apiKey: e.target.value })}
-            placeholder={config.keyPlaceholder}
-            style={{
-              flex: 1,
-              padding: '5px 8px',
-              fontSize: 12,
-              fontFamily: 'monospace',
-              background: c.bg,
-              color: c.text,
-              border: `1px solid ${c.chromeBorder}`,
-              borderRadius: 4,
-              outline: 'none',
-            }}
-          />
-          <button
-            onClick={() => setShowKey(!showKey)}
-            style={{
-              background: 'none',
-              border: `1px solid ${c.chromeBorder}`,
-              borderRadius: 4,
-              color: c.chromeText,
-              fontSize: 11,
-              padding: '0 8px',
-              cursor: 'pointer',
-            }}
-          >
-            {showKey ? 'Hide' : 'Show'}
-          </button>
-        </div>
+        {isLocal ? (
+          /* Local provider — show setup instructions instead of key input */
+          <div style={{
+            padding: '6px 8px',
+            fontSize: 11,
+            color: c.chromeText,
+            background: `${c.chromeBorder}33`,
+            borderRadius: 4,
+            borderLeft: '2px solid #7C3AED88',
+          }}>
+            <span style={{ fontWeight: 600, color: '#A78BFA' }}>Setup: </span>
+            {config.localSetup}
+          </div>
+        ) : (
+          <>
+            <label style={{ fontSize: 11, color: c.chromeText, display: 'block', marginBottom: 3 }}>
+              API Key
+              {config.keyUrl && (
+                <a
+                  href={config.keyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ marginLeft: 6, fontSize: 10, color: '#7C3AED' }}
+                >
+                  Get key
+                </a>
+              )}
+            </label>
+            <div style={{ display: 'flex', gap: 4 }}>
+              <input
+                type={showKey ? 'text' : 'password'}
+                value={apiKey}
+                onChange={(e) => onUpdate({ apiKey: e.target.value })}
+                placeholder={config.keyPlaceholder}
+                style={{
+                  flex: 1,
+                  padding: '5px 8px',
+                  fontSize: 12,
+                  fontFamily: 'monospace',
+                  background: c.bg,
+                  color: c.text,
+                  border: `1px solid ${c.chromeBorder}`,
+                  borderRadius: 4,
+                  outline: 'none',
+                }}
+              />
+              <button
+                onClick={() => setShowKey(!showKey)}
+                style={{
+                  background: 'none',
+                  border: `1px solid ${c.chromeBorder}`,
+                  borderRadius: 4,
+                  color: c.chromeText,
+                  fontSize: 11,
+                  padding: '0 8px',
+                  cursor: 'pointer',
+                }}
+              >
+                {showKey ? 'Hide' : 'Show'}
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Model selector — custom dropdown with pricing */}
@@ -158,7 +176,7 @@ export default function ProviderCard({
               }}
             >
               {models.length === 0
-                ? (apiKey ? 'No models loaded' : 'Enter API key first')
+                ? (isLocal || apiKey ? 'Click ↻ to load models' : 'Enter API key first')
                 : (selectedModelObj?.name || selectedModel || 'Select a model')
               }
               {/* Chevron */}
@@ -250,7 +268,7 @@ export default function ProviderCard({
           {config.supportsModelFetch && (
             <button
               onClick={onRefreshModels}
-              disabled={!apiKey || modelsLoading}
+              disabled={(!isLocal && !apiKey) || modelsLoading}
               style={{
                 background: 'none',
                 border: `1px solid ${c.chromeBorder}`,
@@ -258,8 +276,8 @@ export default function ProviderCard({
                 color: modelsLoading ? c.chromeText : c.text,
                 fontSize: 12,
                 padding: '0 8px',
-                cursor: apiKey && !modelsLoading ? 'pointer' : 'not-allowed',
-                opacity: !apiKey ? 0.4 : 1,
+                cursor: (isLocal || apiKey) && !modelsLoading ? 'pointer' : 'not-allowed',
+                opacity: (!isLocal && !apiKey) ? 0.4 : 1,
               }}
             >
               {modelsLoading ? '...' : '\u21BB'}
@@ -270,15 +288,17 @@ export default function ProviderCard({
 
       {/* Status line */}
       <div style={{ marginTop: 6, fontSize: 10, color: c.chromeText }}>
-        {!apiKey
-          ? 'No API key set'
+        {modelsLoading
+          ? 'Loading models...'
           : models.length > 0
             ? `${models.length} model${models.length !== 1 ? 's' : ''} available`
-            : modelsLoading
-              ? 'Loading models...'
-              : config.supportsModelFetch
-                ? 'Click refresh to load models'
-                : ''
+            : isLocal
+              ? 'Click ↻ to fetch models from local server'
+              : !apiKey
+                ? 'No API key set'
+                : config.supportsModelFetch
+                  ? 'Click ↻ to load models'
+                  : ''
         }
       </div>
     </div>

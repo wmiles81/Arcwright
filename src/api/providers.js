@@ -2,6 +2,13 @@
  * Static provider registry.
  * Each entry defines connection details for an LLM API provider.
  * The protocol field determines which streaming implementation to use.
+ *
+ * Local providers use requiresApiKey: false and serve the OpenAI-compatible
+ * REST protocol on localhost. CORS must be enabled on the local server:
+ *   Ollama:    OLLAMA_ORIGINS=http://localhost:5173 ollama serve
+ *   LM Studio: App → Developer → enable CORS
+ *   Jan.ai:    Settings → Advanced → CORS → add http://localhost:5173
+ *   LocalAI:   CORS enabled by default
  */
 export const PROVIDERS = {
   openrouter: {
@@ -83,6 +90,76 @@ export const PROVIDERS = {
       { id: 'sonar', name: 'Sonar', supportedParameters: ['temperature'], contextLength: 128000, maxCompletionTokens: 8192 },
     ],
   },
+
+  // ── Local LLM Providers ────────────────────────────────────────────────────
+  ollama: {
+    id: 'ollama',
+    name: 'Ollama (Local)',
+    description: 'Locally-run models via Ollama',
+    keyPlaceholder: '(no key required)',
+    keyUrl: 'https://ollama.com',
+    protocol: 'openai-compat',
+    baseUrl: 'http://localhost:11434/v1',
+    completionsEndpoint: '/chat/completions',
+    modelsEndpoint: '/models',
+    defaultModel: 'llama3.2',
+    extraHeaders: () => ({}),
+    supportsModelFetch: true,
+    supportsStreamOptions: false,
+    requiresApiKey: false,
+    localSetup: 'Run: OLLAMA_ORIGINS=http://localhost:5173 ollama serve',
+  },
+  lmstudio: {
+    id: 'lmstudio',
+    name: 'LM Studio (Local)',
+    description: 'Locally-run models via LM Studio',
+    keyPlaceholder: 'lm-studio (any string)',
+    keyUrl: 'https://lmstudio.ai',
+    protocol: 'openai-compat',
+    baseUrl: 'http://localhost:1234/v1',
+    completionsEndpoint: '/chat/completions',
+    modelsEndpoint: '/models',
+    defaultModel: '',
+    extraHeaders: () => ({}),
+    supportsModelFetch: true,
+    supportsStreamOptions: false,
+    requiresApiKey: false,
+    localSetup: 'Enable Local Server in LM Studio, then allow CORS in Developer settings',
+  },
+  janai: {
+    id: 'janai',
+    name: 'Jan.ai (Local)',
+    description: 'Locally-run models via Jan.ai',
+    keyPlaceholder: 'jan-ai (any string)',
+    keyUrl: 'https://jan.ai',
+    protocol: 'openai-compat',
+    baseUrl: 'http://localhost:1337/v1',
+    completionsEndpoint: '/chat/completions',
+    modelsEndpoint: '/models',
+    defaultModel: '',
+    extraHeaders: () => ({}),
+    supportsModelFetch: true,
+    supportsStreamOptions: false,
+    requiresApiKey: false,
+    localSetup: 'In Jan: Settings → Advanced → CORS → add http://localhost:5173',
+  },
+  localai: {
+    id: 'localai',
+    name: 'LocalAI (Local)',
+    description: 'Self-hosted multi-model server',
+    keyPlaceholder: 'localai (any string)',
+    keyUrl: 'https://localai.io',
+    protocol: 'openai-compat',
+    baseUrl: 'http://localhost:8080/v1',
+    completionsEndpoint: '/chat/completions',
+    modelsEndpoint: '/models',
+    defaultModel: '',
+    extraHeaders: () => ({}),
+    supportsModelFetch: true,
+    supportsStreamOptions: false,
+    requiresApiKey: false,
+    localSetup: 'LocalAI enables CORS by default. Run: docker run -p 8080:8080 localai/localai',
+  },
 };
 
-export const PROVIDER_ORDER = ['openrouter', 'openai', 'anthropic', 'perplexity'];
+export const PROVIDER_ORDER = ['openrouter', 'openai', 'anthropic', 'perplexity', 'ollama', 'lmstudio', 'janai', 'localai'];

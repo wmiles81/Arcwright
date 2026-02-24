@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import useAppStore from '../../store/useAppStore';
 import useEditorStore from '../../store/useEditorStore';
 import useProjectStore from '../../store/useProjectStore';
@@ -15,6 +15,100 @@ import ComparisonOverlay from './ComparisonOverlay';
 import GetWellPlan from './GetWellPlan';
 import RevisionChecklist from './RevisionChecklist';
 import ProjectionOverlay from './ProjectionOverlay';
+
+/**
+ * Toggle for comparing against Genre Ideal vs Custom Scaffold.
+ * Very prominent visual indicator of which mode is active.
+ */
+function ComparisonModeToggle() {
+  const { useScaffoldAsIdeal, setUseScaffoldAsIdeal, scaffoldBeats } = useAppStore();
+  const hasScaffold = scaffoldBeats.length > 0;
+
+  return (
+    <div className={`rounded-lg p-4 mb-6 border-2 transition-all ${
+      useScaffoldAsIdeal
+        ? 'bg-teal-900/40 border-teal-500'
+        : 'bg-purple-900/40 border-purple-500'
+    }`}>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-white/80">Compare Against:</span>
+
+          {/* Toggle Buttons */}
+          <div className="flex rounded-lg overflow-hidden border border-white/20">
+            <button
+              onClick={() => setUseScaffoldAsIdeal(false)}
+              className={`px-4 py-2 text-sm font-bold transition-all ${
+                !useScaffoldAsIdeal
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-slate-700/50 text-purple-300 hover:bg-slate-700'
+              }`}
+            >
+              Genre Ideal
+            </button>
+            <button
+              onClick={() => hasScaffold && setUseScaffoldAsIdeal(true)}
+              disabled={!hasScaffold}
+              className={`px-4 py-2 text-sm font-bold transition-all ${
+                useScaffoldAsIdeal
+                  ? 'bg-teal-600 text-white'
+                  : hasScaffold
+                    ? 'bg-slate-700/50 text-teal-300 hover:bg-slate-700'
+                    : 'bg-slate-800/50 text-slate-500 cursor-not-allowed'
+              }`}
+            >
+              My Scaffold
+            </button>
+          </div>
+        </div>
+
+        {/* Status Badge */}
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold ${
+          useScaffoldAsIdeal
+            ? 'bg-teal-600/80 text-white'
+            : 'bg-purple-600/80 text-white'
+        }`}>
+          <span className={`w-2 h-2 rounded-full animate-pulse ${
+            useScaffoldAsIdeal ? 'bg-teal-300' : 'bg-purple-300'
+          }`} />
+          {useScaffoldAsIdeal ? (
+            <>Using Your Scaffold ({scaffoldBeats.length} beats)</>
+          ) : (
+            <>Using Genre Preset</>
+          )}
+        </div>
+      </div>
+
+      {/* Help text */}
+      <div className="mt-2 text-xs text-white/60">
+        {useScaffoldAsIdeal ? (
+          <span>
+            Comparing your manuscript against your custom scaffold from{' '}
+            <Link to="/scaffold" className="text-teal-400 hover:underline">Story Scaffolding</Link>.
+          </span>
+        ) : hasScaffold ? (
+          <span>
+            Comparing against the standard genre curve. You have a scaffold with {scaffoldBeats.length} beats —{' '}
+            <button
+              onClick={() => setUseScaffoldAsIdeal(true)}
+              className="text-teal-400 hover:underline"
+            >
+              switch to use it
+            </button>.
+          </span>
+        ) : (
+          <span>
+            Comparing against the standard genre curve.{' '}
+            <Link to="/scaffold" className="text-purple-400 hover:underline">
+              Create a scaffold
+            </Link>{' '}
+            to compare against your own story plan.
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function sanitizeFilename(title) {
   return title.replace(/[<>:"/\\|?*]/g, '_').replace(/\s+/g, '-').trim() || 'untitled';
@@ -129,6 +223,8 @@ export default function AnalysisWorkflow() {
       <h1 className="text-3xl font-bold mb-6">Reverse Engineer & Diagnose</h1>
 
       <GenreSelector />
+
+      <ComparisonModeToggle />
 
       {/* Provider Status */}
       <div className="bg-white/10 backdrop-blur rounded-lg p-3 mb-6 flex items-center gap-3">

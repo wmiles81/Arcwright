@@ -59,6 +59,21 @@ export function buildRevisionUserPrompt(chapterText, source, analysisData) {
     guidance += analysisData.customPrompt + '\n\n';
   }
 
+  // Fallback: if no specific guidance was generated, provide default revision instructions
+  if (!guidance.trim()) {
+    guidance = `## Revision Focus
+
+No specific dimension gaps were detected for this chapter, but please apply these general improvements:
+
+1. **Prose Polish**: Tighten sentence structure, eliminate unnecessary words, and vary sentence rhythm
+2. **Show Don't Tell**: Convert any telling passages into vivid sensory details and character actions
+3. **Dialogue Enhancement**: Ensure dialogue sounds natural, has subtext, and reveals character
+4. **Pacing**: Check that scene momentum matches the emotional beats — speed up action, slow down for emotional moments
+5. **Interiority**: Deepen character internal thoughts where appropriate for POV
+
+`;
+  }
+
   return `${guidance}## Chapter Text to Revise\n\n${chapterText}`;
 }
 

@@ -281,6 +281,9 @@ const useAppStore = create(
       // --- Analysis (Workflow 2) ---
       chapters: [],
       analysisInProgress: false,
+      useScaffoldAsIdeal: false, // When true, compare against scaffoldBeats instead of genre preset
+
+      setUseScaffoldAsIdeal: (enabled) => set({ useScaffoldAsIdeal: enabled }),
 
       // --- Multi-provider LLM state ---
       activeProvider: 'openrouter',

@@ -573,6 +573,7 @@ function InterfaceGuideTab() {
               <ControlRow name="Spacer Rows">Blank row on one side when a paragraph exists only on the other, keeping the grid aligned.</ControlRow>
               <ControlRow name={<><span className="text-green-400">{'\u2190'}</span> Accept Arrow</>}>In the gutter between panes. Click to accept the revised text into the original document for that row.</ControlRow>
               <ControlRow name={<><span className="text-red-400">{'\u2192'}</span> Reject Arrow</>}>In the gutter. Click to push the original text into the revised document for that row.</ControlRow>
+              <ControlRow name={<><span className="text-amber-400">{'\u21BA'}</span> Revert Icon</>}>Appears in the gutter after any merge or direct edit. Click to undo that specific change and restore the previous state. Multiple changes revert one at a time.</ControlRow>
               <ControlRow name="Accept All">Button in the stats bar. Accepts every revision at once.</ControlRow>
               <ControlRow name="Reject All">Button in the stats bar. Rejects every revision at once.</ControlRow>
               <ControlRow name="Inline Editing">Click into any paragraph cell to edit its text directly. Changes save on blur and the diff recomputes.</ControlRow>
@@ -1035,6 +1036,7 @@ function EditGuideTab() {
           <li><strong>Smart alignment:</strong> Uses a diff algorithm with fuzzy paragraph matching to find anchors between the two versions, so similar paragraphs line up even when text has been added or removed.</li>
           <li><strong>Word-level highlighting:</strong> Within each aligned pair, additions are highlighted in green and removals in red with strikethrough.</li>
           <li><strong>Merge arrows:</strong> Each changed row has gutter arrows &mdash; click <span className="text-green-400">{'\u2190'}</span> to accept the revision into the original, or <span className="text-red-400">{'\u2192'}</span> to push the original into the revision.</li>
+          <li><strong>Revert icon:</strong> After any merge or direct edit, an amber <span className="text-amber-400">{'\u21BA'}</span> revert icon appears in the gutter. Click to undo that change and restore the previous state. Chained edits revert one step at a time.</li>
           <li><strong>Bulk actions:</strong> "Accept All" and "Reject All" buttons in the stats bar for wholesale changes.</li>
           <li><strong>Inline editing:</strong> Click into any paragraph on either side to edit directly. Changes save on blur and the diff recomputes.</li>
           <li><strong>Stats bar:</strong> Shows character counts for additions/removals, number of changes, and paragraph counts for both sides.</li>

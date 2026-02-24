@@ -60,14 +60,16 @@ export default function useRevisionPipeline() {
     const enrichedIdeal = enrichDataWithTension(idealCurve, weights);
 
     const chapterIndex = app.chapters.indexOf(chapter);
+    const totalChapters = app.chapters.length;
     const timePercent =
       scores.timePercent ??
-      (app.chapters.length > 0
-        ? Math.round(((chapterIndex + 1) / app.chapters.length) * 100)
+      (totalChapters > 0
+        ? Math.round(((chapterIndex + 1) / totalChapters) * 100)
         : 50);
 
     const idealPoint = interpolateAtTime(enrichedIdeal, timePercent);
 
+    // Lower threshold to 0.5 to catch more revision opportunities
     const gapDetails = DIMENSION_KEYS.map((k) => {
       const actual = scores[k] ?? 0;
       const ideal = idealPoint?.[k] ?? 0;
@@ -81,14 +83,33 @@ export default function useRevisionPipeline() {
         absGap: Math.abs(gap),
         direction: gap > 0 ? 'reduce' : 'increase',
       };
-    }).filter((g) => g.absGap >= 1.0);
+    }).filter((g) => g.absGap >= 0.5);
 
-    // Filter revision items matching this chapter
-    const matchingRevItems = app.revisionItems.filter(
-      (item) =>
-        item.time === timePercent ||
-        item.beat === (scores.beat || chapter.title)
-    );
+    // Calculate time range for this chapter (spans from previous midpoint to next midpoint)
+    const chapterStart = chapterIndex === 0
+      ? 0
+      : Math.round(((chapterIndex + 0.5) / totalChapters) * 100);
+    const chapterEnd = chapterIndex === totalChapters - 1
+      ? 100
+      : Math.round(((chapterIndex + 1.5) / totalChapters) * 100);
+
+    // Find revision items that fall within this chapter's time range
+    const beatKey = scores.beat || '';
+    const matchingRevItems = app.revisionItems.filter((item) => {
+      // Time range match (item falls within this chapter's span)
+      if (item.time >= chapterStart && item.time <= chapterEnd) return true;
+      // Exact time match
+      if (item.time === timePercent) return true;
+      // Beat key match (normalize both to compare)
+      if (beatKey && item.beat) {
+        const normalizedItemBeat = item.beat.toLowerCase().replace(/[^a-z]/g, '');
+        const normalizedBeatKey = beatKey.toLowerCase().replace(/[^a-z]/g, '');
+        if (normalizedItemBeat.includes(normalizedBeatKey) || normalizedBeatKey.includes(normalizedItemBeat)) {
+          return true;
+        }
+      }
+      return false;
+    });
 
     return { chapterScores: scores, idealScores: idealPoint, gapDetails, revisionItems: matchingRevItems };
   }, []);

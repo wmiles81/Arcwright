@@ -55,6 +55,19 @@ export const genreDimensionRanges = {
     danger:        [2, 9],    // persistent threat
     mystery:       [4, 10],   // THE defining dimension — always high
   },
+  womensFiction: {
+    intimacy:      [0, 6],    // friendship → mild romance, no spice
+    powerDiff:     [-2, 2],   // minimal power imbalances
+    infoAsym:      [0, 4],    // low secrets, mostly open communication
+    alignment:     [3, 9],    // starts uncertain, ends aligned
+    proximity:     [3, 8],    // small town/community forces connection
+    vulnerability: [2, 8],    // emotional journey is key
+    desire:        [0, 4],    // low romantic desire, more about belonging
+    stakes:        [2, 6],    // personal/emotional, not life-threatening
+    trust:         [2, 9],    // building trust with new community
+    danger:        [0, 3],    // very low danger
+    mystery:       [0, 3],    // minimal mystery
+  },
 };
 
 export const genreSystem = {
@@ -163,6 +176,36 @@ export const genreSystem = {
         weights: { infoAsym: 1.4, stakes: 1.3, misalignment: 1.0, powerDiff: 0.8, vulnerabilityTrust: 0.9, desireIntimacy: 0.4, proximityTrust: 0.7, danger: 1.5, mystery: 1.5 },
         requirements: { finalIntimacy: [0, 4], finalTrust: [5, 8], finalTension: [4, 7] },
         modifiers: ['Noir', 'Urban', 'Private Eye', 'Corruption', 'Cynical'],
+      },
+    },
+  },
+  womensFiction: {
+    name: "Women's Fiction",
+    structure: 'womensFiction',
+    subgenres: {
+      smallTown: {
+        name: 'Small Town',
+        weights: { infoAsym: 0.4, stakes: 0.6, misalignment: 0.5, powerDiff: 0.3, vulnerabilityTrust: 1.2, desireIntimacy: 0.5, proximityTrust: 1.0, danger: 0.2, mystery: 0.3 },
+        requirements: { finalIntimacy: [4, 7], finalTrust: [7, 10], finalTension: [0, 2] },
+        modifiers: ['Bakery/Café', 'Holiday', 'Family Business', 'Seasonal', 'Festival'],
+      },
+      returningHome: {
+        name: 'Returning Home',
+        weights: { infoAsym: 0.5, stakes: 0.7, misalignment: 0.6, powerDiff: 0.3, vulnerabilityTrust: 1.3, desireIntimacy: 0.4, proximityTrust: 0.9, danger: 0.2, mystery: 0.4 },
+        requirements: { finalIntimacy: [4, 7], finalTrust: [7, 10], finalTension: [0, 2] },
+        modifiers: ['Family Estate', 'Childhood Sweetheart', 'Old Wounds', 'Legacy', 'Reconciliation'],
+      },
+      freshStart: {
+        name: 'Fresh Start',
+        weights: { infoAsym: 0.5, stakes: 0.8, misalignment: 0.7, powerDiff: 0.4, vulnerabilityTrust: 1.4, desireIntimacy: 0.5, proximityTrust: 1.1, danger: 0.3, mystery: 0.3 },
+        requirements: { finalIntimacy: [4, 7], finalTrust: [7, 10], finalTension: [0, 3] },
+        modifiers: ['Divorce Recovery', 'Career Change', 'Widowed', 'New City', 'Starting Over'],
+      },
+      familySaga: {
+        name: 'Family Saga',
+        weights: { infoAsym: 0.6, stakes: 0.9, misalignment: 0.8, powerDiff: 0.5, vulnerabilityTrust: 1.2, desireIntimacy: 0.4, proximityTrust: 0.8, danger: 0.3, mystery: 0.5 },
+        requirements: { finalIntimacy: [3, 6], finalTrust: [6, 9], finalTension: [1, 4] },
+        modifiers: ['Multi-generational', 'Inheritance', 'Family Secrets', 'Reunion', 'Matriarch'],
       },
     },
   },

@@ -119,6 +119,7 @@ export default function GetWellPlan() {
   const {
     selectedGenre, selectedSubgenre, selectedModifier,
     weights, chapters, apiKey, setRevisionItems,
+    useScaffoldAsIdeal, scaffoldBeats,
   } = useAppStore();
 
   const { generateGetWellPlan, error, progress } = useClaudeAnalysis();
@@ -154,10 +155,22 @@ export default function GetWellPlan() {
     [actualData, activeWeights]
   );
 
+  // Get ideal data — either from scaffold or genre preset
   const idealData = useMemo(() => {
+    if (useScaffoldAsIdeal && scaffoldBeats.length > 0) {
+      // Use user's scaffold as the ideal
+      const scaffoldData = scaffoldBeats.map((beat) => ({
+        time: beat.time,
+        beat: beat.beat || '',
+        label: beat.label || beat.beat || '',
+        ...Object.fromEntries(DIMENSION_KEYS.map((k) => [k, beat[k] ?? 0])),
+      }));
+      return enrichDataWithTension(scaffoldData, activeWeights);
+    }
+    // Default: use genre preset
     const ideal = getIdealCurve(selectedGenre);
     return enrichDataWithTension(ideal, activeWeights);
-  }, [selectedGenre, activeWeights]);
+  }, [selectedGenre, activeWeights, useScaffoldAsIdeal, scaffoldBeats]);
 
   const gapAnalysis = useMemo(
     () => computeGapAnalysis(enrichedActual, idealData, activeWeights, currentStructure),

@@ -55,6 +55,20 @@ export const presetArcs = {
     { time: 90, beat: 'climaxReveal', label: 'Confrontation & Reveal', intimacy: 4, powerDiff: 0, infoAsym: 2, alignment: 9, proximity: 7, vulnerability: 7, desire: 1, stakes: 10, trust: 8, danger: 9, mystery: 2 },
     { time: 100, beat: 'denouement', label: 'Justice Served', intimacy: 5, powerDiff: 0, infoAsym: 1, alignment: 9, proximity: 5, vulnerability: 4, desire: 1, stakes: 2, trust: 8, danger: 2, mystery: 1 },
   ],
+  womensFiction: [
+    { time: 3, beat: 'oldLife', label: 'Old Life', intimacy: 3, powerDiff: 0, infoAsym: 1, alignment: 5, proximity: 4, vulnerability: 2, desire: 1, stakes: 2, trust: 5, danger: 1, mystery: 1 },
+    { time: 8, beat: 'incitingChange', label: 'Life Disrupted', intimacy: 2, powerDiff: 0, infoAsym: 2, alignment: 3, proximity: 3, vulnerability: 5, desire: 1, stakes: 5, trust: 3, danger: 2, mystery: 2 },
+    { time: 15, beat: 'newBeginnings', label: 'Arrival/Return', intimacy: 1, powerDiff: 0, infoAsym: 3, alignment: 4, proximity: 4, vulnerability: 4, desire: 1, stakes: 4, trust: 3, danger: 1, mystery: 2 },
+    { time: 25, beat: 'meetingLocals', label: 'Meeting the Locals', intimacy: 2, powerDiff: 0, infoAsym: 3, alignment: 5, proximity: 6, vulnerability: 4, desire: 2, stakes: 4, trust: 4, danger: 1, mystery: 2 },
+    { time: 35, beat: 'adjustmentStruggles', label: 'Fish Out of Water', intimacy: 3, powerDiff: 0, infoAsym: 2, alignment: 5, proximity: 7, vulnerability: 5, desire: 2, stakes: 5, trust: 5, danger: 1, mystery: 2 },
+    { time: 48, beat: 'connectionGrows', label: 'Starting to Fit In', intimacy: 4, powerDiff: 0, infoAsym: 2, alignment: 6, proximity: 8, vulnerability: 6, desire: 3, stakes: 4, trust: 6, danger: 1, mystery: 1 },
+    { time: 60, beat: 'minorConflict', label: 'Misunderstanding', intimacy: 3, powerDiff: 0, infoAsym: 3, alignment: 4, proximity: 6, vulnerability: 6, desire: 3, stakes: 5, trust: 5, danger: 2, mystery: 2 },
+    { time: 70, beat: 'pastInterferes', label: 'Past Returns', intimacy: 3, powerDiff: -1, infoAsym: 4, alignment: 4, proximity: 5, vulnerability: 7, desire: 3, stakes: 6, trust: 4, danger: 2, mystery: 3 },
+    { time: 78, beat: 'momentOfDoubt', label: 'Should I Stay?', intimacy: 2, powerDiff: 0, infoAsym: 3, alignment: 5, proximity: 4, vulnerability: 8, desire: 3, stakes: 6, trust: 5, danger: 2, mystery: 2 },
+    { time: 85, beat: 'breakthrough', label: 'I Belong Here', intimacy: 4, powerDiff: 0, infoAsym: 2, alignment: 7, proximity: 7, vulnerability: 7, desire: 3, stakes: 4, trust: 7, danger: 1, mystery: 1 },
+    { time: 92, beat: 'communityMoment', label: 'Town Celebration', intimacy: 5, powerDiff: 0, infoAsym: 1, alignment: 8, proximity: 9, vulnerability: 6, desire: 3, stakes: 3, trust: 8, danger: 1, mystery: 1 },
+    { time: 100, beat: 'newNormal', label: 'Happy New Life', intimacy: 6, powerDiff: 0, infoAsym: 1, alignment: 9, proximity: 8, vulnerability: 5, desire: 4, stakes: 2, trust: 9, danger: 1, mystery: 1 },
+  ],
 };
 
 // Map genre keys to arc keys for consistent lookup
@@ -63,6 +77,7 @@ export const genreToArcMap = {
   scienceFiction: 'scienceFiction',
   fantasy: 'fantasy',
   mysteryThrillerSuspense: 'mystery',
+  womensFiction: 'womensFiction',
 };
 
 export function getIdealCurve(genreKey) {

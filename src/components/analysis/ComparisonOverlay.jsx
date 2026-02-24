@@ -15,7 +15,7 @@ import NarrativeChart from '../shared/NarrativeChart';
 export default function ComparisonOverlay() {
   const {
     selectedGenre, selectedSubgenre, selectedModifier, selectedActStructure,
-    weights, visibleDims, chapters,
+    weights, visibleDims, chapters, useScaffoldAsIdeal, scaffoldBeats,
   } = useAppStore();
 
   const currentGenre = genreSystem[selectedGenre];
@@ -43,11 +43,22 @@ export default function ComparisonOverlay() {
     return enrichDataWithTension(scored, activeWeights);
   }, [chapters, activeWeights]);
 
-  // Get ideal data
+  // Get ideal data — either from scaffold or genre preset
   const idealData = useMemo(() => {
+    if (useScaffoldAsIdeal && scaffoldBeats.length > 0) {
+      // Use user's scaffold as the ideal
+      const scaffoldData = scaffoldBeats.map((beat) => ({
+        time: beat.time,
+        beat: beat.beat || '',
+        label: beat.label || beat.beat || '',
+        ...Object.fromEntries(DIMENSION_KEYS.map((k) => [k, beat[k] ?? 0])),
+      }));
+      return enrichDataWithTension(scaffoldData, activeWeights);
+    }
+    // Default: use genre preset
     const ideal = getIdealCurve(selectedGenre);
     return enrichDataWithTension(ideal, activeWeights);
-  }, [selectedGenre, activeWeights]);
+  }, [selectedGenre, activeWeights, useScaffoldAsIdeal, scaffoldBeats]);
 
   // Merge for overlay
   const overlayData = useMemo(

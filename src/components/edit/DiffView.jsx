@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { diffWords, diffArrays } from 'diff';
 
 /**
@@ -92,6 +92,9 @@ export default function DiffView({ leftContent, rightContent, colors, onUpdateLe
   const leftText = useMemo(() => htmlToText(leftContent), [leftContent]);
   const rightText = useMemo(() => htmlToText(rightContent), [rightContent]);
 
+  // Track merge history for revert: Map<mergedText, { leftWas, rightWas }>
+  const [mergeHistory, setMergeHistory] = useState(new Map());
+
   const leftParas = useMemo(() => toParagraphs(leftText), [leftText]);
   const rightParas = useMemo(() => toParagraphs(rightText), [rightText]);
 
@@ -183,6 +186,17 @@ export default function DiffView({ leftContent, rightContent, colors, onUpdateLe
   // Accept revision: copy right paragraph into the left document at this row
   const handleAcceptRight = useCallback((rowIdx) => {
     if (!onUpdateLeft) return;
+    const row = rows[rowIdx];
+
+    // Record merge history for revert (only for actual changes)
+    if (row.type !== 'equal' && row.rightText) {
+      setMergeHistory((prev) => {
+        const next = new Map(prev);
+        next.set(row.rightText, { leftWas: row.leftText || '', rightWas: row.rightText });
+        return next;
+      });
+    }
+
     const newParas = [];
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
@@ -204,6 +218,17 @@ export default function DiffView({ leftContent, rightContent, colors, onUpdateLe
   // Keep original: copy left paragraph into the right document at this row
   const handleAcceptLeft = useCallback((rowIdx) => {
     if (!onUpdateRight) return;
+    const row = rows[rowIdx];
+
+    // Record merge history for revert (only for actual changes)
+    if (row.type !== 'equal' && row.leftText) {
+      setMergeHistory((prev) => {
+        const next = new Map(prev);
+        next.set(row.leftText, { leftWas: row.leftText, rightWas: row.rightText || '' });
+        return next;
+      });
+    }
+
     const newParas = [];
     for (let i = 0; i < rows.length; i++) {
       const r = rows[i];
@@ -237,10 +262,20 @@ export default function DiffView({ leftContent, rightContent, colors, onUpdateLe
   // Inline edit: rebuild the document when a cell is edited and blurred
   const handleCellEdit = useCallback((rowIdx, side, newText) => {
     const text = newText.trim();
+    const row = rows[rowIdx];
+
     if (side === 'left') {
       if (!onUpdateLeft) return;
-      const row = rows[rowIdx];
       if (text === (row.leftText || '')) return; // unchanged
+
+      // Record merge history for revert (track the edit)
+      setMergeHistory((prev) => {
+        const next = new Map(prev);
+        // Key by the NEW text so we can find it after the edit
+        next.set(text, { leftWas: row.leftText || '', rightWas: row.rightText || '' });
+        return next;
+      });
+
       const newParas = [];
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
@@ -255,8 +290,16 @@ export default function DiffView({ leftContent, rightContent, colors, onUpdateLe
       onUpdateLeft(newParas.join('\n\n'));
     } else {
       if (!onUpdateRight) return;
-      const row = rows[rowIdx];
       if (text === (row.rightText || '')) return; // unchanged
+
+      // Record merge history for revert (track the edit)
+      setMergeHistory((prev) => {
+        const next = new Map(prev);
+        // Key by the NEW text so we can find it after the edit
+        next.set(text, { leftWas: row.leftText || '', rightWas: row.rightText || '' });
+        return next;
+      });
+
       const newParas = [];
       for (let i = 0; i < rows.length; i++) {
         const r = rows[i];
@@ -271,6 +314,70 @@ export default function DiffView({ leftContent, rightContent, colors, onUpdateLe
       onUpdateRight(newParas.join('\n\n'));
     }
   }, [rows, onUpdateLeft, onUpdateRight]);
+
+  // Check if a row has revert history (used for gutter display)
+  const hasRevertHistory = useCallback((row) => {
+    if (row.type === 'equal') {
+      return mergeHistory.has(row.leftText);
+    }
+    // For changed rows, check if either side was edited
+    return mergeHistory.has(row.leftText) || mergeHistory.has(row.rightText);
+  }, [mergeHistory]);
+
+  // Revert a row back to its original state
+  const handleRevert = useCallback((rowIdx) => {
+    const row = rows[rowIdx];
+
+    // Find the history entry - could be keyed by leftText or rightText
+    let history = mergeHistory.get(row.leftText);
+    let historyKey = row.leftText;
+    if (!history && row.rightText) {
+      history = mergeHistory.get(row.rightText);
+      historyKey = row.rightText;
+    }
+    if (!history) return;
+
+    // Restore left document with original left text
+    if (onUpdateLeft && history.leftWas !== row.leftText) {
+      const newLeftParas = [];
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (r.type === 'equal' || r.type === 'changed' || r.type === 'removed') {
+          if (i === rowIdx) {
+            if (history.leftWas) newLeftParas.push(history.leftWas);
+            // If leftWas was empty, this was an "added" row before merge — don't add anything
+          } else {
+            newLeftParas.push(r.leftText);
+          }
+        }
+      }
+      onUpdateLeft(newLeftParas.join('\n\n'));
+    }
+
+    // Restore right document with original right text
+    if (onUpdateRight && history.rightWas !== row.rightText) {
+      const newRightParas = [];
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        if (r.type === 'equal' || r.type === 'changed' || r.type === 'added') {
+          if (i === rowIdx) {
+            if (history.rightWas) newRightParas.push(history.rightWas);
+            // If rightWas was empty, this was a "removed" row before merge — don't add anything
+          } else {
+            newRightParas.push(r.rightText);
+          }
+        }
+      }
+      onUpdateRight(newRightParas.join('\n\n'));
+    }
+
+    // Remove from history
+    setMergeHistory((prev) => {
+      const next = new Map(prev);
+      next.delete(historyKey);
+      return next;
+    });
+  }, [rows, mergeHistory, onUpdateLeft, onUpdateRight]);
 
   const c = colors;
   const removedBg = 'rgba(239,68,68,0.08)';
@@ -377,10 +484,10 @@ export default function DiffView({ leftContent, rightContent, colors, onUpdateLe
                 </div>
               )}
 
-              {/* Gutter with merge arrows */}
+              {/* Gutter with merge arrows and revert icon */}
               <div
                 className="flex flex-col items-center justify-center gap-0.5"
-                style={{ background: isChange ? c.chrome : c.bg }}
+                style={{ background: isChange || hasRevertHistory(row) ? c.chrome : c.bg }}
               >
                 {canMerge && isChange && (
                   <>
@@ -425,6 +532,31 @@ export default function DiffView({ leftContent, rightContent, colors, onUpdateLe
                       </button>
                     )}
                   </>
+                )}
+                {/* Revert icon for rows with edit history */}
+                {canMerge && hasRevertHistory(row) && (
+                  <button
+                    onClick={() => handleRevert(idx)}
+                    className="rounded transition-colors"
+                    style={{
+                      color: '#F59E0B',
+                      fontSize: 11,
+                      lineHeight: 1,
+                      padding: '1px 3px',
+                      cursor: 'pointer',
+                      background: 'transparent',
+                      border: 'none',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#F59E0B30'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                    title="Revert merge (restore original difference)"
+                  >
+                    {/* 3/4 circle arrow icon */}
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                      <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                    </svg>
+                  </button>
                 )}
               </div>
 

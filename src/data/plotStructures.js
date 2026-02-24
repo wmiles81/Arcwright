@@ -90,6 +90,31 @@ export const plotStructures = {
       denouement: { name: 'Denouement', range: [95, 100], color: '#86efac' },
     },
   },
+  womensFiction: {
+    name: "Women's Fiction / Hallmark",
+    description: 'Life transition story structure focused on personal growth, community, and gentle romance. Classic "Hallmark movie" arc: inciting change → new beginnings → finding belonging → happy ending.',
+    acts: [
+      { name: 'Act I: Life Disrupted', range: [0, 20], beats: ['oldLife', 'incitingChange', 'newBeginnings'] },
+      { name: 'Act II: Finding Place', range: [20, 55], beats: ['meetingLocals', 'adjustmentStruggles', 'connectionGrows'] },
+      { name: 'Act III: Complications', range: [55, 80], beats: ['minorConflict', 'pastInterferes', 'momentOfDoubt'] },
+      { name: 'Act IV: Resolution', range: [80, 100], beats: ['breakthrough', 'communityMoment', 'newNormal'] },
+    ],
+    relatedFrameworks: 'Combines elements of Healing Journey with light romance beats. Related: Transformation Arc, Coming Home story, Fish Out of Water structure.',
+    beats: {
+      oldLife: { name: 'Old Life', range: [0, 5], color: '#64748b' },
+      incitingChange: { name: 'Inciting Change', range: [5, 12], color: '#818cf8' },
+      newBeginnings: { name: 'New Beginnings', range: [12, 20], color: '#60a5fa' },
+      meetingLocals: { name: 'Meeting the Locals', range: [20, 30], color: '#4ade80' },
+      adjustmentStruggles: { name: 'Adjustment Struggles', range: [30, 42], color: '#fb923c' },
+      connectionGrows: { name: 'Connection Grows', range: [42, 55], color: '#db2777' },
+      minorConflict: { name: 'Minor Conflict', range: [55, 65], color: '#c084fc' },
+      pastInterferes: { name: 'Past Interferes', range: [65, 75], color: '#f87171' },
+      momentOfDoubt: { name: 'Moment of Doubt', range: [75, 80], color: '#b91c1c' },
+      breakthrough: { name: 'Breakthrough', range: [80, 88], color: '#22d3ee' },
+      communityMoment: { name: 'Community Moment', range: [88, 95], color: '#fcd34d' },
+      newNormal: { name: 'Happy New Normal', range: [95, 100], color: '#86efac' },
+    },
+  },
 };
 
 // 12-color palette for auto-assigning colors to converted reference structures

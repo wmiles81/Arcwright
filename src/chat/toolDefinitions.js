@@ -559,8 +559,51 @@ export const toolDefinitions = [
     type: 'function',
     function: {
       name: 'listSequences',
-      description: 'List all saved named sequences. Returns their IDs, names, descriptions, and step counts. Use this before calling runNamedSequence.',
+      description: 'List all saved named sequences with full step details (id, name, description, steps). Use this before calling runNamedSequence or to understand what sequences exist.',
       parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'createSequence',
+      description: 'Analyze a workflow or process description and save it as a named sequence that can be run later. Each step can write a file (action), branch on a condition, or loop N times. Use this when the user asks to turn a workflow, process, or set of instructions into a reusable sequence.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Display name for the sequence.',
+          },
+          description: {
+            type: 'string',
+            description: 'Brief description of what the sequence does.',
+          },
+          steps: {
+            type: 'array',
+            description: 'Ordered list of steps. Each step is an object with a type field.',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', description: 'Unique step ID (e.g. "step_1").' },
+                type: { type: 'string', enum: ['action', 'condition', 'loop'], description: 'Step type. Defaults to "action".' },
+                name: { type: 'string', description: 'Human-readable step label.' },
+                template: { type: 'string', description: 'Prompt/task text for action steps. Use {{variable}} for userInputs substitution, {{loop_index}} inside loops.' },
+                outputFile: { type: 'string', description: 'Output file path for action steps (e.g. "chapters/01-intro.md"). Use ## for zero-padded loop iteration number.' },
+                promptRef: { type: 'string', description: 'ID of a saved Prompt Tool to use as template instead of inline template.' },
+                chain: { type: 'boolean', description: 'Pass this step\'s output as context into the next step.' },
+                modelOverride: { type: 'string', description: 'Optional model ID to use for this step instead of the current default.' },
+                ifYes: { type: 'string', description: 'For condition steps: what to do if AI answers YES. Values: "continue", "end", or a step index number.' },
+                ifNo: { type: 'string', description: 'For condition steps: what to do if AI answers NO.' },
+                count: { type: 'number', description: 'For loop steps: fixed iteration count.' },
+                maxIterations: { type: 'number', description: 'For loop steps: maximum iterations (if count not fixed).' },
+                iterations: { type: 'array', description: 'For loop steps: the steps to run on each iteration (action steps only).' },
+              },
+            },
+          },
+        },
+        required: ['name', 'steps'],
+      },
     },
   },
   {

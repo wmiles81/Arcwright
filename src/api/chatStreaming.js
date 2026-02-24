@@ -1,3 +1,5 @@
+import { parseJsonResponse } from './claude.js';
+
 const DEFAULT_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 /**
@@ -148,7 +150,7 @@ export function parseActions(text) {
 
   while ((match = pattern.exec(text)) !== null) {
     try {
-      const parsed = JSON.parse(match[1].trim());
+      const parsed = parseJsonResponse(match[1].trim());
       actions.push({
         raw: match[0],
         data: Array.isArray(parsed) ? parsed : [parsed],

@@ -93,8 +93,7 @@ export default function AppShell() {
       <nav className="bg-slate-900/80 backdrop-blur border-b border-purple-500/30 shrink-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <NavLink to="/" className="flex items-center gap-2 text-xl font-bold text-purple-200 hover:text-white transition-colors">
-            <img src="/mascot.png" alt="" className="h-full max-h-[40px] w-auto rounded-md" />
-            Arcwright
+            <img src="/Arcwright-logotype.png" alt="Arcwright" className="h-full max-h-[40px] w-auto rounded-md" />
           </NavLink>
           <div className="flex gap-2 items-center">
             {activeProjectName && (

@@ -1,8 +1,10 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import useInlineEdit from '../../hooks/useInlineEdit';
 import useInlineEditStore from '../../store/useInlineEditStore';
 import useEditorStore from '../../store/useEditorStore';
 import usePromptStore from '../../store/usePromptStore';
+import useAppStore from '../../store/useAppStore';
+import { genreSystem } from '../../data/genreSystem';
 import defaultPrompts from '../../data/defaultPrompts';
 import PromptEditorDialog from '../prompts/PromptEditorDialog';
 
@@ -30,14 +32,25 @@ function computePosition(anchorRect, popupWidth, popupHeight) {
   return { top, left };
 }
 
-/** Resolve template variables in preset prompts. */
-function resolveTemplate(content, { selectedText, beforeText, afterText, userInput, selectedDocuments }) {
-  return content
+/** Resolve template variables in preset prompts, including scaffold vars. */
+function resolveTemplate(content, { selectedText, beforeText, afterText, userInput, selectedDocuments, scaffoldVars = {} }) {
+  let result = content
     .replace(/\{\{selected_text\}\}/g, selectedText || '')
     .replace(/\{\{before\}\}/g, beforeText || '')
     .replace(/\{\{after\}\}/g, afterText || '')
     .replace(/\{\{selected_documents\}\}/g, selectedDocuments || '')
     .replace(/\{\{user_input\}\}/g, userInput || '');
+  // Resolve scaffold vars (genre, subgenre, modifier, pacing, structure, etc.)
+  for (const [name, value] of Object.entries(scaffoldVars)) {
+    result = result.replace(new RegExp(`\\{\\{${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\}\\}`, 'g'), value || '');
+  }
+  return result;
+}
+
+/** Return list of unresolved {{variable}} names remaining in content. */
+function detectUnresolvedVars(content) {
+  const matches = [...content.matchAll(/\{\{([^}|]+?)(?:\s*\|[^}]*)?\}\}/g)];
+  return [...new Set(matches.map((m) => m[1].trim()))];
 }
 
 /** Get plain text before the saved selection range in the editor. Truncated to last maxChars. */
@@ -195,12 +208,32 @@ function InlineEditPanel({
   const addPrompt = useInlineEditStore((s) => s.addPrompt);
   const customPrompts = usePromptStore((s) => s.customPrompts);
 
+  // Scaffold vars for NovaKit-style template resolution
+  const selectedGenre = useAppStore((s) => s.selectedGenre);
+  const selectedSubgenre = useAppStore((s) => s.selectedSubgenre);
+  const selectedModifier = useAppStore((s) => s.selectedModifier);
+  const selectedPacing = useAppStore((s) => s.selectedPacing);
+  const selectedStructure = useAppStore((s) => s.selectedStructure);
+  const scaffoldVars = useMemo(() => {
+    const gd = genreSystem[selectedGenre];
+    const sd = gd?.subgenres?.[selectedSubgenre];
+    return {
+      genre: gd?.name || selectedGenre || '',
+      subgenre: sd?.name || selectedSubgenre || '',
+      modifier: selectedModifier || '',
+      pacing: selectedPacing || '',
+      structure: selectedStructure || '',
+    };
+  }, [selectedGenre, selectedSubgenre, selectedModifier, selectedPacing, selectedStructure]);
+
   const [prompt, setPrompt] = useState(initialPreset?.title || '');
   const [showHistory, setShowHistory] = useState(false);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [activePreset, setActivePreset] = useState(initialPreset || null);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const [showPromptEditor, setShowPromptEditor] = useState(false);
+  // pendingVars: { resolvedContent, vars: {name: value}, modelOverride } — shown when unresolved {{vars}} remain
+  const [pendingVars, setPendingVars] = useState(null);
 
   const popupRef = useRef(null);
   const inputRef = useRef(null);
@@ -287,13 +320,37 @@ function InlineEditPanel({
         afterText,
         userInput,
         selectedDocuments,
+        scaffoldVars,
       });
-      // Pass model override if the preset has one
+      // Check for unresolved {{variables}} (e.g. NovaKit vars like {{themes}}, {{tone}})
+      const remaining = detectUnresolvedVars(resolved);
+      if (remaining.length > 0) {
+        setPendingVars({
+          resolvedContent: resolved,
+          vars: Object.fromEntries(remaining.map((v) => [v, ''])),
+          modelOverride: activePreset.modelOverride || null,
+        });
+        return;
+      }
       submitEdit(selectedText, resolved, true, activePreset.modelOverride || null);
     } else {
       submitEdit(selectedText, text);
     }
-  }, [prompt, lastPrompt, addPrompt, submitEdit, selectedText, activePreset, editorRef, savedRange]);
+  }, [prompt, lastPrompt, addPrompt, submitEdit, selectedText, activePreset, editorRef, savedRange, scaffoldVars]);
+
+  // Called when user submits the extra-vars form
+  const handleVarFormSubmit = useCallback(() => {
+    if (!pendingVars) return;
+    let final = pendingVars.resolvedContent;
+    for (const [name, value] of Object.entries(pendingVars.vars)) {
+      final = final.replace(
+        new RegExp(`\\{\\{${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s*\\|[^}]*)?\\}\\}`, 'g'),
+        value
+      );
+    }
+    setPendingVars(null);
+    submitEdit(selectedText, final, true, pendingVars.modelOverride);
+  }, [pendingVars, submitEdit, selectedText]);
 
   // Accept: replace selection with AI response
   const handleAccept = useCallback(() => {
@@ -794,6 +851,68 @@ function InlineEditPanel({
         isOpen={showPromptEditor}
         onClose={() => setShowPromptEditor(false)}
       />
+
+      {/* Extra-variable form overlay (NovaKit prompts with unresolved {{vars}}) */}
+      {pendingVars && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: c.chromeBg,
+            borderRadius: 8,
+            zIndex: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 16,
+            gap: 10,
+            overflowY: 'auto',
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 700, color: c.text, marginBottom: 4 }}>
+            Fill in template variables
+          </div>
+          {Object.keys(pendingVars.vars).map((name) => (
+            <div key={name}>
+              <label style={{ display: 'block', fontSize: 11, color: c.chromeText, marginBottom: 3 }}>
+                {`{{${name}}}`}
+              </label>
+              <input
+                type="text"
+                placeholder={`Leave blank to omit`}
+                value={pendingVars.vars[name]}
+                onChange={(e) =>
+                  setPendingVars((p) => ({ ...p, vars: { ...p.vars, [name]: e.target.value } }))
+                }
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '5px 8px',
+                  fontSize: 12,
+                  background: c.editorBg,
+                  color: c.text,
+                  border: `1px solid ${c.chromeBorder}`,
+                  borderRadius: 4,
+                  outline: 'none',
+                }}
+              />
+            </div>
+          ))}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 4 }}>
+            <button
+              onClick={() => setPendingVars(null)}
+              style={{ ...btnBase, background: 'transparent', color: c.chromeText, border: `1px solid ${c.chromeBorder}` }}
+            >
+              Back
+            </button>
+            <button
+              onClick={handleVarFormSubmit}
+              style={{ ...btnBase, background: '#7C3AED', color: '#FFFFFF' }}
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

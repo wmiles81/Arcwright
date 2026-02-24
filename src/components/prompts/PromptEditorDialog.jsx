@@ -127,9 +127,10 @@ export default function PromptEditorDialog({ isOpen, onClose, editingPromptId })
 
   if (!isOpen) return null;
 
-  // Combine custom and default prompts for the list
+  // Combine prompts for the list: file-based (from disk), editor-created custom, and defaults
   const allPrompts = [
-    ...customPrompts.map((p) => ({ ...p, isCustom: true })),
+    ...customPrompts.filter((p) => p.isFileBased).map((p) => ({ ...p, isCustom: true, isFileBased: true })),
+    ...customPrompts.filter((p) => !p.isFileBased).map((p) => ({ ...p, isCustom: true })),
     ...defaultPrompts.map((p) => ({ ...p, isCustom: false })),
   ];
 
@@ -391,120 +392,140 @@ export default function PromptEditorDialog({ isOpen, onClose, editingPromptId })
 }
 
 function PromptList({ prompts, onEdit, onDelete, colors: c, isDark }) {
-  const customPrompts = prompts.filter((p) => p.isCustom);
+  const filePrompts = prompts.filter((p) => p.isFileBased);
+  const customPrompts = prompts.filter((p) => p.isCustom && !p.isFileBased);
   const defaultPromptsInList = prompts.filter((p) => !p.isCustom);
 
-  const renderPromptItem = (prompt) => (
+  const sectionLabel = (text, mt = 0) => (
     <div
-      key={prompt.id}
       style={{
-        padding: '10px 16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        borderBottom: `1px solid ${c.chromeBorder}`,
+        padding: '8px 16px 4px',
+        fontSize: 10,
+        fontWeight: 700,
+        color: c.chromeText,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        marginTop: mt,
       }}
     >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 500 }}>{prompt.title}</span>
-          {prompt.modelOverride && (
-            <span
-              style={{
-                fontSize: 9,
-                padding: '1px 6px',
-                borderRadius: 3,
-                background: isDark ? 'rgba(124,58,237,0.2)' : 'rgba(124,58,237,0.1)',
-                color: '#7C3AED',
-                fontWeight: 600,
-              }}
-            >
-              {prompt.modelOverride.split('/').pop()}
-            </span>
-          )}
+      {text}
+    </div>
+  );
+
+  const renderPromptItem = (prompt) => {
+    const isFile = !!prompt.isFileBased;
+    const isDefault = !prompt.isCustom;
+    return (
+      <div
+        key={prompt.id}
+        style={{
+          padding: '10px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: `1px solid ${c.chromeBorder}`,
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>{prompt.title}</span>
+            {isFile && (
+              <span
+                style={{
+                  fontSize: 9,
+                  padding: '1px 6px',
+                  borderRadius: 3,
+                  background: isDark ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.1)',
+                  color: '#059669',
+                  fontWeight: 600,
+                }}
+              >
+                .md file
+              </span>
+            )}
+            {prompt.modelOverride && (
+              <span
+                style={{
+                  fontSize: 9,
+                  padding: '1px 6px',
+                  borderRadius: 3,
+                  background: isDark ? 'rgba(124,58,237,0.2)' : 'rgba(124,58,237,0.1)',
+                  color: '#7C3AED',
+                  fontWeight: 600,
+                }}
+              >
+                {prompt.modelOverride.split('/').pop()}
+              </span>
+            )}
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              color: c.chromeText,
+              marginTop: 2,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {prompt.content.slice(0, 80)}...
+          </div>
         </div>
-        <div
-          style={{
-            fontSize: 11,
-            color: c.chromeText,
-            marginTop: 2,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-          }}
-        >
-          {prompt.content.slice(0, 80)}...
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
-        <button
-          onClick={() => onEdit(prompt, !prompt.isCustom)}
-          title={prompt.isCustom ? 'Edit' : 'Clone as custom'}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: 14,
-            color: c.chromeText,
-            padding: '4px 8px',
-            borderRadius: 4,
-          }}
-        >
-          {prompt.isCustom ? '\u270E' : '\u2398'}
-        </button>
-        {prompt.isCustom && (
+        <div style={{ display: 'flex', gap: 4, marginLeft: 12 }}>
+          {/* File prompts: clone to custom. Default prompts: clone. Custom: edit. */}
           <button
-            onClick={() => onDelete(prompt)}
-            title="Delete"
+            onClick={() => onEdit(prompt, isDefault || isFile)}
+            title={isFile ? 'Clone as custom' : isDefault ? 'Clone as custom' : 'Edit'}
             style={{
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
               fontSize: 14,
-              color: '#DC2626',
+              color: c.chromeText,
               padding: '4px 8px',
               borderRadius: 4,
             }}
           >
-            {'\u2717'}
+            {(!isDefault && !isFile) ? '\u270E' : '\u2398'}
           </button>
-        )}
+          {/* File prompts can be deleted (removes the .md file); editor-created custom too */}
+          {prompt.isCustom && (
+            <button
+              onClick={() => onDelete(prompt)}
+              title={isFile ? 'Remove file from prompts folder' : 'Delete'}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 14,
+                color: '#DC2626',
+                padding: '4px 8px',
+                borderRadius: 4,
+              }}
+            >
+              {'\u2717'}
+            </button>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div>
+      {filePrompts.length > 0 && (
+        <>
+          {sectionLabel('File Prompts (NovaKit / .md)', 0)}
+          {filePrompts.map(renderPromptItem)}
+        </>
+      )}
       {customPrompts.length > 0 && (
         <>
-          <div
-            style={{
-              padding: '8px 16px 4px',
-              fontSize: 10,
-              fontWeight: 700,
-              color: c.chromeText,
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-            }}
-          >
-            Custom Prompts
-          </div>
+          {sectionLabel('Custom Prompts', filePrompts.length > 0 ? 8 : 0)}
           {customPrompts.map(renderPromptItem)}
         </>
       )}
-      <div
-        style={{
-          padding: '8px 16px 4px',
-          fontSize: 10,
-          fontWeight: 700,
-          color: c.chromeText,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginTop: customPrompts.length > 0 ? 8 : 0,
-        }}
-      >
-        Default Prompts
-      </div>
+      {sectionLabel('Default Prompts', (filePrompts.length > 0 || customPrompts.length > 0) ? 8 : 0)}
       {defaultPromptsInList.map(renderPromptItem)}
     </div>
   );

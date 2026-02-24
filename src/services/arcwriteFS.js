@@ -262,20 +262,33 @@ export async function writeAiChatHistory(arcwriteHandle, projectName, messages) 
 // ── Custom Prompts CRUD ──
 
 /**
- * List custom prompt JSON files in Arcwrite/prompts/.
+ * List custom prompts from Arcwrite/prompts/.
+ * Supports .json (editor-managed) and .md / .txt (file-based, e.g. NovaKit prompts).
+ * File-based prompts use their filename as the title and are flagged isFileBased: true.
  */
 export async function listCustomPrompts(arcwriteHandle) {
   const promptsDir = await ensureDir(arcwriteHandle, 'prompts');
   const prompts = [];
   for await (const [name, handle] of promptsDir.entries()) {
-    if (handle.kind === 'file' && name.endsWith('.json')) {
-      try {
-        const file = await handle.getFile();
-        const text = await file.text();
+    if (handle.kind !== 'file') continue;
+    try {
+      const file = await handle.getFile();
+      const text = await file.text();
+      if (name.endsWith('.json')) {
         prompts.push(JSON.parse(text));
-      } catch (e) {
-        console.warn(`[arcwriteFS] Failed to parse prompt ${name}:`, e.message);
+      } else if (name.endsWith('.md') || name.endsWith('.txt')) {
+        const title = name.replace(/\.(md|txt)$/, '');
+        prompts.push({
+          id: `file:${name}`,
+          title,
+          content: text,
+          isFileBased: true,
+          createdAt: file.lastModified,
+          updatedAt: file.lastModified,
+        });
       }
+    } catch (e) {
+      console.warn(`[arcwriteFS] Failed to load prompt ${name}:`, e.message);
     }
   }
   return prompts.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
@@ -291,11 +304,11 @@ export async function saveCustomPrompt(arcwriteHandle, prompt) {
 }
 
 /**
- * Delete a custom prompt JSON file.
+ * Delete a custom prompt file (.json or file-based .md/.txt).
  */
 export async function deleteCustomPrompt(arcwriteHandle, promptId) {
   const promptsDir = await ensureDir(arcwriteHandle, 'prompts');
-  const filename = `${promptId}.json`;
+  const filename = promptId.startsWith('file:') ? promptId.slice(5) : `${promptId}.json`;
   await promptsDir.removeEntry(filename);
 }
 

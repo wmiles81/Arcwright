@@ -2,11 +2,14 @@ import { create } from 'zustand';
 
 const useChatStore = create((set, get) => ({
   isOpen: false,
+  draftInput: '',
   messages: [],
   isStreaming: false,
   streamBuffer: '',
   error: null,
   abortController: null,
+
+  setDraftInput: (v) => set({ draftInput: v }),
 
   togglePanel: () => set((s) => ({ isOpen: !s.isOpen })),
   openPanel: () => set({ isOpen: true }),

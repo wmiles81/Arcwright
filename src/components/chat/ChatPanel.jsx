@@ -29,7 +29,8 @@ export default function ChatPanel() {
   const truncateFrom = useChatStore((s) => s.truncateFrom);
   const trimToLast = useChatStore((s) => s.trimToLast);
 
-  const [input, setInput] = useState('');
+  const input = useChatStore((s) => s.draftInput);
+  const setInput = useChatStore((s) => s.setDraftInput);
   const [attachments, setAttachments] = useState([]);
   const [imageMode, setImageMode] = useState(false);
   const [imagePending, setImagePending] = useState(false);

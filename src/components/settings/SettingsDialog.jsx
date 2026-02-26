@@ -115,8 +115,8 @@ export default function SettingsDialog({ isOpen, onClose }) {
     if (e.target === e.currentTarget) onClose();
   };
 
-  // Active provider dropdown only shows providers that have an API key
-  const configuredProviders = PROVIDER_ORDER.filter((id) => localProviders[id]?.apiKey);
+  // Active provider dropdown shows providers that have an API key OR don't require one
+  const configuredProviders = PROVIDER_ORDER.filter((id) => localProviders[id]?.apiKey || PROVIDERS[id]?.requiresApiKey === false);
 
   // Get selected model info for chat settings hints
   const activeProv = localProviders[localActiveProvider] || {};
@@ -321,7 +321,7 @@ function ProvidersTab({ localActiveProvider, setLocalActiveProvider, localProvid
         >
           {PROVIDER_ORDER.map((id) => (
             <option key={id} value={id} disabled={!configuredProviders.includes(id) && id !== localActiveProvider}>
-              {PROVIDERS[id].name}{!configuredProviders.includes(id) ? ' (no key)' : ''}
+              {PROVIDERS[id].name}{!configuredProviders.includes(id) && PROVIDERS[id]?.requiresApiKey !== false ? ' (no key)' : ''}
             </option>
           ))}
         </select>
@@ -626,8 +626,26 @@ function PacksTab({ colors: c }) {
 
 // ── Tab: Image ──
 
+function formatImagePrice(pricing) {
+  if (!pricing) return null;
+  // OpenRouter frontend API: pricing.image_output is cost per image token
+  // Multiply by 1000 to get approximate cost per image (rough estimate at ~1000 tokens/image)
+  // pricing.image is used by some older entries
+  const raw = pricing.image_output ?? pricing.image_token ?? pricing.image ?? pricing.request ?? null;
+  if (raw) {
+    const p = parseFloat(raw);
+    if (!isNaN(p) && p > 0) {
+      // image_output/image_token values are per-token — convert to $/img (≈1000 tokens)
+      const isPerToken = (pricing.image_output != null || pricing.image_token != null) && pricing.image == null;
+      const perImg = isPerToken ? p * 1000 : p;
+      return `$${perImg < 0.001 ? perImg.toFixed(5) : perImg < 0.01 ? perImg.toFixed(4) : perImg.toFixed(3)}/img`;
+    }
+  }
+  return null;
+}
+
 function ImageTab({ imageSettings, onUpdate, localProviders, colors: c }) {
-  const configuredProviders = PROVIDER_ORDER.filter((id) => localProviders[id]?.apiKey);
+  const configuredProviders = PROVIDER_ORDER.filter((id) => localProviders[id]?.apiKey || PROVIDERS[id]?.requiresApiKey === false);
 
   const [imageModels, setImageModels] = useState([]);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -800,41 +818,49 @@ function ImageTab({ imageSettings, onUpdate, localProviders, colors: c }) {
                 {modelFilter ? 'No matching models.' : 'No image models found.'}
               </div>
             )}
-            {filteredModels.map((m) => (
-              <button
-                key={m.id}
-                onClick={() => handleSelectModel(m.id)}
-                style={{
-                  display: 'block',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 12px',
-                  fontSize: 12,
-                  background: m.id === imageSettings.model ? 'rgba(124,58,237,0.1)' : 'transparent',
-                  color: c.text,
-                  border: 'none',
-                  borderBottom: `1px solid ${c.chromeBorder}`,
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.background = m.id === imageSettings.model ? 'rgba(124,58,237,0.1)' : 'transparent'; }}
-              >
-                <div style={{ fontFamily: 'monospace', fontSize: 11, fontWeight: 600 }}>{m.id}</div>
-                {m.name && m.name !== m.id && (
-                  <div style={{ fontSize: 10, color: c.chromeText, marginTop: 1 }}>{m.name}</div>
-                )}
-                {m.pricing?.image && (
-                  <div style={{ fontSize: 10, color: c.chromeText, marginTop: 1 }}>
-                    ${parseFloat(m.pricing.image).toFixed(3)}/image
-                  </div>
-                )}
-                {!m.pricing?.image && m.pricing?.prompt && (
-                  <div style={{ fontSize: 10, color: c.chromeText, marginTop: 1 }}>
-                    ${(parseFloat(m.pricing.prompt) * 1e6).toFixed(2)}/M input
-                  </div>
-                )}
-              </button>
-            ))}
+            {filteredModels.map((m) => {
+              const isSelected = m.id === imageSettings.model;
+              const price = formatImagePrice(m.pricing);
+              return (
+                <button
+                  key={m.id}
+                  onClick={() => handleSelectModel(m.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    width: '100%',
+                    textAlign: 'left',
+                    padding: '6px 10px',
+                    fontSize: 12,
+                    background: isSelected ? 'rgba(124,58,237,0.1)' : 'transparent',
+                    borderLeft: isSelected ? '3px solid #7C3AED' : '3px solid transparent',
+                    color: c.text,
+                    border: 'none',
+                    borderBottom: `1px solid ${c.chromeBorder}`,
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.background = `${c.chromeBorder}44`; }}
+                  onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                >
+                  {/* Checkmark */}
+                  <span style={{ width: 14, fontSize: 11, color: '#7C3AED', flexShrink: 0 }}>
+                    {isSelected ? '\u2713' : ''}
+                  </span>
+                  {/* Display name + model id */}
+                  <span style={{ flex: 1, overflow: 'hidden' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name || m.id}</span>
+                    <span style={{ fontFamily: 'monospace', fontSize: 10, color: c.chromeText, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.id}</span>
+                  </span>
+                  {/* Pricing right-aligned */}
+                  {price && (
+                    <span style={{ fontSize: 11, fontFamily: 'monospace', color: c.chromeText, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                      {price}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* Footer with count */}
@@ -882,14 +908,23 @@ function ImageTab({ imageSettings, onUpdate, localProviders, colors: c }) {
       </SettingRow>
 
       {/* Status */}
-      {imageSettings.provider && imageSettings.model && (
-        <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${c.chromeBorder}`, fontSize: 11, color: c.chromeText }}>
-          Ready:{' '}
-          <strong style={{ color: c.text }}>{PROVIDERS[imageSettings.provider]?.name}</strong>
-          {' / '}
-          <code style={{ fontSize: 11 }}>{imageSettings.model}</code>
-        </div>
-      )}
+      {imageSettings.provider && imageSettings.model && (() => {
+        // Warn if the model looks like a text/chat model rather than an image generator
+        const m = imageSettings.model;
+        const looksLikeTextModel = m === 'openrouter/auto' || m.includes('claude') || m.includes('gpt-4') || m.includes('gpt-3') || m.includes('llama') || m.includes('gemini') && !m.includes('image');
+        return looksLikeTextModel ? (
+          <div style={{ marginTop: 12, padding: 12, background: 'rgba(234,179,8,0.1)', borderRadius: 6, fontSize: 11, color: '#92400E' }}>
+            <strong>Warning:</strong> <code style={{ fontSize: 11 }}>{m}</code> appears to be a text model, not an image generator. Use Browse to select a model like <code style={{ fontSize: 11 }}>black-forest-labs/flux-1.1-pro</code>.
+          </div>
+        ) : (
+          <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${c.chromeBorder}`, fontSize: 11, color: c.chromeText }}>
+            Ready:{' '}
+            <strong style={{ color: c.text }}>{PROVIDERS[imageSettings.provider]?.name}</strong>
+            {' / '}
+            <code style={{ fontSize: 11 }}>{imageSettings.model}</code>
+          </div>
+        );
+      })()}
 
       {!imageSettings.provider && (
         <div style={{ marginTop: 12, padding: 12, background: 'rgba(234,179,8,0.1)', borderRadius: 6, fontSize: 11, color: '#92400E' }}>

@@ -1,6 +1,29 @@
 /**
- * Filesystem abstraction for the .arcwrite/ system folder.
- * All disk I/O for settings and project definitions goes through here.
+ * Filesystem abstraction for Arcwrite storage.
+ * All disk I/O for settings, projects, and chat history goes through here.
+ *
+ * Folder structure (all paths relative to arcwriteHandle root):
+ *
+ *   Arcwrite/
+ *   ├── chat-history/
+ *   │   └── {ProjectName}/
+ *   │       ├── project.json      AI project config (name, systemPrompt, files)
+ *   │       ├── active.json       Current chat history
+ *   │       └── {timestamp}.json  Archived chats — created on "New Chat", never deleted
+ *   ├── projects/
+ *   │   └── books/
+ *   │       └── {BookName}/
+ *   │           ├── .chat.json    Book project chat history
+ *   │           └── [manuscript]  Markdown/text files
+ *   ├── sequences/                Sequence definitions (JSON)
+ *   ├── prompts/                  Custom prompt definitions (JSON/MD)
+ *   ├── toolkit/                  Built-in reference tools and style library
+ *   ├── _Artifacts/               Provisioned system artifacts (semantic physics engine etc.)
+ *   ├── images/                   Generated images when no book project is active
+ *   ├── extensions/               Data packs (each pack is a subfolder with pack.json)
+ *   └── settings.json             Global app settings (providers, API keys, themes)
+ *
+ * NOTE: projects/ai/ is legacy — AI project configs now live in chat-history/{Name}/project.json.
  */
 
 const DEFAULT_SETTINGS = {
@@ -96,11 +119,13 @@ export async function writeJsonFile(dirHandle, filename, data) {
  * handle is discarded after this call, so future permission prompts scope
  * to "Arcwrite/" only.
  */
-export async function initArcwrite(parentHandle) {
-  const arcwriteHandle = await parentHandle.getDirectoryHandle('Arcwrite', { create: true });
+export async function initArcwrite(parentHandle, { direct = false } = {}) {
+  const arcwriteHandle = direct
+    ? parentHandle
+    : await parentHandle.getDirectoryHandle('Arcwrite', { create: true });
 
   await ensureDir(arcwriteHandle, 'projects', 'books');
-  await ensureDir(arcwriteHandle, 'projects', 'ai');
+  await ensureDir(arcwriteHandle, 'chat-history');
 
   let settings = await readJsonFile(arcwriteHandle, 'settings.json');
   if (!settings) {
@@ -168,41 +193,43 @@ export async function deleteBookProject(arcwriteHandle, name) {
 }
 
 /**
- * List AI project JSON files in Arcwrite/projects/ai/.
+ * List AI projects from Arcwrite/chat-history/{name}/project.json.
  */
 export async function listAiProjects(arcwriteHandle) {
-  const aiDir = await ensureDir(arcwriteHandle, 'projects', 'ai');
+  const chatHistoryDir = await ensureDir(arcwriteHandle, 'chat-history');
   const projects = [];
-  for await (const [name, handle] of aiDir.entries()) {
-    if (handle.kind === 'file' && name.endsWith('.json')) {
-      try {
-        const file = await handle.getFile();
-        const text = await file.text();
-        projects.push(JSON.parse(text));
-      } catch (e) {
-        console.warn(`[arcwriteFS] Failed to parse AI project ${name}:`, e.message);
-      }
+  for await (const [folderName, folderHandle] of chatHistoryDir.entries()) {
+    if (folderHandle.kind !== 'directory') continue;
+    try {
+      const project = await readJsonFile(folderHandle, 'project.json');
+      if (project) projects.push(project);
+    } catch (e) {
+      console.warn(`[arcwriteFS] Failed to parse AI project in ${folderName}:`, e.message);
     }
   }
   return projects.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 }
 
 /**
- * Save an AI project JSON file.
+ * Save an AI project config to Arcwrite/chat-history/{name}/project.json.
  */
 export async function saveAiProject(arcwriteHandle, project) {
-  const aiDir = await ensureDir(arcwriteHandle, 'projects', 'ai');
-  const filename = `${project.name.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
-  await writeJsonFile(aiDir, filename, { ...project, updatedAt: Date.now() });
+  const projectDir = await ensureDir(arcwriteHandle, 'chat-history', project.name);
+  await writeJsonFile(projectDir, 'project.json', { ...project, updatedAt: Date.now() });
 }
 
 /**
- * Delete an AI project JSON file.
+ * Delete an AI project — removes project.json from its chat-history folder.
+ * Leaves chat history archives in place.
  */
 export async function deleteAiProject(arcwriteHandle, projectName) {
-  const aiDir = await ensureDir(arcwriteHandle, 'projects', 'ai');
-  const filename = `${projectName.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
-  await aiDir.removeEntry(filename);
+  try {
+    const chatHistoryDir = await arcwriteHandle.getDirectoryHandle('chat-history');
+    const projectDir = await chatHistoryDir.getDirectoryHandle(projectName);
+    await projectDir.removeEntry('project.json');
+  } catch (e) {
+    if (e.name !== 'NotFoundError') throw e;
+  }
 }
 
 /**
@@ -238,25 +265,60 @@ export async function writeBookChatHistory(arcwriteHandle, bookName, messages) {
 }
 
 /**
- * Read chat history for an AI project from a dedicated file.
- * Stored at Arcwrite/projects/ai/.chats/{name}.json — separate from the project
- * definition JSON so large conversations don't bloat the project file.
+ * Read chat history for an AI project.
+ * Stored at Arcwrite/chat-history/{slug}/active.json.
+ * Falls back to legacy Arcwrite/projects/ai/.chats/{slug}.json and migrates on first read.
  * Returns [] if not found.
  */
 export async function readAiChatHistory(arcwriteHandle, projectName) {
-  const chatsDir = await ensureDir(arcwriteHandle, 'projects', 'ai', '.chats');
-  const filename = `${projectName.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
-  return (await readJsonFile(chatsDir, filename)) || [];
+  const slug = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const chatDir = await ensureDir(arcwriteHandle, 'chat-history', slug);
+
+  const history = await readJsonFile(chatDir, 'active.json');
+  if (history !== null) return history;
+
+  // Migrate from legacy location if present
+  try {
+    const chatsDir = await arcwriteHandle
+      .getDirectoryHandle('projects')
+      .then((d) => d.getDirectoryHandle('ai'))
+      .then((d) => d.getDirectoryHandle('.chats'));
+    const legacy = await readJsonFile(chatsDir, `${slug}.json`);
+    if (legacy && legacy.length > 0) {
+      await writeJsonFile(chatDir, 'active.json', legacy);
+      try { await chatsDir.removeEntry(`${slug}.json`); } catch (_) {}
+      return legacy;
+    }
+  } catch (_) {}
+
+  return [];
 }
 
 /**
- * Save chat history for an AI project to a dedicated file.
- * Stored at Arcwrite/projects/ai/.chats/{name}.json.
+ * Save chat history for an AI project.
+ * Stored at Arcwrite/chat-history/{slug}/active.json.
  */
 export async function writeAiChatHistory(arcwriteHandle, projectName, messages) {
-  const chatsDir = await ensureDir(arcwriteHandle, 'projects', 'ai', '.chats');
-  const filename = `${projectName.replace(/[^a-zA-Z0-9_-]/g, '_')}.json`;
-  await writeJsonFile(chatsDir, filename, messages);
+  const slug = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const chatDir = await ensureDir(arcwriteHandle, 'chat-history', slug);
+  await writeJsonFile(chatDir, 'active.json', messages);
+}
+
+/**
+ * Archive the current active chat and start fresh.
+ * The current active.json is renamed to a datetime-stamped file so it can be restored.
+ * Stored at Arcwrite/chat-history/{slug}/{YYYY-MM-DDTHH-MM-SS}.json.
+ */
+export async function archiveAiChatHistory(arcwriteHandle, projectName) {
+  const slug = projectName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  const chatDir = await ensureDir(arcwriteHandle, 'chat-history', slug);
+
+  const current = await readJsonFile(chatDir, 'active.json');
+  if (current && current.length > 0) {
+    const stamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+$/, '');
+    await writeJsonFile(chatDir, `${stamp}.json`, current);
+  }
+  await writeJsonFile(chatDir, 'active.json', []);
 }
 
 // ── Custom Prompts CRUD ──

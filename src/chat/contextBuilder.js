@@ -1,6 +1,8 @@
 import useEditorStore from '../store/useEditorStore';
 import useProjectStore from '../store/useProjectStore';
 import useAppStore from '../store/useAppStore';
+import { genreSystem } from '../data/genreSystem';
+import { plotStructures } from '../data/plotStructures';
 
 function routeToWorkflow(route) {
   if (route?.includes('edit')) return 'Edit';
@@ -12,11 +14,12 @@ function routeToWorkflow(route) {
 
 /**
  * Build a system prompt that gives the LLM role context, available tools,
- * and workflow-specific instructions. App state is NOT inlined — the LLM
- * pulls it on demand via getter tools (getGenreConfig, getScaffoldBeats, etc.).
- *
- * Exception: Editor pane contents are still inlined on the Edit page because
- * the LLM needs the prose text every turn for line editing and writing.
+ * and workflow-specific instructions. Key state is inlined per workflow:
+ *   - Scaffold page: genre config + all beats (dimension table)
+ *   - Analysis page: chapter list with dimension scores
+ *   - Edit page: open directory name + active tab names
+ * Remaining state (weights, genre requirements, beat IDs, etc.) is fetched
+ * on demand via getter tools.
  */
 export function buildChatSystemPrompt(currentRoute, { nativeToolsActive = false } = {}) {
   const workflow = routeToWorkflow(currentRoute);
@@ -28,7 +31,7 @@ You are conversational, knowledgeable about storytelling craft, and can both adv
 ## Current Workflow: ${workflow}
 
 ## Reading Application State
-You have tools to inspect the current application state on demand. Use these when the user's question requires specific data — do not call them preemptively.
+You have tools to inspect the current application state. Current scaffold beats and chapter scores are shown inline above when relevant. Use these getters for additional details or to retrieve IDs needed for modifications:
 
 - \`getGenreConfig\` — current genre, subgenre, modifier, pacing, blend settings, and genre requirements
 - \`getAvailableGenres\` — full catalog of genres and subgenres
@@ -76,6 +79,77 @@ You have tools to inspect the current application state on demand. Use these whe
       }
       prompt += `Use \`getEditorContents\` to read file contents.\n`;
       prompt += `**RULE: When asked to write, draft, or revise any chapter or file content, you MUST call \`writeFile\` to save it to disk. Never output file content as text in chat.**\n`;
+    }
+  }
+
+  // Always inline genre + beats — user may ask about scaffold from any workflow
+  {
+    const { scaffoldBeats, selectedGenre, selectedSubgenre, selectedModifier, selectedPacing } = useAppStore.getState();
+    const genreData = genreSystem[selectedGenre];
+    const subgenreData = genreData?.subgenres?.[selectedSubgenre];
+    const structureData = plotStructures[genreData?.structure];
+
+    if (scaffoldBeats.length > 0) {
+      const DIMS = ['intimacy','trust','tension','stakes','pacing','agency','identity','sensory','worldComplexity','moralAmbiguity','goalAlignment'];
+      const HDR  = ['Int','Tst','Ten','Stk','Pac','Acy','Id','Sen','Wld','Mor','Goa'];
+      const genreParts = [
+        genreData?.name || selectedGenre,
+        subgenreData?.name || selectedSubgenre,
+        selectedModifier,
+        selectedPacing,
+      ].filter(Boolean);
+      prompt += `\n## Scaffold State\n`;
+      if (genreParts.length > 0) {
+        prompt += `Genre: **${genreParts.join(' / ')}**`;
+        if (structureData) prompt += ` · Structure: ${structureData.name}`;
+        prompt += `\n`;
+      }
+      prompt += `${scaffoldBeats.length} beats:\n\n`;
+      prompt += `| # | Time | Beat | Label | ${HDR.join(' | ')} |\n`;
+      prompt += `|---|------|------|-------|${HDR.map(() => ':--:').join('|')}|\n`;
+      for (let i = 0; i < scaffoldBeats.length; i++) {
+        const b = scaffoldBeats[i];
+        const beatName = structureData?.beats?.[b.beat]?.name || b.beat || '—';
+        const vals = DIMS.map((k) => b[k] ?? 0).join(' | ');
+        prompt += `| ${i + 1} | ${b.time ?? '?'}% | ${beatName} | ${b.label || '—'} | ${vals} |\n`;
+      }
+      prompt += `\nTo modify beats, call \`getScaffoldBeats\` to get beat IDs, then use \`updateBeat\` / \`addBeat\` / \`removeBeat\`.\n`;
+    }
+  }
+
+  // Always inline chapter list — user may ask about chapters from any workflow
+  {
+    const { chapters } = useAppStore.getState();
+    if (chapters.length > 0) {
+      const DIMS = ['intimacy','trust','tension','stakes','pacing','agency','identity','sensory','worldComplexity','moralAmbiguity','goalAlignment'];
+      const HDR  = ['Int','Tst','Ten','Stk','Pac','Acy','Id','Sen','Wld','Mor','Goa'];
+      const hasScores = chapters.some((ch) => ch.userScores || ch.aiScores);
+      prompt += `\n## Chapter Analysis State\n`;
+      prompt += `${chapters.length} chapters loaded:\n\n`;
+      if (hasScores) {
+        prompt += `| # | Title | Words | Status | Time% | ${HDR.join(' | ')} |\n`;
+        prompt += `|---|-------|-------|--------|-------|${HDR.map(() => ':--:').join('|')}|\n`;
+        for (let i = 0; i < chapters.length; i++) {
+          const ch = chapters[i];
+          const scores = ch.userScores || ch.aiScores;
+          const words = ch.wordCount || (ch.text ? ch.text.split(/\s+/).filter(Boolean).length : 0);
+          const time = scores?.timePercent != null ? `${scores.timePercent}%` : '—';
+          const vals = scores
+            ? DIMS.map((k) => scores[k] != null ? scores[k] : '—').join(' | ')
+            : DIMS.map(() => '—').join(' | ');
+          prompt += `| ${i + 1} | ${ch.title || 'Untitled'} | ${words} | ${ch.status || 'pending'} | ${time} | ${vals} |\n`;
+        }
+      } else {
+        prompt += `| # | Title | Words | Status |\n`;
+        prompt += `|---|-------|-------|--------|\n`;
+        for (let i = 0; i < chapters.length; i++) {
+          const ch = chapters[i];
+          const words = ch.wordCount || (ch.text ? ch.text.split(/\s+/).filter(Boolean).length : 0);
+          prompt += `| ${i + 1} | ${ch.title || 'Untitled'} | ${words} | ${ch.status || 'pending'} |\n`;
+        }
+        prompt += `\nNo dimension scores yet — run AI analysis or set scores manually.\n`;
+      }
+      prompt += `\nUse \`getGenreConfig\` for genre ideal values. To update scores, call \`getChapters\` for chapter IDs, then use \`updateChapterScores\`.\n`;
     }
   }
 

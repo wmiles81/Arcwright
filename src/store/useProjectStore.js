@@ -9,7 +9,7 @@ import {
   saveAiProject as fsSaveAiProject,
   deleteAiProject as fsDeleteAiProject,
   readBookChatHistory, writeBookChatHistory,
-  readAiChatHistory, writeAiChatHistory,
+  readAiChatHistory, writeAiChatHistory, archiveAiChatHistory,
   provisionArtifacts, walkArtifactsTree, readArtifactFile as fsReadArtifactFile,
   listExtensionPacks, loadPackContent,
 } from '../services/arcwriteFS';
@@ -78,8 +78,8 @@ const useProjectStore = create((set, get) => ({
    * Creates "Arcwrite/" inside it, persists only that subfolder handle
    * to IndexedDB. The parent handle is not stored anywhere.
    */
-  setRootDirectory: async (handle) => {
-    const { arcwriteHandle, settings } = await initArcwrite(handle);
+  setRootDirectory: async (handle, { direct = false } = {}) => {
+    const { arcwriteHandle, settings } = await initArcwrite(handle, { direct });
     await saveHandle('rootDir', arcwriteHandle);
     set({ arcwriteHandle, isInitialized: true, needsReconnect: false, settings });
 
@@ -350,8 +350,21 @@ const useProjectStore = create((set, get) => ({
     }
     useChatStore.getState().setMessages(chatHistory);
 
+    // Strip cachedContent from reference-mode files — they read from disk on demand.
+    // This migrates bloated project JSONs silently on first activation.
+    let activeProject = project;
+    if (arcwriteHandle && project.files?.some((f) => f.includeMode === 'reference' && f.cachedContent)) {
+      activeProject = {
+        ...project,
+        files: project.files.map((f) =>
+          f.includeMode === 'reference' ? { ...f, cachedContent: null } : f
+        ),
+      };
+      fsSaveAiProject(arcwriteHandle, { ...activeProject, updatedAt: Date.now() }).catch(() => {});
+    }
+
     set({
-      activeAiProject: project,
+      activeAiProject: activeProject,
       activeBookProject: null,
       activeMode: 'ai',
       skillFolderHandles: {},
@@ -409,7 +422,7 @@ const useProjectStore = create((set, get) => ({
     saveActiveProject(null, null);
   },
 
-  /** Clear chat history on disk for the active project (writes [] explicitly). */
+  /** Clear chat history on disk. For AI projects, archives the current chat before clearing. */
   clearProjectHistory: async () => {
     const { arcwriteHandle, activeBookProject, activeAiProject, activeMode } = get();
     if (!arcwriteHandle) return;
@@ -417,7 +430,7 @@ const useProjectStore = create((set, get) => ({
       if (activeMode === 'book' && activeBookProject) {
         await writeBookChatHistory(arcwriteHandle, activeBookProject, []);
       } else if (activeMode === 'ai' && activeAiProject) {
-        await writeAiChatHistory(arcwriteHandle, activeAiProject.name, []);
+        await archiveAiChatHistory(arcwriteHandle, activeAiProject.name);
       }
     } catch (e) {
       console.warn('[ProjectStore] clearProjectHistory failed:', e.message);

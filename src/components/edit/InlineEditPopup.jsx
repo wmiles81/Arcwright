@@ -234,6 +234,8 @@ function InlineEditPanel({
   const [showPromptEditor, setShowPromptEditor] = useState(false);
   // pendingVars: { resolvedContent, vars: {name: value}, modelOverride } — shown when unresolved {{vars}} remain
   const [pendingVars, setPendingVars] = useState(null);
+  // pendingPromptPreview: { text, modelOverride } — editable resolved preview before sending
+  const [pendingPromptPreview, setPendingPromptPreview] = useState(null);
 
   const popupRef = useRef(null);
   const inputRef = useRef(null);
@@ -373,6 +375,25 @@ function InlineEditPanel({
     setTimeout(() => inputRef.current?.focus(), 50);
   }, [reset]);
 
+  // Select a preset/custom prompt: resolve template immediately → show editable preview
+  const handlePresetSelect = useCallback(async (preset) => {
+    setShowHistory(false);
+    setHistoryIndex(-1);
+    setActivePreset(preset);
+    const beforeText = getBeforeText(editorRef, savedRange);
+    const afterText = getAfterText(editorRef, savedRange);
+    const selectedDocuments = await getSelectedDocumentsContent();
+    const resolved = resolveTemplate(preset.content, {
+      selectedText,
+      beforeText,
+      afterText,
+      userInput: '',
+      selectedDocuments,
+      scaffoldVars,
+    });
+    setPendingPromptPreview({ text: resolved, modelOverride: preset.modelOverride || null });
+  }, [editorRef, savedRange, selectedText, scaffoldVars]);
+
   // Keyboard handling in prompt input
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Escape') {
@@ -401,8 +422,7 @@ function InlineEditPanel({
         e.preventDefault();
         const item = dropdownItems[historyIndex];
         if (item.type === 'preset' || item.type === 'custom') {
-          setActivePreset(item.data);
-          setPrompt(item.data.title);
+          handlePresetSelect(item.data);
         } else if (item.type === 'manage') {
           setShowPromptEditor(true);
           setShowHistory(false);
@@ -419,7 +439,7 @@ function InlineEditPanel({
       e.preventDefault();
       handleSubmit();
     }
-  }, [showHistory, dropdownItems, historyIndex, handleSubmit, handleClose]);
+  }, [showHistory, dropdownItems, historyIndex, handleSubmit, handleClose, handlePresetSelect]);
 
   // Handle prompt input changes
   const handlePromptChange = useCallback((e) => {
@@ -567,11 +587,7 @@ function InlineEditPanel({
                   key={prompt.id}
                   onMouseDown={(e) => {
                     e.preventDefault();
-                    setActivePreset(prompt);
-                    setPrompt(prompt.title);
-                    setShowHistory(false);
-                    setHistoryIndex(-1);
-                    inputRef.current?.focus();
+                    handlePresetSelect(prompt);
                   }}
                   style={{
                     padding: '5px 10px',
@@ -623,11 +639,7 @@ function InlineEditPanel({
                   key={preset.id}
                   onMouseDown={(e) => {
                     e.preventDefault();
-                    setActivePreset(preset);
-                    setPrompt(preset.title);
-                    setShowHistory(false);
-                    setHistoryIndex(-1);
-                    inputRef.current?.focus();
+                    handlePresetSelect(preset);
                   }}
                   style={{
                     padding: '5px 10px',
@@ -851,6 +863,56 @@ function InlineEditPanel({
         isOpen={showPromptEditor}
         onClose={() => setShowPromptEditor(false)}
       />
+
+      {/* Editable prompt preview overlay — shown after selecting a preset/custom prompt */}
+      {pendingPromptPreview && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: c.chromeBg || c.chrome,
+            borderRadius: 8,
+            zIndex: 10,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: 16,
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 700, color: c.text, marginBottom: 2 }}>
+            Preview — edit before sending
+          </div>
+          <textarea
+            autoFocus
+            value={pendingPromptPreview.text}
+            onChange={(e) => setPendingPromptPreview((p) => ({ ...p, text: e.target.value }))}
+            style={{
+              ...inputStyle,
+              flex: 1,
+              minHeight: 120,
+              resize: 'vertical',
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <button
+              onClick={() => { setPendingPromptPreview(null); setActivePreset(null); setPrompt(''); }}
+              style={{ ...btnBase, background: 'transparent', color: c.chromeText, border: `1px solid ${c.chromeBorder}` }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                const { text, modelOverride } = pendingPromptPreview;
+                setPendingPromptPreview(null);
+                submitEdit(selectedText, text, true, modelOverride);
+              }}
+              style={{ ...btnBase, background: '#7C3AED', color: '#FFFFFF' }}
+            >
+              Run
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Extra-variable form overlay (NovaKit prompts with unresolved {{vars}}) */}
       {pendingVars && (

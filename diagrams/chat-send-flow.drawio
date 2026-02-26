@@ -1,0 +1,397 @@
+<mxfile host="65bd71144e">
+    <diagram id="9GLKSNhGi2HneIFo9A9Z" name="Page-1">
+        <mxGraphModel dx="876" dy="589" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="2339" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="&lt;b&gt;Chat Send Flow — Arcwright&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=20;" parent="1" vertex="1">
+                    <mxGeometry x="350" y="10" width="600" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="L1" value="ChatPanel.jsx" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="70" width="130" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="L2" value="useChatSend.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="98" width="130" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="L3" value="contextBuilder.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="126" width="130" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="L4" value="providerAdapter" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="154" width="130" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="L5" value="actionExecutor.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="182" width="130" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="L6" value="Stores / arcwriteFS" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="20" y="210" width="130" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="S0" value="SLASH COMMAND" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=center;rounded=1;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="68" width="180" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="S1" value="User types /word" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="108" width="180" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="S2" value="slashMenuOpen=true&lt;br&gt;filter sequences by query" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="160" width="180" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="S3" value="User selects sequence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="220" width="180" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="S4" value="handleSlashSelect(seq)&lt;br&gt;addMessage('/run seq')" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="272" width="180" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="S5" value="ACTION_HANDLERS&lt;br&gt;.runNamedSequence()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="332" width="180" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="S6" value="END" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;fontColor=#ffffff;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="1185" y="392" width="110" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="R0" value="REGENERATE" style="text;html=1;strokeColor=#6c8ebf;fillColor=#dae8fc;align=center;rounded=1;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="460" width="180" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="R1" value="handleRegenerate(assistantMsg)&lt;br&gt;Find preceding user message" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1150" y="500" width="180" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="R2" value="Has&lt;br&gt;imageArtifact?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1155" y="564" width="170" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="R3" value="truncateFrom +&lt;br&gt;generateImage(prompt)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="1040" y="660" width="170" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="R4" value="truncateFrom +&lt;br&gt;sendMessage()&lt;br&gt;→ joins main flow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1260" y="655" width="160" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="START" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;fontColor=#ffffff;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="50" width="90" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="handleSend()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="525" y="136" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="Empty input&lt;br&gt;or isStreaming?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="515" y="204" width="220" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="21r" value="return" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="224" width="110" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="imageMode&lt;br&gt;AND text?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="515" y="302" width="220" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="addMessage(user)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="318" width="180" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="setImagePending(true)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="370" width="180" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="ACTION_HANDLERS&lt;br&gt;.generateImage(prompt, filename)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="422" width="180" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value=".finally → setImagePending(false)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="482" width="180" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="26e" value="END" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;fontColor=#ffffff;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="225" y="534" width="90" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="Build messageContent&lt;br&gt;(text + attachments)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="525" y="402" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="sendMessage(messageContent)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" parent="1" vertex="1">
+                    <mxGeometry x="525" y="462" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="D1" value="useChatSend.js hook" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;rounded=1;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="420" y="520" width="410" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="API key&lt;br&gt;configured?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="515" y="562" width="220" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="29e" value="setError('No API key')&lt;br&gt;return" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="820" y="580" width="160" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" value="getRecentMessages(32k limit)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="525" y="654" width="200" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="addMessage(userMsg)&lt;br&gt;setStreaming(true)&lt;br&gt;clearStreamBuffer()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="525" y="706" width="200" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="D2" value="Determine System Prompt — contextBuilder.js" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=center;rounded=1;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="778" width="590" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="activeAiProject&lt;br&gt;+ mode='ai'?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="515" y="820" width="220" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="buildAiProjectSystemPrompt()&lt;br&gt;(project knowledge + skills + artifacts)&lt;br&gt;useNativeTools = toolsEnabled ∧ modelSupports" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="160" y="838" width="240" height="54" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="promptMode?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="515" y="916" width="220" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="35a" value="buildChatSystemPrompt()&lt;br&gt;(book / chapter / docs / voice)&lt;br&gt;useNativeTools=true if enabled" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="430" y="1020" width="220" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="35b" value="buildEditModePrompt()&lt;br&gt;(editor/writer/critic/comparator)&lt;br&gt;useNativeTools=false" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="770" y="930" width="210" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="35c" value="systemPrompt = null&lt;br&gt;(plain conversation)&lt;br&gt;useNativeTools=false" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1010" y="930" width="190" height="52" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="Build apiMessages&lt;br&gt;= [ system?, ...recentMessages, userMsg ]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="490" y="1106" width="270" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" value="useNativeTools?&lt;br&gt;(enabled + model supports)" style="rhombus;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="505" y="1182" width="240" height="74" as="geometry"/>
+                </mxCell>
+                <mxCell id="D3" value="Native Tools — Agentic Loop (max 5 iterations)" style="text;html=1;strokeColor=#9673a6;fillColor=#e1d5e7;align=center;rounded=1;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="1290" width="310" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="callCompletion(apiMessages, toolDefinitions)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="1330" width="260" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="streaming chunks →&lt;br&gt;updateStreamBuffer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="1386" width="260" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="Tool calls&lt;br&gt;in response?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="110" y="1452" width="240" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="43a" value="Parse &lt;tool_call&gt; tags&lt;br&gt;— OR —&lt;br&gt;Parse inline {&quot;tool&quot;:...} JSON&lt;br&gt;— OR —&lt;br&gt;Structured tool_calls (OpenAI format)&lt;br&gt;&lt;br&gt;→ ACTION_HANDLERS[name](args)&lt;br&gt;→ add result to apiMessages" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="1558" width="220" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="43b" value="loop back if&lt;br&gt;iterations &lt; 5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="70" y="1704" width="220" height="34" as="geometry"/>
+                </mxCell>
+                <mxCell id="D4" value="Fenced Block Fallback" style="text;html=1;strokeColor=#b85450;fillColor=#f8cecc;align=center;rounded=1;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1290" width="260" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="50" value="callCompletion(apiMessages) [no tools]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1330" width="260" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" value="streaming chunks →&lt;br&gt;updateStreamBuffer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1386" width="260" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="52" value="Parse output:&lt;br&gt;① ` ` `action blocks&lt;br&gt;② &lt;tool_call&gt; text tags&lt;br&gt;③ inline {&quot;tool&quot;:...} JSON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1442" width="260" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="53" value="executeActions(actions)&lt;br&gt;ACTION_HANDLERS[type](args)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="1538" width="260" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="D5" value="Finalize" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=center;rounded=1;fontStyle=1;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="450" y="1790" width="350" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="60" value="finalizeStream(displayText, actionResults, usage)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="465" y="1826" width="320" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="61" value="useChatStore: add assistant message&lt;br&gt;clear isStreaming + set token usage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="465" y="1882" width="320" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="62" value="saveCurrentChatHistory()&lt;br&gt;→ arcwriteFS → chat-history/{name}/active.json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="465" y="1942" width="320" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="63" value="END" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;fontColor=#ffffff;fontStyle=1;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="570" y="2004" width="110" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="eS1" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="S1" target="S2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eS2" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="S2" target="S3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eS3" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="S3" target="S4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eS4" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="S4" target="S5" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eS5" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="S5" target="S6" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eR1" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="R1" target="R2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eR2" value="YES" style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="R2" target="R3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eR3" value="NO" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="R2" target="R4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e10" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="10" target="20" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e20" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="20" target="21" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e21y" value="YES" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="21" target="21r" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e21n" value="NO" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="21" target="22" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e22y" value="YES" style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="22" target="23" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e22n" value="NO" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="22" target="27" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e23" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="23" target="24" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e24" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="24" target="25" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e25" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="25" target="26" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e26" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="26" target="26e" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e27" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="27" target="28" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e28" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="28" target="29" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e29y" value="NO" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="29" target="29e" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e29n" value="YES" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="29" target="30" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e30" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="30" target="31" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e31" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="31" target="32" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e32y" value="YES" style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="32" target="33" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e32n" value="NO" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="32" target="34" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e34f" value="full" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="34" target="35a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e34e" value="edit-mode" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="34" target="35b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e34o" value="off" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="34" target="35c" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1010" y="951"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e33m" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="33" target="36" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="280" y="1095"/>
+                            <mxPoint x="625" y="1095"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e35am" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="35a" target="36" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e35bm" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="35b" target="36" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="875" y="1095"/>
+                            <mxPoint x="625" y="1095"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e35cm" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="35c" target="36" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1105" y="1095"/>
+                            <mxPoint x="625" y="1095"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e36" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="36" target="37" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e37y" value="YES" style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="37" target="40" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="400" y="1219"/>
+                            <mxPoint x="230" y="1219"/>
+                            <mxPoint x="230" y="1330"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e37n" value="NO" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="37" target="50" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="850" y="1219"/>
+                            <mxPoint x="970" y="1219"/>
+                            <mxPoint x="970" y="1330"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e40" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="40" target="41" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e41" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="41" target="42" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e42y" value="YES" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="42" target="43a" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e42n" value="NO → break" style="edgeStyle=orthogonalEdgeStyle;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="42" target="60" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="420" y="1487"/>
+                            <mxPoint x="420" y="1840"/>
+                            <mxPoint x="465" y="1840"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e43a" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="43a" target="43b" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e43loop" value="loop" style="edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="43b" target="40" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="40" y="1721"/>
+                            <mxPoint x="40" y="1350"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e43fin" value="break" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="43b" target="60" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1760"/>
+                            <mxPoint x="180" y="1840"/>
+                            <mxPoint x="465" y="1840"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e50" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="50" target="51" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e51" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="51" target="52" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e52" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="52" target="53" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e53fin" style="edgeStyle=orthogonalEdgeStyle;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="53" target="60" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="970" y="1760"/>
+                            <mxPoint x="970" y="1840"/>
+                            <mxPoint x="785" y="1840"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e60" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="60" target="61" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e61" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="61" target="62" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e62" style="edgeStyle=orthogonalEdgeStyle;" parent="1" source="62" target="63" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

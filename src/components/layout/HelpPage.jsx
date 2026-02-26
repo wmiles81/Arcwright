@@ -1,9 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { dimensions, DIMENSION_KEYS } from '../../data/dimensions';
 import { WEIGHT_KEYS } from '../../engine/weights';
 import { plotStructures, referenceStructures } from '../../data/plotStructures';
 import { genreSystem } from '../../data/genreSystem';
 import ActStructuresTab from './ActStructuresTab';
+
+/**
+ * Renders a Mermaid flowchart diagram. Mermaid is lazy-imported so it only
+ * loads when the Help page is opened.
+ */
+function MermaidDiagram({ chart, id }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!ref.current) return;
+    let cancelled = false;
+    import('mermaid').then((m) => {
+      if (cancelled) return;
+      m.default.initialize({
+        startOnLoad: false,
+        theme: 'dark',
+        themeVariables: {
+          primaryColor: '#7C3AED',
+          primaryTextColor: '#e9d5ff',
+          primaryBorderColor: '#9333ea',
+          lineColor: '#a78bfa',
+          secondaryColor: '#1e1b4b',
+          tertiaryColor: '#312e81',
+          background: '#0f172a',
+          mainBkg: '#1e1b4b',
+          nodeBorder: '#7C3AED',
+          clusterBkg: '#1e1b4b',
+          titleColor: '#e9d5ff',
+          edgeLabelBackground: '#1e1b4b',
+          fontFamily: 'ui-monospace, monospace',
+          fontSize: '13px',
+        },
+      });
+      const uid = `mermaid-${id || Math.random().toString(36).slice(2)}`;
+      m.default.render(uid, chart).then(({ svg }) => {
+        if (!cancelled && ref.current) ref.current.innerHTML = svg;
+      }).catch((e) => {
+        if (!cancelled && ref.current) ref.current.textContent = `Diagram error: ${e.message}`;
+      });
+    });
+    return () => { cancelled = true; };
+  }, [chart, id]);
+
+  return (
+    <div
+      ref={ref}
+      style={{ margin: '16px 0', overflowX: 'auto', textAlign: 'center' }}
+    />
+  );
+}
 
 const tabs = ['about', 'interface', 'scaffolding', 'analysis', 'editing', 'sequences', 'dataPacks', 'structures', 'actStructures', 'dimensions', 'changelog'];
 
@@ -88,6 +137,43 @@ function AboutTab() {
             </p>
           </div>
         </div>
+      </Section>
+
+      <Section title="Getting Started">
+        <p className="mb-3 text-purple-200">
+          New to Arcwright? Follow this flow to get set up and start writing.
+        </p>
+        <MermaidDiagram id="getting-started" chart={`
+flowchart TD
+    A([Open Arcwright]) --> B{Storage\\nconfigured?}
+
+    B -- No --> C[Click the Setup banner]
+    C --> D{Pick a folder}
+    D -- "Folder named Arcwrite or Arcwright" --> E{Is this your\\nhome folder?}
+    E -- Yes --> F[Use folder as-is]
+    E -- No --> G["Create Arcwrite/ subfolder\\ninside the selected folder"]
+    D -- Any other folder --> G
+    F & G --> H
+
+    B -- Yes --> H{Provider\\nconfigured?}
+    H -- No --> I["Settings ⚙ → Providers tab\\nAdd API key for OpenRouter,\\nAnthropic, or OpenAI"]
+    I --> J
+    H -- Yes --> J{What do you\\nwant to do?}
+
+    J -- Write a book --> K["Projects → New Book\\nOpen a folder → start editing"]
+    J -- Chat with AI --> L["Open AI panel →\\njust start typing"]
+    J -- Use an AI assistant --> M["Projects → AI Projects\\nCreate → add knowledge files → Activate"]
+
+    K & L & M --> N([You're ready!])
+
+    style A fill:#7C3AED,color:#fff,stroke:#9333ea
+    style N fill:#059669,color:#fff,stroke:#10b981
+    style I fill:#b45309,color:#fff,stroke:#d97706
+    style C fill:#b45309,color:#fff,stroke:#d97706
+`} />
+        <p className="text-xs text-purple-400 mt-1">
+          Storage is set once and remembered across sessions via IndexedDB. Your Arcwrite folder holds all projects, chat history, prompts, sequences, and images.
+        </p>
       </Section>
 
       <Section title="AI Chat Assistant">
@@ -1212,57 +1298,32 @@ function SequencesTab() {
         <p className="mb-3 text-xs text-purple-300">
           Steps execute top-to-bottom. Chain passes context forward. Conditions can redirect flow.
         </p>
-        <DiagramBox>{`
-  Sequence: "Write & Verify Chapters"
-  ============================================================
+        <MermaidDiagram id="seq-flow" chart={`
+flowchart TD
+    S1["Step 1 · Action
+    Write outline for 5 chapters
+    saves to outline.md"]
+    S1 -->|"chained context"| S2
+    S2["Step 2 · Loop × 5
+    Write chapter for each iteration
+    saves to chapters/Chapter_##.md"]
+    S2 -->|"chained context"| S3
+    S3{"Step 3 · Condition
+    Is this chapter complete
+    and well-paced?"}
+    S3 -->|"YES → continue"| S4
+    S3 -->|"NO → retry, max 2×"| S2
+    S4["Step 4 · Action
+    Write synopsis of all chapters
+    saves to synopsis.md"]
+    S4 --> Done([Sequence complete])
 
-  STEP 1: Action (Inline Template)           [chain: ON]
-  ┌─────────────────────────────────────────────────────────┐
-  │  "Write a detailed outline for a 5-chapter story..."   │
-  │  Output File: outline.md                               │
-  │  ────────────────────────────────────                   │
-  │  Result: outline text ──────────────────┐               │
-  └─────────────────────────────────────────┼───────────────┘
-                                            │ chained context
-                                            ▼
-  STEP 2: Loop (Fixed Count: 5)             [chain: ON]
-  ┌─────────────────────────────────────────────────────────┐
-  │  Iteration 1:                                          │
-  │  ┌───────────────────────────────────────────────────┐  │
-  │  │ Body Step A: Action                               │  │
-  │  │ "Write chapter {{loop_index}} based on outline"   │  │
-  │  │ Output: chapters/Chapter_##.md                    │  │
-  │  │ → chapters/Chapter_01.md  (1,200 words)           │  │
-  │  └───────────────────────────────────────────────────┘  │
-  │                                                        │
-  │  Iteration 2:                                          │
-  │  ┌───────────────────────────────────────────────────┐  │
-  │  │ → chapters/Chapter_02.md  (1,150 words)           │  │
-  │  └───────────────────────────────────────────────────┘  │
-  │  ... iterations 3, 4, 5                                │
-  │                                                        │
-  │  Final output ──────────────────────────┐               │
-  └─────────────────────────────────────────┼───────────────┘
-                                            │ chained context
-                                            ▼
-  STEP 3: Condition
-  ┌─────────────────────────────────────────────────────────┐
-  │  "Does this chapter feel complete and                   │
-  │   well-paced? Answer YES or NO."                       │
-  │                                                        │
-  │  If YES → Continue to Step 4                           │
-  │  If NO  → Retry Step 2 (max 2 retries)                 │
-  └─────────────────────────────────────────────────────────┘
-                    │
-                    ▼
-  STEP 4: Action
-  ┌─────────────────────────────────────────────────────────┐
-  │  "Write a synopsis summarizing all chapters."           │
-  │  Output File: synopsis.md                              │
-  └─────────────────────────────────────────────────────────┘
-
-  ============================================================
-        `}</DiagramBox>
+    style S1 fill:#1e1b4b,stroke:#7C3AED,color:#e9d5ff
+    style S2 fill:#1e293b,stroke:#3b82f6,color:#bfdbfe
+    style S3 fill:#1c1917,stroke:#d97706,color:#fef3c7
+    style S4 fill:#1e1b4b,stroke:#7C3AED,color:#e9d5ff
+    style Done fill:#14532d,stroke:#16a34a,color:#bbf7d0
+        `} />
       </Section>
 
       <Section title="Template Variables Reference">
@@ -1316,21 +1377,21 @@ function SequencesTab() {
           If the AI responds with &ldquo;STOP&rdquo;, the loop ends. If &ldquo;CONTINUE&rdquo;, it keeps going. A max-iterations
           cap (default: 20) prevents runaway loops.
         </p>
-        <DiagramBox>{`
-  Loop: "Generate ideas until satisfied"
-  Exit template: "Review the ideas so far. Are there
-                  at least 10 strong, distinct ideas?
-                  Answer CONTINUE or STOP."
-  Max iterations: 20
-  ┌──────────────────────────────────────────────┐
-  │  iter 0 → body runs → AI says "CONTINUE"    │
-  │  iter 1 → body runs → AI says "CONTINUE"    │
-  │  iter 2 → body runs → AI says "CONTINUE"    │
-  │  iter 3 → body runs → AI says "STOP"        │
-  │           ↓                                  │
-  │  Loop exits after 4 iterations               │
-  └──────────────────────────────────────────────┘
-        `}</DiagramBox>
+        <MermaidDiagram id="seq-exit-loop" chart={`
+flowchart TD
+    A([Loop starts]) --> B
+    B["Run body steps"] --> C{"Exit condition:
+    Is this done?
+    Answer CONTINUE or STOP"}
+    C -->|CONTINUE| B
+    C -->|STOP| D([Loop ends — next step])
+    C -->|"max iterations reached"| D
+
+    style A fill:#312e81,stroke:#7C3AED,color:#e9d5ff
+    style B fill:#1e293b,stroke:#3b82f6,color:#bfdbfe
+    style C fill:#1c1917,stroke:#d97706,color:#fef3c7
+    style D fill:#14532d,stroke:#16a34a,color:#bbf7d0
+        `} />
       </Section>
 
       <Section title="Condition Deep-Dive">
@@ -1338,30 +1399,25 @@ function SequencesTab() {
           Condition steps evaluate quality, check completeness, or gate progression. The AI answers
           YES or NO and the sequence follows the configured path.
         </p>
-        <DiagramBox>{`
-  Condition: "Is the draft publication-ready?"
-  ┌──────────────────────────────────────────────┐
-  │  Template: "Review the following draft.      │
-  │  Is it publication-ready? Answer YES or NO." │
-  │                                              │
-  │  AI answers → YES                            │
-  │    ifYes: continue ──→ next step             │
-  │                                              │
-  │  AI answers → NO                             │
-  │    ifNo: retry ──→ re-run previous step      │
-  │    (up to maxRetries: 3)                     │
-  │                                              │
-  │  After 3 retries with NO → continues anyway  │
-  └──────────────────────────────────────────────┘
+        <MermaidDiagram id="seq-condition" chart={`
+flowchart TD
+    Prev["Previous step output"] --> Q
+    Q{"Condition step
+    AI answers YES or NO"}
+    Q -->|"YES → continue"| Next["Next step"]
+    Q -->|"YES → end"| Stop([Sequence ends])
+    Q -->|"NO → continue"| Next
+    Q -->|"NO → end"| Stop
+    Q -->|"NO → retry"| Retry["Re-run previous step"]
+    Retry -->|"within maxRetries"| Prev
+    Retry -->|"retries exhausted"| Next
 
-  Possible ifYes / ifNo values:
-  ┌────────────┬──────────────────────────────────┐
-  │  continue  │  Proceed to the next step        │
-  │  end       │  Stop the sequence immediately   │
-  │  retry     │  Re-run the PREVIOUS step        │
-  │            │  (ifNo only, up to maxRetries)    │
-  └────────────┴──────────────────────────────────┘
-        `}</DiagramBox>
+    style Prev fill:#1e1b4b,stroke:#7C3AED,color:#e9d5ff
+    style Q fill:#1c1917,stroke:#d97706,color:#fef3c7
+    style Next fill:#1e1b4b,stroke:#7C3AED,color:#e9d5ff
+    style Stop fill:#450a0a,stroke:#dc2626,color:#fecaca
+    style Retry fill:#1e293b,stroke:#3b82f6,color:#bfdbfe
+        `} />
       </Section>
 
       <Section title="Three Ways to Run a Sequence">
@@ -1797,6 +1853,54 @@ function ChangelogTab() {
       <Section title="Changelog">
         <div className="space-y-6">
           <div>
+            <div className="flex items-center gap-3 mb-2">
+              <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.6.0</span>
+              <span className="text-purple-300 text-xs">2026-02-25</span>
+            </div>
+            <h4 className="font-bold text-white mb-2">Storage Reorganization &amp; Chat History Archiving</h4>
+            <div className="space-y-3">
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Folder Structure</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>AI project configs moved from <code className="text-purple-200 bg-slate-700/50 px-1 rounded">projects/ai/Name.json</code> to <code className="text-purple-200 bg-slate-700/50 px-1 rounded">chat-history/Name/project.json</code></li>
+                  <li>Each AI project now has its own subfolder under <code className="text-purple-200 bg-slate-700/50 px-1 rounded">chat-history/</code> containing both config and all chat history in one place</li>
+                  <li><code className="text-purple-200 bg-slate-700/50 px-1 rounded">projects/ai/</code> is now unused &mdash; all AI project data lives under <code className="text-purple-200 bg-slate-700/50 px-1 rounded">chat-history/</code></li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Chat History Archiving</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>&ldquo;New Chat&rdquo; archives the current conversation to a timestamped file before clearing &mdash; no history is ever destroyed</li>
+                  <li>Archives stored as <code className="text-purple-200 bg-slate-700/50 px-1 rounded">chat-history/Name/2026-02-25T20-30-00.json</code></li>
+                  <li>Restore any archived session by renaming it to <code className="text-purple-200 bg-slate-700/50 px-1 rounded">active.json</code></li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Storage Setup</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Picking an existing <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite</code> folder now asks: &ldquo;Is this your home folder?&rdquo; &mdash; OK uses it directly, Cancel creates a subfolder inside it</li>
+                  <li>Prevents accidentally nesting <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/Arcwrite/</code></li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Image Generation</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Fixed OpenRouter routing &mdash; dual-output models (Gemini Image, GPT-5-image) use text+image modalities; image-only models (Flux, Seedream) use image-only</li>
+                  <li>Regenerate button on image messages re-runs image generation directly instead of sending to the chat model</li>
+                  <li>Images save to the active book project&rsquo;s <code className="text-purple-200 bg-slate-700/50 px-1 rounded">images/</code> folder, or <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/images/</code> when no project is open</li>
+                </ul>
+              </div>
+              <div>
+                <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Context Efficiency</h5>
+                <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
+                  <li>Reference-mode files no longer cache content in the project JSON &mdash; loaded from disk on demand</li>
+                  <li>Switching a file to reference mode immediately clears its cached content</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-purple-500/20 pt-4">
             <div className="flex items-center gap-3 mb-2">
               <span className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono">v2.5.0</span>
               <span className="text-purple-300 text-xs">2026-02-21</span>

@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cp start.sh dist/start.sh && cp start.bat dist/start.bat && chmod +x dist/start.sh",
+    "build": "vite build && cp start.sh dist/start.sh && cp start.bat dist/start.bat && chmod +x dist/start.sh && cp server.js Arcwright-dist/server.js && cp dist/index.html Arcwright-dist/index.html && rm -rf Arcwright-dist/assets && cp -r dist/assets Arcwright-dist/assets && cp dist/Arcwright-1600.png Arcwright-dist/Arcwright-1600.png && cp dist/favicon.png Arcwright-dist/favicon.png && cp dist/mascot.png Arcwright-dist/mascot.png",
     "preview": "vite preview"
   },
   "dependencies": {
     "diff": "^8.0.3",
+    "mermaid": "^11.12.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",

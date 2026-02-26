@@ -150,7 +150,13 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
   };
 
   const updateFile = (index, field, value) => {
-    setFiles((prev) => prev.map((f, i) => (i === index ? { ...f, [field]: value } : f)));
+    setFiles((prev) => prev.map((f, i) => {
+      if (i !== index) return f;
+      const updated = { ...f, [field]: value };
+      // Switching to reference mode — drop cached content, disk read handles it
+      if (field === 'includeMode' && value === 'reference') updated.cachedContent = null;
+      return updated;
+    }));
   };
 
   const removeFile = (index) => {

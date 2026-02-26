@@ -154,6 +154,46 @@ function _logTs() {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * Resolve the active book project's FileSystemDirectoryHandle.
+ *
+ * Priority:
+ *  1. directoryHandle already open in editor store (and activeMode is 'book')
+ *  2. activeBookProject name + arcwriteHandle → reconstruct the handle
+ *  3. Last resort: create/activate 'Untitled Project'
+ *
+ * This prevents the app from creating a new "Untitled Project" when the user
+ * is on a non-Editor page (Analyze, Scaffold) with a book project already open.
+ */
+async function resolveBookProjectHandle() {
+  const projectStore = useProjectStore.getState();
+  const editorHandle = useEditorStore.getState().directoryHandle;
+
+  // Best case: editor already has the book directory open
+  if (editorHandle && projectStore.activeMode === 'book') {
+    return editorHandle;
+  }
+
+  // Good case: we know the active project name — reconstruct from arcwriteHandle
+  if (projectStore.activeBookProject && projectStore.arcwriteHandle) {
+    try {
+      const projectsDir = await projectStore.arcwriteHandle.getDirectoryHandle('projects');
+      const booksDir = await projectsDir.getDirectoryHandle('books');
+      const bookHandle = await booksDir.getDirectoryHandle(projectStore.activeBookProject);
+      // Restore into editor store so future calls find it immediately
+      useEditorStore.getState().setDirectoryHandle(bookHandle);
+      return bookHandle;
+    } catch (e) {
+      console.warn('[resolveBookProjectHandle] Could not reconstruct handle for',
+        projectStore.activeBookProject, e.message);
+    }
+  }
+
+  throw new Error('No book project is active.');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const ACTION_HANDLERS = {
   // --- Read-only state getters ---
   getGenreConfig: () => {
@@ -595,25 +635,7 @@ export const ACTION_HANDLERS = {
     if (!cleanFilename) throw new Error('Invalid filename');
 
     // 1. Get or create a book project
-    const projectStore = useProjectStore.getState();
-    let bookProjectHandle = useEditorStore.getState().directoryHandle;
-
-    if (!bookProjectHandle || projectStore.activeMode !== 'book') {
-      // No book project active — auto-create one
-      if (!projectStore.arcwriteHandle) {
-        throw new Error('Arcwrite storage not initialized. Open a folder first.');
-      }
-      const projectName = 'Untitled Project';
-      const existing = projectStore.bookProjects.find((p) => p.name === projectName);
-      if (!existing) {
-        await projectStore.createNewBookProject(projectName);
-      }
-      await projectStore.activateBookProject(projectName);
-      bookProjectHandle = useEditorStore.getState().directoryHandle;
-      if (!bookProjectHandle) {
-        throw new Error('Failed to activate book project');
-      }
-    }
+    const bookProjectHandle = await resolveBookProjectHandle();
 
     // 2. Get/create artifacts/ directory
     const artifactsDir = await bookProjectHandle.getDirectoryHandle('artifacts', { create: true });
@@ -720,56 +742,34 @@ export const ACTION_HANDLERS = {
     }
     const blob = new Blob([bytes], { type: 'image/png' });
 
-    // 3. Get/create book project handle (same bootstrap as writeArtifact)
-    const projectStore = useProjectStore.getState();
-    let bookProjectHandle = useEditorStore.getState().directoryHandle;
-
-    if (!bookProjectHandle || projectStore.activeMode !== 'book') {
-      if (!projectStore.arcwriteHandle) {
-        throw new Error('Arcwrite storage not initialized. Open a folder first.');
-      }
-      const projectName = 'Untitled Project';
-      const existing = projectStore.bookProjects.find((p) => p.name === projectName);
-      if (!existing) {
-        await projectStore.createNewBookProject(projectName);
-      }
-      await projectStore.activateBookProject(projectName);
-      bookProjectHandle = useEditorStore.getState().directoryHandle;
-      if (!bookProjectHandle) throw new Error('Failed to activate book project');
+    // 3. Save to active book project; fall back to Arcwrite root if none is open
+    let imageParentHandle;
+    let isBookProject = false;
+    try {
+      imageParentHandle = await resolveBookProjectHandle();
+      isBookProject = true;
+    } catch (_) {
+      const { arcwriteHandle } = useProjectStore.getState();
+      if (!arcwriteHandle) throw new Error('No storage folder connected. Click the folder icon to open your Arcwrite folder.');
+      imageParentHandle = arcwriteHandle;
     }
 
-    // 4. Write binary blob to artifacts/
-    const artifactsDir = await bookProjectHandle.getDirectoryHandle('artifacts', { create: true });
-    const fileHandle = await artifactsDir.getFileHandle(cleanFilename, { create: true });
+    // 4. Write binary blob to images/
+    const imagesDir = await imageParentHandle.getDirectoryHandle('images', { create: true });
+    const fileHandle = await imagesDir.getFileHandle(cleanFilename, { create: true });
     const writable = await fileHandle.createWritable();
     await writable.write(blob);
     await writable.close();
 
     // 5. Register blob URL for rendering
-    const artifactPath = `artifacts/${cleanFilename}`;
+    const artifactPath = `images/${cleanFilename}`;
     const blobUrl = registerBlob(artifactPath, blob);
 
-    // 6. Update artifact manifest
-    let manifest;
-    try {
-      manifest = await readJsonFile(artifactsDir, 'manifest.json');
-    } catch (_) {
-      manifest = null;
+    // 6. Refresh file tree only for book projects — don't overwrite the tree with Arcwrite root contents
+    if (isBookProject) {
+      const tree = await buildFileTree(imageParentHandle);
+      useEditorStore.getState().setFileTree(tree);
     }
-    if (!manifest || !manifest.files) manifest = { files: [] };
-    manifest.files = manifest.files.filter((f) => f.name !== cleanFilename);
-    manifest.files.push({
-      name: cleanFilename,
-      type: 'image',
-      description: result.revised_prompt || prompt.substring(0, 100),
-      created: new Date().toISOString(),
-      source: 'image-generation',
-    });
-    await writeJsonFile(artifactsDir, 'manifest.json', manifest);
-
-    // 7. Refresh file tree
-    const tree = await buildFileTree(bookProjectHandle);
-    useEditorStore.getState().setFileTree(tree);
 
     // 8. Post image preview to chat
     const chatStore = useChatStore.getState();
@@ -787,7 +787,7 @@ export const ACTION_HANDLERS = {
     });
 
     const sizeKb = Math.round(blob.size / 1024);
-    return `Generated image "${cleanFilename}" (${sizeKb} KB) and saved to artifacts/.${result.revised_prompt ? ` Revised prompt: "${result.revised_prompt}"` : ''}`;
+    return `Generated image "${cleanFilename}" (${sizeKb} KB) and saved to images/.${result.revised_prompt ? ` Revised prompt: "${result.revised_prompt}"` : ''}`;
   },
 
   // --- Orchestrator / Multi-agent ---

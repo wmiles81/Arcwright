@@ -138,8 +138,7 @@ async function fetchAnthropicModels(config, apiKey) {
 /**
  * Fetch image-capable models for a given provider.
  *
- * OpenRouter: uses /api/frontend/models/find?output_modalities=image
- *   — the standard /models endpoint omits most image generators.
+ * OpenRouter: uses /api/frontend/models/find?output_modalities=image (no auth header — avoids CORS preflight).
  * OpenAI: filters /models for known image model IDs.
  * Others: returns empty (no image generation support known).
  */
@@ -172,34 +171,29 @@ export async function fetchImageModels(providerId, apiKey) {
 
 /**
  * OpenRouter image model discovery.
- * Uses /api/frontend/models/find?output_modalities=image which returns
- * all models that can generate images (Flux, Sourceful, Gemini Image, GPT-5 Image, etc.).
+ *
+ * The full image model list (Flux, Seedream, Sourceful, Gemini Image, etc.) only
+ * appears in /api/frontend/models/find?output_modalities=image — not in /api/v1/models.
+ * This endpoint is CORS-blocked from the browser, so we proxy it via /or-image-models
+ * (Vite dev proxy + server.js in dist). Response: { data: { models: [...] } }
  */
-async function fetchOpenRouterImageModels(apiKey, config) {
-  const url = 'https://openrouter.ai/api/frontend/models/find?q=&output_modalities=image';
-  const response = await fetch(url, {
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      ...config.extraHeaders(apiKey),
-    },
-  });
+async function fetchOpenRouterImageModels(_apiKey, _config) {
+  const response = await fetch('/or-image-models');
 
   if (!response.ok) {
     throw new Error(`Failed to fetch image models from OpenRouter (${response.status})`);
   }
 
   const data = await response.json();
-  const items = data.data || data || [];
+  const items = data?.data?.models ?? data?.data ?? [];
 
   return (Array.isArray(items) ? items : [])
     .map((m) => ({
       id: m.slug || m.id,
       name: m.name || m.slug || m.id,
       pricing: m.endpoint?.pricing || m.pricing,
-      architecture: m.architecture,
-      outputModalities: m.output_modalities,
     }))
-    .filter((m) => m.id)
+    .filter((m) => m.id && m.id !== 'openrouter/auto')
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 

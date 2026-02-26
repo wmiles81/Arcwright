@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { dimensions, DIMENSION_KEYS } from '../../data/dimensions';
+import { calculateTension } from '../../engine/tension';
 import DimensionSlider from './DimensionSlider';
 import BeatSuggestions from './BeatSuggestions';
 
@@ -51,19 +52,30 @@ export default function BeatEditorRow({ beat, structureBeats, idealCurve, active
             {structureBeats[beat.beat]?.name || beat.beat}
           </span>
         </div>
-        {/* Mini dimension summary */}
-        <div className="flex gap-1">
-          {DIMENSION_KEYS.slice(0, 5).map((key) => (
-            <div
-              key={key}
-              className="w-2 h-4 rounded-sm"
-              style={{
-                backgroundColor: dimensions[key].color,
-                opacity: (beat[key] || 0) / 10,
-              }}
-              title={`${dimensions[key].name}: ${beat[key]}`}
-            />
-          ))}
+        {/* Mini dimension summary + tension badge */}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1">
+            {DIMENSION_KEYS.slice(0, 5).map((key) => (
+              <div
+                key={key}
+                className="w-2 h-4 rounded-sm"
+                style={{
+                  backgroundColor: dimensions[key].color,
+                  opacity: (beat[key] || 0) / 10,
+                }}
+                title={`${dimensions[key].name}: ${beat[key]}`}
+              />
+            ))}
+          </div>
+          {activeWeights && (
+            <span
+              className="text-[10px] font-bold tabular-nums px-1 py-0.5 rounded"
+              style={{ color: '#ff6666', backgroundColor: 'rgba(255,0,0,0.1)' }}
+              title="Derived tension score"
+            >
+              T:{calculateTension(beat, activeWeights).toFixed(1)}
+            </span>
+          )}
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(beat.id); }}
@@ -115,7 +127,28 @@ export default function BeatEditorRow({ beat, structureBeats, idealCurve, active
           </div>
 
           <div className="space-y-1.5">
-            <h4 className="text-xs font-bold text-purple-300 mt-2">Dimensions</h4>
+            <div className="flex items-center justify-between mt-2">
+              <h4 className="text-xs font-bold text-purple-300">Dimensions</h4>
+              {activeWeights && (() => {
+                const t = calculateTension(beat, activeWeights);
+                return (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-slate-400">Tension:</span>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-150"
+                          style={{ width: `${(t / 10) * 100}%`, backgroundColor: '#ff0000' }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold tabular-nums" style={{ color: '#ff6666' }}>
+                        {t.toFixed(1)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
             {DIMENSION_KEYS.map((key) => (
               <DimensionSlider
                 key={key}

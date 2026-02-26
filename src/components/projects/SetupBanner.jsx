@@ -4,11 +4,27 @@ import useProjectStore from '../../store/useProjectStore';
 export default function SetupBanner() {
   const isInitialized = useProjectStore((s) => s.isInitialized);
   const needsReconnect = useProjectStore((s) => s.needsReconnect);
+  const folderName = useProjectStore((s) => s.arcwriteHandle?.name);
+  const hasApiKey = useProjectStore((s) => !!s.settings?.apiKey);
 
   const handleSetup = useCallback(async () => {
     try {
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
-      await useProjectStore.getState().setRootDirectory(handle);
+      const existing = useProjectStore.getState().arcwriteHandle;
+      const handle = await window.showDirectoryPicker({
+        mode: 'readwrite',
+        startIn: existing ?? 'documents',
+      });
+
+      // If the user picked a folder named "Arcwrite", confirm whether it IS
+      // the home folder (use directly) or just the parent (create inside it).
+      let direct = false;
+      if (/^arcwri(te|ght)$/i.test(handle.name)) {
+        direct = window.confirm(
+          `"${handle.name}" detected.\n\nIs this your Arcwrite home folder?\n\nOK → Use it as-is\nCancel → Create a new "Arcwrite" folder inside it`
+        );
+      }
+
+      await useProjectStore.getState().setRootDirectory(handle, { direct });
     } catch (e) {
       if (e.name !== 'AbortError') console.error('Setup failed:', e);
     }
@@ -20,8 +36,6 @@ export default function SetupBanner() {
 
   // State 1: Initialized — green banner
   if (isInitialized) {
-    const settings = useProjectStore.getState().settings;
-    const folderName = useProjectStore.getState().arcwriteHandle?.name;
     return (
       <div className="max-w-2xl mx-auto mb-8 bg-green-900/30 border border-green-500/40 rounded-lg px-6 py-4">
         <div className="flex items-center justify-between">
@@ -29,7 +43,7 @@ export default function SetupBanner() {
             <p className="text-green-300 text-sm font-semibold">Arcwrite initialized</p>
             <p className="text-green-200/70 text-xs mt-0.5">
               Storage: {folderName || 'connected'}
-              {settings?.apiKey ? ' \u2022 API key configured' : ''}
+              {hasApiKey ? ' \u2022 API key configured' : ''}
             </p>
           </div>
           <button

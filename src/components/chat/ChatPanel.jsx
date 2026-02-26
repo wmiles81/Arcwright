@@ -13,6 +13,9 @@ import { PROVIDERS } from '../../api/providers';
 import { useOpenSettings } from '../layout/AppShell';
 import useEditorStore from '../../store/useEditorStore';
 import useSequenceStore from '../../store/useSequenceStore';
+import usePromptStore from '../../store/usePromptStore';
+import defaultPrompts from '../../data/defaultPrompts';
+import PromptEditorDialog from '../prompts/PromptEditorDialog';
 import { ACTION_HANDLERS } from '../../chat/actionExecutor';
 
 export default function ChatPanel() {
@@ -28,6 +31,8 @@ export default function ChatPanel() {
 
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState([]);
+  const [imageMode, setImageMode] = useState(false);
+  const [imagePending, setImagePending] = useState(false);
   const [slashMenuOpen, setSlashMenuOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
   const [slashIndex, setSlashIndex] = useState(0);
@@ -36,12 +41,15 @@ export default function ChatPanel() {
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [systemPromptText, setSystemPromptText] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
+  const [showPromptManager, setShowPromptManager] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const activeProvider = useAppStore((s) => s.activeProvider);
   const providers = useAppStore((s) => s.providers);
   const chatSettings = useAppStore((s) => s.chatSettings);
+  const imageSettings = useAppStore((s) => s.imageSettings);
+  const imageReady = !!(imageSettings?.provider && imageSettings?.model);
   const sendMessage = useChatSend();
   const location = useLocation();
   const openSettings = useOpenSettings();
@@ -55,6 +63,8 @@ export default function ChatPanel() {
   const fileTree = useEditorStore((s) => s.fileTree);
   const directoryHandle = useEditorStore((s) => s.directoryHandle);
   const sequences = useSequenceStore((s) => s.customSequences);
+  const customPrompts = usePromptStore((s) => s.customPrompts);
+  const allPrompts = [...customPrompts, ...defaultPrompts];
 
   const providerState = providers[activeProvider] || {};
   const providerConfig = PROVIDERS[activeProvider];
@@ -68,30 +78,41 @@ export default function ChatPanel() {
   /** Shorten a model ID for display: strip date suffix. */
   const shortName = (id) => id.replace(/-\d{8}$/, '');
 
-  // Slash-command: sequences filtered by typed query
-  const filteredSequences = slashMenuOpen
-    ? sequences.filter((s) => !slashQuery || s.name.toLowerCase().includes(slashQuery.toLowerCase()))
-    : [];
+  // Slash-command: sequences + prompts filtered by typed query
+  const filteredItems = slashMenuOpen ? [
+    ...sequences
+      .filter(s => !slashQuery || s.name.toLowerCase().includes(slashQuery.toLowerCase()))
+      .map(s => ({ _type: 'sequence', ...s })),
+    ...allPrompts
+      .filter(p => !slashQuery || p.title.toLowerCase().includes(slashQuery.toLowerCase()))
+      .map(p => ({ _type: 'prompt', ...p })),
+  ] : [];
 
-  const handleSlashSelect = useCallback(async (seq) => {
+  const handleSlashSelect = useCallback(async (item) => {
     setInput('');
     setSlashMenuOpen(false);
     setSlashQuery('');
-    useChatStore.getState().addMessage({
-      id: `slash_seq_${Date.now()}`,
-      role: 'user',
-      content: `/run "${seq.name}"`,
-      timestamp: Date.now(),
-    });
-    try {
-      await ACTION_HANDLERS.runNamedSequence({ sequenceId: seq.id });
-    } catch (e) {
+    if (item._type === 'sequence') {
       useChatStore.getState().addMessage({
-        id: `slash_seq_err_${Date.now()}`,
-        role: 'assistant',
-        content: `Error running "${seq.name}": ${e.message}`,
+        id: `slash_seq_${Date.now()}`,
+        role: 'user',
+        content: `/run "${item.name}"`,
         timestamp: Date.now(),
       });
+      try {
+        await ACTION_HANDLERS.runNamedSequence({ sequenceId: item.id });
+      } catch (e) {
+        useChatStore.getState().addMessage({
+          id: `slash_seq_err_${Date.now()}`,
+          role: 'assistant',
+          content: `Error running "${item.name}": ${e.message}`,
+          timestamp: Date.now(),
+        });
+      }
+    } else {
+      // Prompt: insert template text into input box; do NOT send
+      setInput(item.content || '');
+      setTimeout(() => inputRef.current?.focus(), 0);
     }
   }, [sequences]);
 
@@ -182,9 +203,27 @@ export default function ChatPanel() {
 
   const handleSend = () => {
     const text = input.trim();
-    if ((!text && attachments.length === 0) || isStreaming) return;
+    if ((!text && attachments.length === 0) || isStreaming || imagePending) return;
 
     setSlashMenuOpen(false);
+
+    // Image mode: bypass AI and call generateImage directly
+    if (imageMode && text) {
+      const addMessage = useChatStore.getState().addMessage;
+      // Post user message
+      addMessage({ id: `u-${Date.now()}`, role: 'user', content: text, timestamp: Date.now() });
+      setInput('');
+      setImagePending(true);
+      // Derive a filename from the prompt (first 40 chars, slugified)
+      const slug = text.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40).replace(/_+$/, '');
+      const filename = `${slug}_${Date.now()}`;
+      ACTION_HANDLERS.generateImage({ prompt: text, filename })
+        .catch((err) => {
+          addMessage({ id: `e-${Date.now()}`, role: 'assistant', content: `Image generation failed: ${err.message}`, timestamp: Date.now() });
+        })
+        .finally(() => setImagePending(false));
+      return;
+    }
 
     // Build message content with attachments
     let messageContent = text;
@@ -202,10 +241,10 @@ export default function ChatPanel() {
   };
 
   const handleKeyDown = (e) => {
-    if (slashMenuOpen && filteredSequences.length > 0) {
+    if (slashMenuOpen && filteredItems.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSlashIndex((i) => Math.min(i + 1, filteredSequences.length - 1));
+        setSlashIndex((i) => Math.min(i + 1, filteredItems.length - 1));
         return;
       }
       if (e.key === 'ArrowUp') {
@@ -215,7 +254,7 @@ export default function ChatPanel() {
       }
       if (e.key === 'Enter') {
         e.preventDefault();
-        handleSlashSelect(filteredSequences[slashIndex]);
+        handleSlashSelect(filteredItems[slashIndex]);
         return;
       }
       if (e.key === 'Escape') {
@@ -251,7 +290,25 @@ export default function ChatPanel() {
     if (userMsgIndex === -1) return;
 
     const userMessage = messages[userMsgIndex];
-    // Truncate to just before the user message, then resend
+
+    // Image messages: re-run generation directly — don't send to the chat LLM
+    if (assistantMessage.imageArtifact) {
+      const { prompt } = assistantMessage.imageArtifact;
+      truncateFrom(userMessage.id);
+      const addMsg = useChatStore.getState().addMessage;
+      addMsg({ id: `u-${Date.now()}`, role: 'user', content: userMessage.content, timestamp: Date.now() });
+      setImagePending(true);
+      const slug = prompt.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40).replace(/_+$/, '');
+      const filename = `${slug}_${Date.now()}`;
+      ACTION_HANDLERS.generateImage({ prompt, filename })
+        .catch((err) => {
+          addMsg({ id: `e-${Date.now()}`, role: 'assistant', content: `Image generation failed: ${err.message}`, timestamp: Date.now() });
+        })
+        .finally(() => setImagePending(false));
+      return;
+    }
+
+    // Regular messages: truncate to just before the user message, then resend via chat
     truncateFrom(userMessage.id);
     setTimeout(() => sendMessage(userMessage.content), 100);
   };
@@ -364,6 +421,13 @@ export default function ChatPanel() {
                 title="View system prompt"
               >
                 Prompt
+              </button>
+              <button
+                onClick={() => setShowPromptManager(true)}
+                className="text-xs px-2 py-1 rounded transition-colors text-gray-500 hover:text-black hover:bg-gray-100"
+                title="Manage prompts"
+              >
+                Prompts
               </button>
               {hasFiles && (
                 <button
@@ -570,30 +634,46 @@ export default function ChatPanel() {
         {/* Input area */}
         <div className="p-3 border-t border-black/15 shrink-0 bg-white">
           <div className="relative">
-            {/* Slash-command sequence picker */}
-            {slashMenuOpen && filteredSequences.length > 0 && (
+            {/* Slash-command picker: sequences + prompts */}
+            {slashMenuOpen && filteredItems.length > 0 && (
               <div className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-black/15 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50">
-                <div className="px-2.5 py-1 text-[9px] font-bold text-gray-400 uppercase border-b border-black/5">
-                  Sequences
-                </div>
-                {filteredSequences.map((seq, idx) => (
-                  <button
-                    key={seq.id}
-                    onMouseDown={(e) => { e.preventDefault(); handleSlashSelect(seq); }}
-                    onMouseEnter={() => setSlashIndex(idx)}
-                    className={`w-full text-left px-2.5 py-1.5 text-xs flex items-baseline gap-2 transition-colors ${
-                      idx === slashIndex ? 'bg-purple-50 text-purple-700' : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    <span className="font-medium shrink-0">{seq.name}</span>
-                    {seq.description && (
-                      <span className="text-gray-400 text-[10px] truncate">{seq.description}</span>
-                    )}
-                    <span className="text-gray-400 text-[10px] shrink-0 ml-auto">
-                      {seq.steps?.length || 0} steps
-                    </span>
-                  </button>
-                ))}
+                {filteredItems.map((item, idx) => {
+                  const isFirstOfType = idx === 0 || filteredItems[idx - 1]._type !== item._type;
+                  return (
+                    <React.Fragment key={item.id}>
+                      {isFirstOfType && (
+                        <div className={`px-2.5 py-1 text-[9px] font-bold text-gray-400 uppercase border-b border-black/5${idx > 0 ? ' border-t border-black/5 mt-0.5' : ''}`}>
+                          {item._type === 'sequence' ? 'Sequences' : 'Prompts'}
+                        </div>
+                      )}
+                      <button
+                        onMouseDown={(e) => { e.preventDefault(); handleSlashSelect(item); }}
+                        onMouseEnter={() => setSlashIndex(idx)}
+                        className={`w-full text-left px-2.5 py-1.5 text-xs flex items-baseline gap-2 transition-colors ${
+                          idx === slashIndex ? 'bg-purple-50 text-purple-700' : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="font-medium shrink-0">
+                          {item._type === 'sequence' ? item.name : item.title}
+                        </span>
+                        {item._type === 'sequence' ? (
+                          <>
+                            {item.description && (
+                              <span className="text-gray-400 text-[10px] truncate">{item.description}</span>
+                            )}
+                            <span className="text-gray-400 text-[10px] shrink-0 ml-auto">
+                              {item.steps?.length || 0} steps
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[9px] px-1 py-0.5 rounded bg-purple-50 text-purple-500 shrink-0 ml-auto">
+                            prompt
+                          </span>
+                        )}
+                      </button>
+                    </React.Fragment>
+                  );
+                })}
               </div>
             )}
             <textarea
@@ -602,7 +682,7 @@ export default function ChatPanel() {
               onChange={(e) => {
                 const val = e.target.value;
                 setInput(val);
-                if (val.startsWith('/') && !val.includes(' ') && sequences.length > 0) {
+                if (val.startsWith('/') && !val.includes(' ') && (sequences.length > 0 || allPrompts.length > 0)) {
                   setSlashQuery(val.slice(1));
                   setSlashMenuOpen(true);
                   setSlashIndex(0);
@@ -611,9 +691,9 @@ export default function ChatPanel() {
                 }
               }}
               onKeyDown={handleKeyDown}
-              placeholder={editingMessageId ? 'Edit your message...' : 'Ask about your story...'}
+              placeholder={imageMode ? 'Describe the image to generate...' : (editingMessageId ? 'Edit your message...' : 'Ask about your story...')}
               rows={2}
-              className="w-full bg-white border border-black/20 rounded-lg pl-10 pr-10 py-2 text-sm text-black resize-none focus:outline-none focus:border-black/50 placeholder:text-gray-400"
+              className={`w-full bg-white border rounded-lg pl-10 pr-20 py-2 text-sm text-black resize-none focus:outline-none placeholder:text-gray-400 ${imageMode ? 'border-purple-400 focus:border-purple-600' : 'border-black/20 focus:border-black/50'}`}
             />
             {/* File attachment button */}
             <button
@@ -632,11 +712,26 @@ export default function ChatPanel() {
               className="hidden"
               accept=".txt,.md,.json,.js,.jsx,.ts,.tsx,.css,.html,.py,.xml,.yaml,.yml,.csv"
             />
-            {isStreaming ? (
+            {/* Image mode toggle */}
+            <button
+              onClick={() => { if (imageReady) setImageMode((m) => !m); else openSettings('image'); }}
+              title={imageReady ? (imageMode ? 'Switch to text mode' : 'Switch to image generation mode') : 'Configure image provider in Settings'}
+              className={`absolute right-10 bottom-2 w-7 h-7 flex items-center justify-center rounded-md transition-colors text-base ${
+                imageMode
+                  ? 'bg-purple-600 text-white hover:bg-purple-700'
+                  : imageReady
+                    ? 'text-gray-400 hover:text-purple-600 hover:bg-purple-50'
+                    : 'text-gray-300 cursor-pointer'
+              }`}
+            >
+              🖼
+            </button>
+            {isStreaming || imagePending ? (
               <button
-                onClick={abortStream}
-                className="absolute right-2 bottom-2 w-7 h-7 flex items-center justify-center bg-black hover:bg-gray-800 rounded-md transition-colors"
-                title="Stop generating"
+                onClick={imagePending ? undefined : abortStream}
+                disabled={imagePending}
+                className="absolute right-2 bottom-2 w-7 h-7 flex items-center justify-center bg-black hover:bg-gray-800 rounded-md transition-colors disabled:opacity-60"
+                title={imagePending ? 'Generating image...' : 'Stop generating'}
               >
                 <span style={{ width: 10, height: 10, background: '#DC2626', borderRadius: 2, display: 'block' }} />
               </button>
@@ -644,7 +739,7 @@ export default function ChatPanel() {
               <button
                 onClick={handleSend}
                 disabled={!input.trim() && attachments.length === 0}
-                className="absolute right-2 bottom-2 w-7 h-7 flex items-center justify-center bg-black hover:bg-gray-800 disabled:bg-gray-300 disabled:text-gray-500 text-white rounded-md text-sm font-semibold transition-colors"
+                className={`absolute right-2 bottom-2 w-7 h-7 flex items-center justify-center disabled:bg-gray-300 disabled:text-gray-500 text-white rounded-md text-sm font-semibold transition-colors ${imageMode ? 'bg-purple-600 hover:bg-purple-700' : 'bg-black hover:bg-gray-800'}`}
               >
                 {'\u2191'}
               </button>
@@ -658,6 +753,7 @@ export default function ChatPanel() {
             </div>
           )}
         </div>
+      <PromptEditorDialog isOpen={showPromptManager} onClose={() => setShowPromptManager(false)} />
       </div>
   );
 }

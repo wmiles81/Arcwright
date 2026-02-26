@@ -1,8 +1,8 @@
 /**
  * Image generation API client.
  *
- * OpenRouter: uses /chat/completions with modalities: ["image"] — returns
- *   base64 data URLs in the assistant message's content array.
+ * OpenRouter: uses /chat/completions — image models return the image as a
+ *   data URL or remote URL in the message content. No special modalities param.
  * OpenAI: uses /images/generations with response_format: "b64_json".
  */
 import useAppStore from '../store/useAppStore';
@@ -31,9 +31,12 @@ export async function generateImage(prompt, options = {}) {
   const apiKey = provState?.apiKey;
   if (!apiKey) throw new Error(`No API key configured for ${config.name}`);
 
-  // OpenRouter uses /chat/completions with modalities parameter
   if (providerId === 'openrouter') {
-    return generateViaCompletions(config, apiKey, modelId, prompt, options);
+    // All OpenRouter image models use /chat/completions, but modalities differ:
+    // - Dual-output models (Gemini Image, GPT-5 Image): modalities: ["image", "text"]
+    // - Image-only models (Flux, Seedream, Sourceful): modalities: ["image"]
+    const isDualOutput = /^(google\/gemini.*image|openai\/gpt-5-image)/i.test(modelId);
+    return generateViaOpenRouter(config, apiKey, modelId, prompt, options, isDualOutput);
   }
 
   // OpenAI and others use /images/generations
@@ -41,20 +44,19 @@ export async function generateImage(prompt, options = {}) {
 }
 
 /**
- * OpenRouter path: POST /chat/completions with modalities: ["image"].
- * Response contains base64 data URLs in the message content array.
+ * OpenRouter: POST /chat/completions with the image model.
+ * No modalities param — image models return the image in the message content
+ * as a data URL or remote URL.
  */
-async function generateViaCompletions(config, apiKey, modelId, prompt, options) {
+async function generateViaOpenRouter(config, apiKey, modelId, prompt, options, isDualOutput = true) {
   const size = options.size || useAppStore.getState().imageSettings.defaultSize || '1024x1024';
-  const [w, h] = size.split('x').map(Number);
-  // Map size to aspect ratio for image_config
   const ratioMap = { '1024x1024': '1:1', '1792x1024': '16:9', '1024x1792': '9:16', '512x512': '1:1' };
   const aspectRatio = ratioMap[size] || '1:1';
 
   const body = {
     model: modelId,
     messages: [{ role: 'user', content: prompt }],
-    modalities: ['image'],
+    modalities: isDualOutput ? ['image', 'text'] : ['image'],
     image_config: { aspect_ratio: aspectRatio },
   };
 
@@ -65,11 +67,7 @@ async function generateViaCompletions(config, apiKey, modelId, prompt, options) 
     ...(config.extraHeaders ? config.extraHeaders(apiKey) : {}),
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
 
   if (!response.ok) {
     const errBody = await response.text().catch(() => '');
@@ -78,68 +76,74 @@ async function generateViaCompletions(config, apiKey, modelId, prompt, options) 
       const parsed = JSON.parse(errBody);
       if (parsed.error?.message) msg = parsed.error.message;
     } catch (_) {
-      if (errBody.length > 0) msg += `: ${errBody.substring(0, 200)}`;
+      if (errBody.length > 0 && !errBody.startsWith('<!')) msg += `: ${errBody.substring(0, 200)}`;
     }
     throw new Error(msg);
   }
 
   const data = await response.json();
-
-  // Extract base64 image from the assistant message content
   const message = data.choices?.[0]?.message;
   if (!message) throw new Error('No response from image model');
 
-  // Content may be a string or an array of parts
   const content = message.content;
-  let b64_json = null;
+  let imageUrl = null;
 
   if (Array.isArray(content)) {
-    // Look for image_url parts with base64 data URLs
     for (const part of content) {
-      if (part.type === 'image_url' && part.image_url?.url) {
-        const dataUrl = part.image_url.url;
-        // Extract base64 from data:image/png;base64,... or data:image/jpeg;base64,...
-        const match = dataUrl.match(/^data:image\/[^;]+;base64,(.+)$/);
-        if (match) {
-          b64_json = match[1];
-          break;
-        }
-      }
+      if (part.type === 'image_url' && part.image_url?.url) { imageUrl = part.image_url.url; break; }
+      if (part.type === 'image' && part.url) { imageUrl = part.url; break; }
     }
+  } else if (typeof content === 'string') {
+    // Some models return the URL as plain text
+    const urlMatch = content.match(/https?:\/\/\S+\.(png|jpg|jpeg|webp)(\?\S*)?/i);
+    if (urlMatch) imageUrl = urlMatch[0];
+    else if (content.startsWith('data:image')) imageUrl = content;
   }
 
-  // Also check the images field (some OpenRouter responses put it here)
-  if (!b64_json && message.images && message.images.length > 0) {
+  if (!imageUrl && Array.isArray(message.images) && message.images.length > 0) {
     const img = message.images[0];
-    if (typeof img === 'string') {
-      const match = img.match(/^data:image\/[^;]+;base64,(.+)$/);
-      b64_json = match ? match[1] : img;
-    } else if (img.url) {
-      const match = img.url.match(/^data:image\/[^;]+;base64,(.+)$/);
-      b64_json = match ? match[1] : null;
-    }
+    // Documented format: { type: "image_url", image_url: { url: "data:..." } }
+    imageUrl = typeof img === 'string' ? img
+      : (img.image_url?.url || img.url || null);
   }
 
-  if (!b64_json) {
-    throw new Error('No image data found in response. The model may not support image output.');
+  if (!imageUrl) {
+    console.error('[imageGeneration] Unexpected response:', JSON.stringify(data).slice(0, 500));
+    throw new Error('No image found in response. Verify the model supports image generation.');
   }
 
-  return { b64_json, revised_prompt: null };
+  // Data URL → extract base64
+  const dataMatch = imageUrl.match(/^data:image\/[^;]+;base64,(.+)$/s);
+  if (dataMatch) return { b64_json: dataMatch[1], revised_prompt: null };
+
+  // Remote URL → fetch and convert
+  if (imageUrl.startsWith('http')) {
+    const imgResponse = await fetch(imageUrl);
+    if (!imgResponse.ok) throw new Error(`Failed to download generated image (${imgResponse.status})`);
+    const arrayBuffer = await imgResponse.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return { b64_json: btoa(binary), revised_prompt: null };
+  }
+
+  throw new Error('Unrecognized image format in response.');
 }
 
 /**
- * Standard OpenAI path: POST /images/generations with response_format: "b64_json".
+ * Standard OpenAI path: POST /images/generations.
+ * gpt-image-1 always returns b64_json and rejects response_format.
+ * DALL-E 2/3 need response_format: 'b64_json' to get base64 instead of expiring URLs.
  */
 async function generateViaImagesEndpoint(config, apiKey, modelId, prompt, options) {
   const size = options.size || useAppStore.getState().imageSettings.defaultSize || '1024x1024';
 
-  const body = {
-    model: modelId,
-    prompt,
-    n: 1,
-    size,
-    response_format: 'b64_json',
-  };
+  const body = { model: modelId, prompt, n: 1, size };
+
+  // gpt-image-1 does not accept response_format (always returns b64_json).
+  if (!modelId.startsWith('gpt-image')) {
+    body.response_format = 'b64_json';
+  }
 
   const url = `${config.baseUrl}/images/generations`;
   const headers = {
@@ -148,11 +152,7 @@ async function generateViaImagesEndpoint(config, apiKey, modelId, prompt, option
     ...(config.extraHeaders ? config.extraHeaders(apiKey) : {}),
   };
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  });
+  const response = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
 
   if (!response.ok) {
     const errBody = await response.text().catch(() => '');
@@ -161,15 +161,27 @@ async function generateViaImagesEndpoint(config, apiKey, modelId, prompt, option
       const parsed = JSON.parse(errBody);
       if (parsed.error?.message) msg = parsed.error.message;
     } catch (_) {
-      if (errBody.length > 0) msg += `: ${errBody.substring(0, 200)}`;
+      if (errBody.length > 0 && !errBody.startsWith('<!')) msg += `: ${errBody.substring(0, 200)}`;
     }
     throw new Error(msg);
   }
 
   const data = await response.json();
-  if (!data.data || data.data.length === 0) {
-    throw new Error('No image data in response');
+  if (!data.data || data.data.length === 0) throw new Error('No image data in response');
+
+  const item = data.data[0];
+  if (item.b64_json) return item;
+
+  // URL response — fetch and convert to base64
+  if (item.url) {
+    const imgResponse = await fetch(item.url);
+    if (!imgResponse.ok) throw new Error(`Failed to download generated image (${imgResponse.status})`);
+    const arrayBuffer = await imgResponse.arrayBuffer();
+    const bytes = new Uint8Array(arrayBuffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+    return { b64_json: btoa(binary), revised_prompt: item.revised_prompt };
   }
 
-  return data.data[0];
+  throw new Error('No image data in response (expected b64_json or url)');
 }

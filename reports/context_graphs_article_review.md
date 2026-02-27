@@ -1,7 +1,3 @@
-Here’s the full review as a markdown document you can copy into your own `.md` file.
-
-***
-
 # Comprehensive Review: Context Graphs Survey Paper  
 ## Date: February 13, 2026  
 ## Reviewer Notes

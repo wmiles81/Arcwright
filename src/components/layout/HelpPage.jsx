@@ -193,7 +193,7 @@ flowchart TD
         <p className="mt-2">
           Requires an API key &mdash; configure one in <strong>Settings</strong> (gear icon in the nav bar).
           Supports OpenRouter, OpenAI, Anthropic, and Perplexity.
-          Click the <em>"Prompt"</em> button in the chat header to inspect exactly what context
+          Click the <em>"Mode"</em> button in the chat header to inspect exactly what context
           the assistant receives.
         </p>
       </Section>
@@ -407,8 +407,9 @@ function InterfaceGuideTab() {
             <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
               <ControlRow name="Provider / Model Badge">Shows &ldquo;Provider / model-name&rdquo; (e.g., &ldquo;OpenAI / gpt-4o&rdquo;). Click to open Settings and change provider or model.</ControlRow>
               <ControlRow name="Context Mode Badge">Purple badge indicating the current context mode (see below). Shows the active project name, or &ldquo;Full Context&rdquo; when no project is active.</ControlRow>
-              <ControlRow name="&ldquo;tools&rdquo; Badge">Small green badge visible when native tools are enabled. The AI can call tools to modify app state (beats, genres, scores). Only shown in Full Context and Book Project modes.</ControlRow>
-              <ControlRow name="Prompt Button">Toggle button. When active (black background), an expandable panel shows the exact system prompt being sent to the AI. Use this to inspect what context the AI receives.</ControlRow>
+              <ControlRow name="&ldquo;tools&rdquo; Badge + AI Label">Small green &ldquo;tools&rdquo; badge visible in Full Context mode when native tools are enabled. When tools are active the &ldquo;AI&rdquo; label at the top-left also turns green. The AI can call tools to modify app state (beats, genres, scores).</ControlRow>
+              <ControlRow name="Mode Button">Toggle button. When active (black background), an expandable panel shows the exact system prompt being sent to the AI. Use this to inspect what context the AI receives.</ControlRow>
+              <ControlRow name="Prompts Button">Opens the Prompt Manager where you can create, edit, and delete saved prompt templates. Templates are stored as <code className="text-purple-200 bg-slate-700/50 px-1 rounded">.md</code> files in the <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/prompts/</code> folder and are also accessible via the <Kbd>/</Kbd> slash menu in the chat input.</ControlRow>
               <ControlRow name="Files Button">Toggle button. When active, shows a file tree panel listing files loaded from the open folder. Only visible when files are loaded. Files listed here are available as AI context.</ControlRow>
               <ControlRow name="New Chat Button">Document-with-plus icon. Clears all messages and starts a fresh conversation. Shows a confirmation dialog before clearing.</ControlRow>
             </div>
@@ -475,7 +476,7 @@ function InterfaceGuideTab() {
               <ControlRow name="Text Input">Multi-line textarea. Press <Kbd>Enter</Kbd> to send, <Kbd>Shift+Enter</Kbd> for a new line.</ControlRow>
               <ControlRow name={<>{'\u2191'} Send Button</>}>Bottom-right of the input. Disabled when empty. Sends the message.</ControlRow>
               <ControlRow name={<>{'\u25A0'} Stop Button</>}>Replaces the send button while the AI is responding. Click to abort generation mid-stream.</ControlRow>
-              <ControlRow name="/ Sequence Picker">Type <Kbd>/</Kbd> in the chat input without a space to open a floating sequence picker showing all saved named sequences. Arrow keys navigate the list, Enter or click runs the highlighted sequence immediately. Escape or typing a space closes the menu.</ControlRow>
+              <ControlRow name="/ Slash Menu">Type <Kbd>/</Kbd> in the chat input without a space to open a floating picker showing two groups: <strong>Sequences</strong> (run immediately on select) and <strong>Prompts</strong> (insert template text into the input for editing before sending). Arrow keys navigate, Enter or click selects, Escape or a space closes the menu. Typing after <Kbd>/</Kbd> filters both groups by name.</ControlRow>
             </div>
           </Section>
         </>
@@ -508,10 +509,10 @@ function InterfaceGuideTab() {
 
           <Section title="Beat Editor">
             <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-              <ControlRow name="Beat Row (collapsed)">Shows beat number, name, time%, and mini color bars summarizing dimension values. Click to expand.</ControlRow>
+              <ControlRow name="Beat Row (collapsed)">Shows beat number, name, time%, mini color bars summarizing dimension values, and a live <strong>T:x.x</strong> tension score badge (red). Click anywhere to expand.</ControlRow>
               <ControlRow name="Beat Name">Click to rename inline. Press Enter to confirm, Escape to cancel.</ControlRow>
               <ControlRow name="Time % Input">Number field (0&ndash;100). Position in the story timeline. Beats auto-sort by this value.</ControlRow>
-              <ControlRow name="Dimension Sliders">One slider (0&ndash;10) per visible dimension inside the expanded beat row. Drag to set values.</ControlRow>
+              <ControlRow name="Dimension Sliders">One slider (0&ndash;10) per visible dimension inside the expanded beat row. Drag to set values. A live tension bar and numeric score update in real time as you move sliders.</ControlRow>
               <ControlRow name={<>{'\u2261'} Drag Handle</>}>Grip handle on each beat. Drag to reorder. Time% recalculates to fit the new position.</ControlRow>
               <ControlRow name="+ Insertion Zone">Hover between two beats to reveal a &ldquo;+&rdquo; button. Click to insert a new beat at the midpoint with averaged dimension values.</ControlRow>
               <ControlRow name="+ Add Beat">Finds the largest gap in the timeline and inserts there, not at the end.</ControlRow>

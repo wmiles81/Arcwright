@@ -592,6 +592,20 @@ export const ACTION_HANDLERS = {
       } catch (_) { /* fall through */ }
     }
 
+    // Try 1.5: Book files live inside a same-named folder
+    // e.g. "projects/books/My-Book.md" → "projects/books/My-Book/My-Book.md"
+    if (arcwriteHandle && cleanPath.startsWith('projects/books/')) {
+      const filename = cleanPath.split('/').pop();
+      const stem = filename.replace(/\.[^.]+$/, '');
+      const nestedPath = `projects/books/${stem}/${filename}`;
+      if (nestedPath !== cleanPath) {
+        try {
+          const content = await readFileByPath(arcwriteHandle, nestedPath);
+          return formatResult(content, filename);
+        } catch (_) { /* fall through */ }
+      }
+    }
+
     // Try 2: Read from the editor's open directory (for book chapter files)
     const editorHandle = useEditorStore.getState().directoryHandle;
     if (editorHandle) {

@@ -62,6 +62,8 @@ const useProjectStore = create((set, get) => ({
   activeBookProject: null,
   activeAiProject: null,
   activeMode: null, // 'book' | 'ai' | null
+  bookDirHandle: null,   // FileSystemDirectoryHandle for the active book project folder
+  bookFileTree: [],       // file tree for the active book project (independent of editor)
 
   // Skill folder directory handles (restored from IDB on project activation)
   skillFolderHandles: {}, // { idbKey: FileSystemDirectoryHandle }
@@ -305,16 +307,31 @@ const useProjectStore = create((set, get) => ({
     const { default: useChatStore } = await import('./useChatStore');
     useChatStore.getState().setMessages(chatHistory);
 
-    // Load file tree into editor
+    // Build book project file tree (separate from editor's directory)
     const { buildFileTree } = await import('../components/edit/FilePanel');
-    useEditorStore.getState().setDirectoryHandle(projectHandle);
-    const tree = await buildFileTree(projectHandle);
-    useEditorStore.getState().setFileTree(tree);
+    const rawTree = await buildFileTree(projectHandle);
+
+    // Apply persisted expanded state to book tree
+    const { expandedPaths } = useEditorStore.getState();
+    const applyExpanded = (nodes) => nodes.map((n) => ({
+      ...n,
+      expanded: !!expandedPaths[n.path],
+      ...(n.children ? { children: applyExpanded(n.children) } : {}),
+    }));
+    const bookTree = applyExpanded(rawTree);
+
+    // Also load into editor if no explicit folder is open
+    if (!useEditorStore.getState().directoryHandle) {
+      useEditorStore.getState().setDirectoryHandle(projectHandle);
+      useEditorStore.getState().setFileTree(rawTree);
+    }
 
     set({
       activeBookProject: projectName,
       activeAiProject: null,
       activeMode: 'book',
+      bookDirHandle: projectHandle,
+      bookFileTree: bookTree,
     });
     saveActiveProject('book', projectName);
   },
@@ -367,6 +384,8 @@ const useProjectStore = create((set, get) => ({
       activeAiProject: activeProject,
       activeBookProject: null,
       activeMode: 'ai',
+      bookDirHandle: null,
+      bookFileTree: [],
       skillFolderHandles: {},
     });
     saveActiveProject('ai', project.name);
@@ -418,6 +437,8 @@ const useProjectStore = create((set, get) => ({
       activeBookProject: null,
       activeAiProject: null,
       activeMode: null,
+      bookDirHandle: null,
+      bookFileTree: [],
     });
     saveActiveProject(null, null);
   },
@@ -472,9 +493,24 @@ const useProjectStore = create((set, get) => ({
     if (!arcwriteHandle) return;
     await fsDeleteBookProject(arcwriteHandle, name);
     if (activeBookProject === name) {
-      set({ activeBookProject: null, activeMode: null });
+      set({ activeBookProject: null, activeMode: null, bookDirHandle: null, bookFileTree: [] });
     }
     await get().loadProjects();
+  },
+
+  /** Refresh the book project file tree (call after file ops that change the book folder). */
+  refreshBookFileTree: async () => {
+    const { bookDirHandle } = get();
+    if (!bookDirHandle) return;
+    const { buildFileTree } = await import('../components/edit/FilePanel');
+    const rawTree = await buildFileTree(bookDirHandle);
+    const { expandedPaths } = useEditorStore.getState();
+    const applyExpanded = (nodes) => nodes.map((n) => ({
+      ...n,
+      expanded: !!expandedPaths[n.path],
+      ...(n.children ? { children: applyExpanded(n.children) } : {}),
+    }));
+    set({ bookFileTree: applyExpanded(rawTree) });
   },
 
   /** Create a new AI project. */

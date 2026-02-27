@@ -212,7 +212,7 @@ export default function App() {
   useEffect(() => {
     const editor = useEditorStore.getState();
     const apply = () => {
-      const { dyslexiaFont, letterSpacing, lineHeightA11y, reducedMotion, minFontSize } = useEditorStore.getState();
+      const { zoomLevel, dyslexiaFont, letterSpacing, lineHeightA11y, reducedMotion, minFontSize } = useEditorStore.getState();
       const root = document.documentElement;
 
       // Font family
@@ -232,6 +232,21 @@ export default function App() {
 
       // Minimum font size
       root.toggleAttribute('data-min-font', minFontSize);
+
+      // Zoom — applied on #root with compensated height so content fits viewport
+      root.style.zoom = '';  // never zoom <html> (breaks 100vh)
+      const appRoot = document.getElementById('root');
+      if (zoomLevel !== 1) {
+        appRoot.style.zoom = zoomLevel;
+        appRoot.style.height = `${100 / zoomLevel}vh`;
+        appRoot.style.width = `${100 / zoomLevel}vw`;
+        appRoot.style.overflow = 'hidden';
+      } else {
+        appRoot.style.zoom = '';
+        appRoot.style.height = '';
+        appRoot.style.width = '';
+        appRoot.style.overflow = '';
+      }
     };
 
     apply();

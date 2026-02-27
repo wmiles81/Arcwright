@@ -54,7 +54,7 @@ function MermaidDiagram({ chart, id }) {
   );
 }
 
-const tabs = ['about', 'interface', 'scaffolding', 'analysis', 'editing', 'sequences', 'dataPacks', 'structures', 'actStructures', 'dimensions', 'changelog'];
+const tabs = ['about', 'interface', 'mainPages', 'sequences', 'dataPacks', 'structures', 'actStructures', 'dimensions', 'changelog'];
 
 function Tab({ id, label, active, onClick }) {
   return (
@@ -1185,6 +1185,38 @@ function DiagramBox({ children }) {
     <pre className="bg-slate-900/80 border border-purple-500/30 rounded-lg p-4 text-[11px] leading-relaxed text-purple-200 font-mono overflow-x-auto whitespace-pre">
       {children}
     </pre>
+  );
+}
+
+function MainPagesTab() {
+  const [subTab, setSubTab] = useState('scaffolding');
+  const subTabs = [
+    { id: 'scaffolding', label: 'Scaffold' },
+    { id: 'analysis', label: 'Analyze' },
+    { id: 'editing', label: 'Edit' },
+  ];
+
+  return (
+    <div>
+      <div className="flex gap-1 mb-4">
+        {subTabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setSubTab(t.id)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded transition-colors ${
+              subTab === t.id
+                ? 'bg-purple-500 text-white'
+                : 'bg-slate-700/50 text-purple-300 hover:bg-slate-600 hover:text-white'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {subTab === 'scaffolding' && <ScaffoldingTab />}
+      {subTab === 'analysis' && <AnalysisTab />}
+      {subTab === 'editing' && <EditGuideTab />}
+    </div>
   );
 }
 
@@ -2624,9 +2656,7 @@ const weightChannelDescriptions = [
 const tabLabels = {
   about: 'About',
   interface: 'Interface Guide',
-  scaffolding: 'Scaffolding Guide',
-  analysis: 'Analysis Guide',
-  editing: 'Edit Workflow',
+  mainPages: 'Main Pages',
   sequences: 'Sequences',
   dataPacks: 'Data Packs',
   structures: 'Story Structures',
@@ -2659,9 +2689,7 @@ export default function HelpPage() {
       <div className="bg-white/10 backdrop-blur rounded-b-lg rounded-tr-lg p-6 border border-purple-500/20 border-t-0">
         {activeTab === 'about' && <AboutTab />}
         {activeTab === 'interface' && <InterfaceGuideTab />}
-        {activeTab === 'scaffolding' && <ScaffoldingTab />}
-        {activeTab === 'analysis' && <AnalysisTab />}
-        {activeTab === 'editing' && <EditGuideTab />}
+        {activeTab === 'mainPages' && <MainPagesTab />}
         {activeTab === 'sequences' && <SequencesTab />}
         {activeTab === 'dataPacks' && <DataPacksTab />}
         {activeTab === 'structures' && <StructuresTab />}

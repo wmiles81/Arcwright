@@ -18,6 +18,7 @@ const useEditorStore = create(
       // --- File system ---
       directoryHandle: null,
       fileTree: [],        // [{ name, path, handle, type: 'file'|'dir', children?, expanded? }]
+      expandedPaths: {},   // { [dirPath]: true } — persisted folder expanded state
       contextPaths: {},    // { [filePath]: true } — files included in AI context
       contextContent: {}, // { [filePath]: string } — cached content of green-dotted files
       selectedPaths: {},   // { [filePath]: true } — multi-selection for drag-and-drop
@@ -145,7 +146,16 @@ const useEditorStore = create(
           else removeHandle('editorDir');
         });
       },
-      setFileTree: (tree) => set({ fileTree: tree }),
+      setFileTree: (tree) => {
+        // Reapply persisted expanded state to fresh tree nodes
+        const { expandedPaths } = get();
+        const applyExpanded = (nodes) => nodes.map((n) => ({
+          ...n,
+          expanded: !!expandedPaths[n.path],
+          ...(n.children ? { children: applyExpanded(n.children) } : {}),
+        }));
+        set({ fileTree: applyExpanded(tree) });
+      },
 
       toggleContextPath: (path) => set((s) => {
         const nextPaths = { ...s.contextPaths };
@@ -176,7 +186,12 @@ const useEditorStore = create(
             if (n.children) return { ...n, children: toggle(n.children) };
             return n;
           });
-        set((s) => ({ fileTree: toggle(s.fileTree) }));
+        set((s) => {
+          const nextExpanded = { ...s.expandedPaths };
+          if (nextExpanded[path]) delete nextExpanded[path];
+          else nextExpanded[path] = true;
+          return { fileTree: toggle(s.fileTree), expandedPaths: nextExpanded };
+        });
       },
 
       // --- Selection (for drag-and-drop) ---
@@ -254,6 +269,7 @@ const useEditorStore = create(
         lineHeightA11y: state.lineHeightA11y,
         reducedMotion: state.reducedMotion,
         minFontSize: state.minFontSize,
+        expandedPaths: state.expandedPaths,
         contextPaths: state.contextPaths,
         // Persist tab paths (not content/handles — those reload from disk)
         _savedTabs: state.tabs.map((t) => ({ id: t.id, title: t.title })),

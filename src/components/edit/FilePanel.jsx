@@ -326,7 +326,9 @@ export default function FilePanel() {
 
   const handleOpenFolder = useCallback(async () => {
     try {
-      const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: 'documents' });
+      // Start in the Arcwrite storage folder if available, otherwise Documents
+      const arcwriteHandle = (await import('../../store/useProjectStore')).default.getState().arcwriteHandle;
+      const handle = await window.showDirectoryPicker({ mode: 'readwrite', startIn: arcwriteHandle || 'documents' });
       setDirectoryHandle(handle);
       const tree = await buildFileTree(handle);
       setFileTree(tree);

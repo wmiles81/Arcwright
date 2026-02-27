@@ -3,7 +3,6 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import ChatPanel from '../chat/ChatPanel';
 import useChatStore from '../../store/useChatStore';
 import useProjectStore from '../../store/useProjectStore';
-import useEditorStore from '../../store/useEditorStore';
 import ProjectsDialog from '../projects/ProjectsDialog';
 import SettingsDialog from '../settings/SettingsDialog';
 
@@ -14,8 +13,6 @@ export default function AppShell() {
   const isOpen = useChatStore((s) => s.isOpen);
   const togglePanel = useChatStore((s) => s.togglePanel);
   const location = useLocation();
-  const zoomLevel = useEditorStore((s) => s.zoomLevel);
-
   const isInitialized = useProjectStore((s) => s.isInitialized);
   const activeMode = useProjectStore((s) => s.activeMode);
   const activeBookProject = useProjectStore((s) => s.activeBookProject);
@@ -92,8 +89,7 @@ export default function AppShell() {
   return (
     <SettingsContext.Provider value={openSettings}>
     <div
-      className="w-full h-screen flex flex-col bg-gradient-to-br from-slate-900 to-purple-900 text-white overflow-hidden"
-      style={zoomLevel !== 1 ? { zoom: zoomLevel } : undefined}
+      className="w-full h-full flex flex-col bg-gradient-to-br from-slate-900 to-purple-900 text-white overflow-hidden"
     >
       <nav className="bg-slate-900/80 backdrop-blur border-b border-purple-500/30 shrink-0 z-50" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">

@@ -4,6 +4,60 @@ Tracks significant changes, architectural decisions, and bug fixes. Most recent 
 
 ---
 
+## 2026-02-27
+
+### Bug Fix: Disappearing Chat Responses
+
+**Problem:** AI responses would show action badges but no visible text. In the native tool-calling loop, `fullResponse` was reset to `''` at each iteration, discarding text from earlier iterations.
+
+**Changes:**
+- Added `accumulatedText` variable in `useChatSend.js` to preserve text across tool-call loop iterations
+- Added fallback "Ran N actions" text in `ChatMessage.jsx` when content is empty but actions exist
+
+**Files:** `src/hooks/useChatSend.js`, `src/components/chat/ChatMessage.jsx`
+
+---
+
+### Bug Fix: Nav Bar Scrolling Off Screen
+
+**Problem:** CSS `zoom` applied on `<html>` made `100vh` (used by `h-screen`) render at `100vh × zoom` physical pixels, overflowing the viewport and pushing the nav bar out of view.
+
+**Changes:**
+- Moved zoom from `<html>` to `#root` with compensated height (`100vh / zoom`) so rendered height = viewport
+- Changed AppShell root div from `h-screen` to `h-full` to inherit the compensated height
+- Added `#root` to the `html, body` overflow/height rules in `index.css`
+
+**Files:** `src/App.jsx`, `src/components/layout/AppShell.jsx`, `src/index.css`
+
+---
+
+### Files Tab: Clickable Files + Book Project Folder
+
+**Problem:** Files in the chat panel's Files tab were not clickable. Also, file tree always showed the Arcwrite storage root instead of the active book project folder. Folder expanded/collapsed state reset on every tree refresh.
+
+**Changes:**
+- Made files clickable `<button>` elements that open in the editor and navigate to /edit
+- Added `bookDirHandle` and `bookFileTree` to `useProjectStore` — book project tree displayed separately from editor directory
+- Added `expandedPaths` to `useEditorStore` (persisted) — folder expand/collapse state survives tree rebuilds
+- `setFileTree` auto-applies persisted expanded state to fresh tree nodes
+- Directory picker `startIn` now uses the Arcwrite storage handle as the starting hint
+
+**Files:** `src/components/chat/ChatPanel.jsx`, `src/store/useProjectStore.js`, `src/store/useEditorStore.js`, `src/components/edit/FilePanel.jsx`
+
+---
+
+### Help Page: Main Pages Tab
+
+**Problem:** Help page had 11 top-level tabs, taking up too much horizontal space.
+
+**Changes:**
+- Consolidated Scaffolding Guide, Analysis Guide, and Edit Workflow into a single "Main Pages" tab with sub-tabs
+- Reduced top-level tabs from 11 to 9
+
+**Files:** `src/components/layout/HelpPage.jsx`
+
+---
+
 ## 2026-02-25
 
 ### Storage Architecture Reorganization

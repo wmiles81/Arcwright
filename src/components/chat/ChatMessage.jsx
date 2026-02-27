@@ -25,7 +25,11 @@ export default function ChatMessage({ message, onCopy, onRegenerate, onEdit }) {
         }`}
       >
         <div className="whitespace-pre-wrap break-words leading-relaxed">
-          {formatText(message.content)}
+          {formatText(message.content) || (
+            !isUser && message.actions?.length > 0
+              ? <span className="text-g-status italic text-xs">Ran {message.actions.length} action{message.actions.length !== 1 ? 's' : ''}</span>
+              : null
+          )}
         </div>
 
         {/* Image artifact preview */}

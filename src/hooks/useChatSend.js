@@ -97,6 +97,7 @@ export default function useChatSend() {
       // --- Native tool calling path (agentic loop) ---
       let allActionResults = [];
       let fullResponse = '';
+      let accumulatedText = '';
       let iterations = 0;
       let totalUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
@@ -202,10 +203,16 @@ export default function useChatSend() {
           }
           apiMessages.push({ role: 'tool', tool_call_id: tc.id, content: result });
         }
+        // Preserve text from this iteration before looping
+        if (fullResponse.trim()) {
+          accumulatedText += (accumulatedText ? '\n' : '') + fullResponse.trim();
+        }
         // Loop back — model sees tool results and may respond or call more tools
       }
 
-      useChatStore.getState().finalizeStream(fullResponse, allActionResults, totalUsage.totalTokens > 0 ? totalUsage : null);
+      // Use accumulated text from all iterations; fall back to last iteration's text
+      const finalText = accumulatedText || fullResponse;
+      useChatStore.getState().finalizeStream(finalText, allActionResults, totalUsage.totalTokens > 0 ? totalUsage : null);
       // Auto-persist so history survives browser close without switching projects
       useProjectStore.getState().saveCurrentChatHistory().catch(() => {});
     } else {

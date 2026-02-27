@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Prevent body scroll — all scrolling happens inside app containers */
+html, body, #root {
+  overflow: hidden;
+  height: 100%;
+  margin: 0;
+}
+
 /* ── OpenDyslexic font ── */
 @font-face {
   font-family: 'OpenDyslexic';

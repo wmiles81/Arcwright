@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import useChatStore from '../../store/useChatStore';
 import useAppStore from '../../store/useAppStore';
 import useProjectStore from '../../store/useProjectStore';
@@ -53,16 +53,19 @@ export default function ChatPanel() {
   const imageReady = !!(imageSettings?.provider && imageSettings?.model);
   const sendMessage = useChatSend();
   const location = useLocation();
+  const navigate = useNavigate();
   const openSettings = useOpenSettings();
 
   const activeAiProject = useProjectStore((s) => s.activeAiProject);
   const activeBookProject = useProjectStore((s) => s.activeBookProject);
   const activeMode = useProjectStore((s) => s.activeMode);
   const aiProjects = useProjectStore((s) => s.aiProjects);
+  const bookFileTree = useProjectStore((s) => s.bookFileTree);
+  const bookDirHandle = useProjectStore((s) => s.bookDirHandle);
   const dropdownRef = useRef(null);
 
-  const fileTree = useEditorStore((s) => s.fileTree);
-  const directoryHandle = useEditorStore((s) => s.directoryHandle);
+  const editorFileTree = useEditorStore((s) => s.fileTree);
+  const editorDirHandle = useEditorStore((s) => s.directoryHandle);
   const sequences = useSequenceStore((s) => s.customSequences);
   const customPrompts = usePromptStore((s) => s.customPrompts);
   const allPrompts = [...customPrompts, ...defaultPrompts];
@@ -74,6 +77,10 @@ export default function ChatPanel() {
     : (providerConfig?.hardcodedModels || []);
   const model = allModels.find((m) => m.id === providerState.selectedModel);
   const toolsActive = chatSettings.toolsEnabled && modelSupportsTools(model);
+
+  // Prefer book project tree when a book is active; fall back to editor tree
+  const fileTree = (activeMode === 'book' && bookFileTree?.length > 0) ? bookFileTree : editorFileTree;
+  const directoryHandle = (activeMode === 'book' && bookDirHandle) ? bookDirHandle : editorDirHandle;
   const hasFiles = fileTree && fileTree.length > 0;
 
   /** Shorten a model ID for display: strip date suffix. */
@@ -499,7 +506,32 @@ export default function ChatPanel() {
                   {'\u2715'}
                 </button>
               </div>
-              <FileTreeView entries={fileTree} />
+              <FileTreeView
+                entries={fileTree}
+                onFileClick={async (entry) => {
+                  try {
+                    const file = await entry.handle.getFile();
+                    const content = await file.text();
+                    useEditorStore.getState().openTab(entry.path, entry.name, content, entry.handle);
+                    if (!location.pathname.startsWith('/edit')) navigate('/edit');
+                  } catch (e) {
+                    console.warn('[ChatPanel] Could not open file:', e.message);
+                  }
+                }}
+                onToggleDir={(path) => {
+                  // Persist expanded state in editor store
+                  useEditorStore.getState().toggleTreeNode(path);
+                  // Also update book tree if showing the book project
+                  if (activeMode === 'book' && bookFileTree?.length > 0) {
+                    const toggle = (nodes) => nodes.map((n) => {
+                      if (n.path === path) return { ...n, expanded: !n.expanded };
+                      if (n.children) return { ...n, children: toggle(n.children) };
+                      return n;
+                    });
+                    useProjectStore.setState((s) => ({ bookFileTree: toggle(s.bookFileTree) }));
+                  }
+                }}
+              />
             </div>
           </div>
         )}
@@ -764,7 +796,7 @@ export default function ChatPanel() {
 }
 
 /** Compact file tree for the chat panel's Files drawer. */
-function FileTreeView({ entries, depth = 0 }) {
+function FileTreeView({ entries, depth = 0, onFileClick, onToggleDir }) {
   if (!entries || entries.length === 0) return null;
   return (
     <div style={{ paddingLeft: depth > 0 ? 12 : 0 }}>
@@ -772,15 +804,25 @@ function FileTreeView({ entries, depth = 0 }) {
         <div key={entry.path}>
           {entry.type === 'dir' ? (
             <>
-              <div className="text-[11px] text-g-muted font-medium py-0.5">
+              <button
+                onClick={() => onToggleDir?.(entry.path)}
+                className="text-[11px] text-g-muted font-medium py-0.5 flex items-center gap-1 w-full text-left hover:bg-g-chrome rounded px-1 -mx-1 cursor-pointer"
+              >
+                <span className="text-[9px] w-3 text-center shrink-0">{entry.expanded ? '\u25BE' : '\u25B8'}</span>
                 {'\uD83D\uDCC1'} {entry.name}/
-              </div>
-              <FileTreeView entries={entry.children} depth={depth + 1} />
+              </button>
+              {entry.expanded && (
+                <FileTreeView entries={entry.children} depth={depth + 1} onFileClick={onFileClick} onToggleDir={onToggleDir} />
+              )}
             </>
           ) : entry.type === 'file' ? (
-            <div className="text-[11px] text-g-text py-0.5 truncate" title={entry.path}>
+            <button
+              onClick={() => onFileClick?.(entry)}
+              className="text-[11px] text-g-text py-0.5 truncate block w-full text-left hover:bg-g-chrome rounded px-1 -mx-1 cursor-pointer"
+              title={entry.path}
+            >
               {entry.name}
-            </div>
+            </button>
           ) : null}
         </div>
       ))}

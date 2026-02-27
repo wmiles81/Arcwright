@@ -52,7 +52,7 @@ export default function ScriptOutputPanel({ colors: c }) {
           flexShrink: 0,
         }}
       >
-        <span style={{ fontSize: '11px', fontWeight: 600, color: c.chromeText }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, color: c.chromeText }} role="status" aria-live="polite">
           {isRunning ? `Running: ${scriptName}` : scriptName || 'Script Output'}
         </span>
         <button

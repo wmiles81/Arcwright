@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useAppStore from '../../store/useAppStore';
 import useEditorStore from '../../store/useEditorStore';
+import useFocusTrap from '../../hooks/useFocusTrap';
 import useProjectStore from '../../store/useProjectStore';
 import { getTheme, lightThemes, darkThemes } from '../edit/editorThemes';
 import { PROVIDERS, PROVIDER_ORDER } from '../../api/providers';
@@ -109,6 +110,8 @@ export default function SettingsDialog({ isOpen, onClose }) {
     onClose();
   };
 
+  const focusTrapRef = useFocusTrap(isOpen);
+
   if (!isOpen) return null;
 
   const handleBackdropClick = (e) => {
@@ -154,6 +157,10 @@ export default function SettingsDialog({ isOpen, onClose }) {
       }}
     >
       <div
+        ref={focusTrapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Settings"
         style={{
           background: c.chrome,
           color: c.text,
@@ -201,6 +208,9 @@ export default function SettingsDialog({ isOpen, onClose }) {
             <button style={tabStyle(activeTab === 'packs')} onClick={() => setActiveTab('packs')}>
               Packs
             </button>
+            <button style={tabStyle(activeTab === 'accessibility')} onClick={() => setActiveTab('accessibility')}>
+              Accessibility
+            </button>
           </div>
         </div>
 
@@ -246,6 +256,9 @@ export default function SettingsDialog({ isOpen, onClose }) {
           )}
           {activeTab === 'packs' && (
             <PacksTab colors={c} />
+          )}
+          {activeTab === 'accessibility' && (
+            <AccessibilityTab colors={c} />
           )}
         </div>
 
@@ -931,6 +944,126 @@ function ImageTab({ imageSettings, onUpdate, localProviders, colors: c }) {
           No provider selected. Add an API key to a provider in the Providers tab first, then select it here.
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Tab: Accessibility ──
+
+function AccessibilityTab({ colors: c }) {
+  const zoomLevel = useEditorStore((s) => s.zoomLevel);
+  const setZoomLevel = useEditorStore((s) => s.setZoomLevel);
+  const dyslexiaFont = useEditorStore((s) => s.dyslexiaFont);
+  const setDyslexiaFont = useEditorStore((s) => s.setDyslexiaFont);
+  const letterSpacing = useEditorStore((s) => s.letterSpacing);
+  const setLetterSpacing = useEditorStore((s) => s.setLetterSpacing);
+  const lineHeightA11y = useEditorStore((s) => s.lineHeightA11y);
+  const setLineHeightA11y = useEditorStore((s) => s.setLineHeightA11y);
+  const reducedMotion = useEditorStore((s) => s.reducedMotion);
+  const setReducedMotion = useEditorStore((s) => s.setReducedMotion);
+  const minFontSize = useEditorStore((s) => s.minFontSize);
+  const setMinFontSize = useEditorStore((s) => s.setMinFontSize);
+
+  const zoomOptions = [
+    { value: 1.0, label: '100%' },
+    { value: 1.15, label: '115%' },
+    { value: 1.3, label: '130%' },
+    { value: 1.5, label: '150%' },
+  ];
+
+  const buttonGroupStyle = (active) => ({
+    padding: '5px 14px',
+    fontSize: 12,
+    fontWeight: active ? 700 : 500,
+    background: active ? '#7C3AED' : 'transparent',
+    color: active ? '#fff' : c.chromeText,
+    border: `1px solid ${active ? '#7C3AED' : c.chromeBorder}`,
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  });
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <div style={{ fontSize: 12, color: c.chromeText, marginBottom: 16, lineHeight: 1.5 }}>
+        Adjust display settings for better readability and comfort.
+        Changes take effect immediately.
+      </div>
+
+      {/* Zoom Level */}
+      <SettingRow label="Zoom Level" supported={true} hint="Scales the entire interface — text, buttons, and panels" colors={c}>
+        <div style={{ display: 'flex', borderRadius: 6, overflow: 'hidden' }}>
+          {zoomOptions.map((opt, i) => (
+            <button
+              key={opt.value}
+              onClick={() => setZoomLevel(opt.value)}
+              style={{
+                ...buttonGroupStyle(zoomLevel === opt.value),
+                borderRadius: i === 0 ? '6px 0 0 6px' : i === zoomOptions.length - 1 ? '0 6px 6px 0' : 0,
+                borderRight: i < zoomOptions.length - 1 ? 'none' : undefined,
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </SettingRow>
+
+      {/* Dyslexia Font */}
+      <SettingRow label="Dyslexia-Friendly Font" supported={true} hint="Use OpenDyslexic font for improved letter recognition" colors={c}>
+        <ToggleSwitch checked={dyslexiaFont} onChange={setDyslexiaFont} />
+      </SettingRow>
+
+      {/* Letter Spacing */}
+      <SettingRow label="Letter Spacing" supported={true} hint="Increase space between letters for readability" colors={c}>
+        <select
+          value={letterSpacing}
+          onChange={(e) => setLetterSpacing(parseFloat(e.target.value))}
+          style={{
+            padding: '6px 10px',
+            fontSize: 13,
+            background: c.bg,
+            color: c.text,
+            border: `1px solid ${c.chromeBorder}`,
+            borderRadius: 6,
+            outline: 'none',
+          }}
+        >
+          <option value={0}>Normal</option>
+          <option value={0.05}>Wide (+0.05em)</option>
+          <option value={0.1}>Extra Wide (+0.1em)</option>
+        </select>
+      </SettingRow>
+
+      {/* Line Height */}
+      <SettingRow label="Line Height" supported={true} hint="Increase space between lines of text" colors={c}>
+        <select
+          value={lineHeightA11y}
+          onChange={(e) => setLineHeightA11y(e.target.value)}
+          style={{
+            padding: '6px 10px',
+            fontSize: 13,
+            background: c.bg,
+            color: c.text,
+            border: `1px solid ${c.chromeBorder}`,
+            borderRadius: 6,
+            outline: 'none',
+          }}
+        >
+          <option value="normal">Normal (1.5)</option>
+          <option value="relaxed">Relaxed (1.75)</option>
+          <option value="loose">Loose (2.0)</option>
+        </select>
+      </SettingRow>
+
+      {/* Minimum Font Size */}
+      <SettingRow label="Minimum Font Size" supported={true} hint="Prevent any text in the interface from being smaller than 12px" colors={c}>
+        <ToggleSwitch checked={minFontSize} onChange={setMinFontSize} />
+      </SettingRow>
+
+      {/* Reduced Motion */}
+      <SettingRow label="Reduce Motion" supported={true} hint="Minimize animations and transitions throughout the interface" colors={c}>
+        <ToggleSwitch checked={reducedMotion} onChange={setReducedMotion} />
+      </SettingRow>
     </div>
   );
 }

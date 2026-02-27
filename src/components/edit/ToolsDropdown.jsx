@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import builtinScripts from '../../scripts/builtinScripts';
 import useScriptStore from '../../store/useScriptStore';
 import { runScript } from '../../scripts/scriptRunner';
+import ScriptEditorDialog from './ScriptEditorDialog';
 
 export default function ToolsDropdown({ colors: c }) {
   const [open, setOpen] = useState(false);
+  const [showManager, setShowManager] = useState(false);
   const ref = useRef(null);
   const userScripts = useScriptStore((s) => s.userScripts);
 
@@ -27,6 +29,11 @@ export default function ToolsDropdown({ colors: c }) {
     runScript(script);
   };
 
+  const handleManage = () => {
+    setOpen(false);
+    setShowManager(true);
+  };
+
   return (
     <div className="relative" ref={ref}>
       <button
@@ -34,6 +41,9 @@ export default function ToolsDropdown({ colors: c }) {
         className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded transition-colors"
         style={{ color: c.toolbarBtn }}
         title="Scripts & Tools"
+        aria-label="Scripts and Tools menu"
+        aria-expanded={open}
+        aria-haspopup="true"
         onMouseEnter={(e) => {
           e.currentTarget.style.color = c.toolbarBtnHover;
           e.currentTarget.style.background = c.toolbarBtnHoverBg;
@@ -63,11 +73,14 @@ export default function ToolsDropdown({ colors: c }) {
             maxHeight: 320,
             overflowY: 'auto',
           }}
+          role="menu"
         >
           {toolbarBuiltin.map((script) => (
             <div
               key={script.id}
               onClick={() => handleRun(script)}
+              role="menuitem"
+              tabIndex={-1}
               style={{
                 padding: '6px 10px',
                 fontSize: '11px',
@@ -127,8 +140,34 @@ export default function ToolsDropdown({ colors: c }) {
               ))}
             </>
           )}
+
+          <div style={{ borderTop: `1px solid ${c.chromeBorder}`, marginTop: 2 }}>
+            <div
+              onClick={handleManage}
+              style={{
+                padding: '6px 10px',
+                fontSize: '11px',
+                color: c.statusText,
+                cursor: 'pointer',
+                fontStyle: 'italic',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = c.toolbarBtnHoverBg || 'rgba(0,0,0,0.05)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              Manage Scripts...
+            </div>
+          </div>
         </div>
       )}
+      <ScriptEditorDialog
+        isOpen={showManager}
+        onClose={() => setShowManager(false)}
+        colors={c}
+      />
     </div>
   );
 }

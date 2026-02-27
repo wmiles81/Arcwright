@@ -29,6 +29,14 @@ const useEditorStore = create(
       // --- Editor theme ---
       editorTheme: 'light', // 'light' | 'dark' | 'sepia' | 'nord'
 
+      // --- Accessibility ---
+      zoomLevel: 1.0,           // 1.0 | 1.15 | 1.3 | 1.5
+      dyslexiaFont: false,
+      letterSpacing: 0,         // 0 | 0.05 | 0.1 (em)
+      lineHeightA11y: 'normal', // 'normal' | 'relaxed' | 'loose'
+      reducedMotion: false,
+      minFontSize: false,
+
       // --- Tab actions ---
       openTab: (id, title, content, fileHandle) => {
         const { tabs, dualPane, focusedPane } = get();
@@ -119,6 +127,14 @@ const useEditorStore = create(
 
       // --- Editor theme ---
       setEditorTheme: (theme) => set({ editorTheme: theme }),
+
+      // --- Accessibility ---
+      setZoomLevel: (level) => set({ zoomLevel: level }),
+      setDyslexiaFont: (on) => set({ dyslexiaFont: on }),
+      setLetterSpacing: (val) => set({ letterSpacing: val }),
+      setLineHeightA11y: (val) => set({ lineHeightA11y: val }),
+      setReducedMotion: (on) => set({ reducedMotion: on }),
+      setMinFontSize: (on) => set({ minFontSize: on }),
 
       // --- File system ---
       setDirectoryHandle: (handle) => {
@@ -232,6 +248,12 @@ const useEditorStore = create(
       partialize: (state) => ({
         editorTheme: state.editorTheme,
         leftPanelTab: state.leftPanelTab,
+        zoomLevel: state.zoomLevel,
+        dyslexiaFont: state.dyslexiaFont,
+        letterSpacing: state.letterSpacing,
+        lineHeightA11y: state.lineHeightA11y,
+        reducedMotion: state.reducedMotion,
+        minFontSize: state.minFontSize,
         contextPaths: state.contextPaths,
         // Persist tab paths (not content/handles — those reload from disk)
         _savedTabs: state.tabs.map((t) => ({ id: t.id, title: t.title })),

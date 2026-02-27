@@ -65,6 +65,71 @@ Tracks significant changes, architectural decisions, and bug fixes. Most recent 
 
 ---
 
+## 2026-02-27
+
+### WCAG 2.1 AA Accessibility Implementation
+
+Full accessibility overhaul for authors with physical challenges (visual impairments, dyslexia). Delivered in 6 phases.
+
+**Phase 1 — Zoom Scaling + Reading Aids + Settings Tab:**
+- CSS `zoom` on the app container scales ALL content (including 230+ inline `px` font sizes) without touching component code
+- New persisted fields in `useEditorStore`: `zoomLevel`, `dyslexiaFont`, `letterSpacing`, `lineHeightA11y`, `reducedMotion`, `minFontSize`
+- New "Accessibility" tab in Settings with controls for: Zoom Level (100/115/130/150%), Dyslexia Font toggle, Letter Spacing, Line Height, Minimum Font Size, Reduce Motion
+- Body-level CSS effects applied via `useEffect` in `App.jsx` — font-family (OpenDyslexic when toggled), letter-spacing, line-height, `.reduce-motion` class, `data-min-font` attribute
+- OpenDyslexic woff2 fonts loaded via `@font-face` in `index.css`
+
+**Phase 2 — High-Contrast Themes + Global Theme Reach:**
+- Two new themes in `editorThemes.js`: "High Contrast Light" (#000 on #FFF) and "High Contrast Dark" (#FFF on #000), both AAA ratios
+- Theme colors published as CSS custom properties (`--g-bg`, `--g-text`, `--g-chrome`, etc.) on `:root` from `App.jsx`
+- Tailwind semantic color tokens (`g-bg`, `g-text`, `g-chrome`, `g-border`, `g-muted`, `g-status`, `g-accent`) referencing CSS variables
+- Migrated 4 highest-impact components from hardcoded Tailwind colors to `g-*` tokens: `EditWorkflow`, `ChatPanel`, `ChatMessage`, `SequencesPanel`
+
+**Phase 3 — ARIA Labels:**
+- `aria-label` on all icon-only buttons (settings gear, chat toggle, attach, send, stop, action buttons)
+- `role="dialog" aria-modal="true" aria-label` on SettingsDialog, ScriptEditorDialog
+- `role="menu"` / `role="menuitem"` + `aria-expanded` + `aria-haspopup` on ToolsDropdown
+- `aria-hidden="true"` on decorative icon spans in ChatMessage
+- `aria-label="Main navigation"` on nav, `aria-label="Main content"` on main elements
+
+**Phase 4 — Focus Trapping:**
+- New `useFocusTrap` hook (`src/hooks/useFocusTrap.js`) — traps Tab within modal container, restores focus on deactivation
+- Applied to SettingsDialog and ScriptEditorDialog
+
+**Phase 5 — Screen Reader Live Regions:**
+- `aria-live="polite" role="log" aria-label="Chat messages"` on chat messages container
+- `.sr-only` streaming indicator: "AI is generating a response..."
+- `role="status" aria-live="polite"` on ScriptOutputPanel header
+- `.sr-only` utility class in `index.css`
+
+**Phase 6 — Small-Font Remediation:**
+- CSS rules under `[data-min-font="true"]` bump Tailwind `text-[7-10px]` → 12px, `text-[11px]` → 13px, `text-xs` → 13px
+- Inline `style={{ fontSize }}` instances handled by Phase 1's zoom
+
+**Files:** `src/store/useEditorStore.js`, `src/components/layout/AppShell.jsx`, `src/components/settings/SettingsDialog.jsx`, `src/App.jsx`, `src/index.css`, `src/components/edit/editorThemes.js`, `tailwind.config.js`, `src/components/edit/EditWorkflow.jsx`, `src/components/chat/ChatPanel.jsx`, `src/components/chat/ChatMessage.jsx`, `src/components/sequences/SequencesPanel.jsx`, `src/hooks/useFocusTrap.js`, `src/components/edit/ScriptEditorDialog.jsx`, `src/components/edit/ToolsDropdown.jsx`, `src/components/edit/ScriptOutputPanel.jsx`, `public/fonts/OpenDyslexic-Regular.woff2`, `public/fonts/OpenDyslexic-Bold.woff2`
+
+---
+
+### Script Manager UI
+
+**Changes:**
+- New `ScriptEditorDialog` modal accessible from "Manage Scripts..." in `ToolsDropdown` — create, edit, rename, delete user scripts with a code editor
+- `deleteFile` added to `scriptApi` for removing script files
+- "Rename Chapter Files" builtin script added
+
+**Files:** `src/components/edit/ScriptEditorDialog.jsx`, `src/components/edit/ToolsDropdown.jsx`
+
+---
+
+### Re-analyze All + Stop Analysis Buttons
+
+**Changes:**
+- "Re-analyze All" button in AnalysisWorkflow — calls `resetChaptersForReanalysis` to clear all cached analysis and re-run
+- Stop button during analysis — uses `AbortController` in `useClaudeAnalysis` to cancel in-flight requests
+
+**Files:** `src/components/analysis/AnalysisWorkflow.jsx`, `src/hooks/useClaudeAnalysis.js`
+
+---
+
 ## 2026-02-26
 
 ### Prompts Management

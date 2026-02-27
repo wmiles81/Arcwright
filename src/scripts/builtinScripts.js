@@ -261,6 +261,76 @@ if (findOnly) {
 }
 `,
   },
+  {
+    id: 'builtin-rename-chapters',
+    name: 'Rename Chapter Files',
+    description: 'Rename files like "01-##-Chapter-1.md" → "chapter-01.md" in the current folder',
+    language: 'js',
+    context: 'both',
+    builtin: true,
+    code: `
+// Determine target folder from selected dir node or active file's parent
+let folderPath;
+if (ctx.selectedNode?.type === 'dir') {
+  folderPath = ctx.selectedNode.path;
+} else {
+  const activeFile = ctx.getActiveFilePath();
+  if (!activeFile) {
+    ctx.error('No folder selected and no file open. Select a folder in the Files panel or open a file in the target folder.');
+    return;
+  }
+  const lastSlash = activeFile.lastIndexOf('/');
+  folderPath = lastSlash > 0 ? activeFile.substring(0, lastSlash) : '';
+}
+
+ctx.log('Scanning: ' + (folderPath || '(root)'));
+const entries = await ctx.readDir(folderPath);
+
+// Match files like 01-##-Chapter-1.md (## are literal hash characters)
+const pattern = /^(\\d+)-##-.+\\.md$/;
+const candidates = entries.filter(e => e.type === 'file' && pattern.test(e.name));
+
+if (candidates.length === 0) {
+  ctx.log('No files matching the pattern "NN-##-*.md" found in this folder.');
+  return;
+}
+
+ctx.log('Found ' + candidates.length + ' file(s) to rename:');
+candidates.forEach(e => {
+  const num = e.name.match(/^(\\d+)/)[1];
+  const newName = 'chapter-' + num.padStart(2, '0') + '.md';
+  ctx.log('  ' + e.name + '  →  ' + newName);
+});
+
+const ok = ctx.confirm('Rename ' + candidates.length + ' file(s)?');
+if (!ok) { ctx.log('Cancelled.'); return; }
+
+let renamed = 0;
+for (let i = 0; i < candidates.length; i++) {
+  const entry = candidates[i];
+  const num = entry.name.match(/^(\\d+)/)[1];
+  const newName = 'chapter-' + num.padStart(2, '0') + '.md';
+  const oldPath = folderPath ? folderPath + '/' + entry.name : entry.name;
+  const newPath = folderPath ? folderPath + '/' + newName : newName;
+
+  if (oldPath === newPath) {
+    ctx.log('  Skipped (already correct): ' + entry.name);
+    ctx.progress(i + 1, candidates.length);
+    continue;
+  }
+
+  const content = await ctx.readFile(oldPath);
+  await ctx.writeFile(newPath, content);
+  await ctx.deleteFile(oldPath);
+  ctx.log('  ' + entry.name + '  →  ' + newName);
+  renamed++;
+  ctx.progress(i + 1, candidates.length);
+}
+
+ctx.log('Done. ' + renamed + ' file(s) renamed.');
+await ctx.refreshFileTree();
+`,
+  },
 ];
 
 export default builtinScripts;

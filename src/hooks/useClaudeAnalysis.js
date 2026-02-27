@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import useAppStore from '../store/useAppStore';
 import { genreSystem } from '../data/genreSystem';
 import { plotStructures } from '../data/plotStructures';
@@ -22,6 +22,11 @@ export default function useClaudeAnalysis() {
 
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState('');
+  const abortControllerRef = useRef(null);
+
+  const cancelAnalysis = useCallback(() => {
+    abortControllerRef.current?.abort();
+  }, []);
 
   const currentGenre = genreSystem[selectedGenre];
   const currentSubgenre = currentGenre.subgenres[selectedSubgenre];
@@ -42,6 +47,9 @@ export default function useClaudeAnalysis() {
     setError(null);
     setAnalysisInProgress(true);
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     const systemPrompt = buildScoringSystemPrompt(
       currentGenre.name,
       currentSubgenre.name,
@@ -51,6 +59,8 @@ export default function useClaudeAnalysis() {
     try {
       // Process in batches
       for (let i = 0; i < unanalyzed.length; i += BATCH_SIZE) {
+        if (controller.signal.aborted) break;
+
         const batch = unanalyzed.slice(i, i + BATCH_SIZE);
         setProgress(`Analyzing chapters ${i + 1}-${Math.min(i + BATCH_SIZE, unanalyzed.length)} of ${unanalyzed.length}...`);
 
@@ -60,7 +70,7 @@ export default function useClaudeAnalysis() {
         }));
 
         const userMessage = buildScoringUserMessage(batchWithIndex, chapters.length);
-        const responseText = await callCompletionSync(systemPrompt, userMessage, { maxTokens: 8192 });
+        const responseText = await callCompletionSync(systemPrompt, userMessage, { maxTokens: 8192, signal: controller.signal });
         const parsed = parseJsonResponse(responseText);
 
         if (parsed.chapters && Array.isArray(parsed.chapters)) {
@@ -77,10 +87,12 @@ export default function useClaudeAnalysis() {
         }
       }
 
-      setProgress('Analysis complete');
+      setProgress(controller.signal.aborted ? 'Analysis cancelled.' : 'Analysis complete');
     } catch (err) {
-      setError(`Analysis failed: ${err.message}`);
+      if (err.name !== 'AbortError') setError(`Analysis failed: ${err.message}`);
+      else setProgress('Analysis cancelled.');
     } finally {
+      abortControllerRef.current = null;
       setAnalysisInProgress(false);
     }
   }, [apiKey, chapters, currentGenre, currentSubgenre, currentStructure, updateChapterScores, setAnalysisInProgress]);
@@ -108,5 +120,5 @@ export default function useClaudeAnalysis() {
     }
   }, [apiKey, currentGenre, currentSubgenre]);
 
-  return { analyzeChapters, generateGetWellPlan, error, progress };
+  return { analyzeChapters, cancelAnalysis, generateGetWellPlan, error, progress };
 }

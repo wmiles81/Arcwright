@@ -11,6 +11,7 @@ import useSequenceStore from './store/useSequenceStore';
 import { PROVIDERS, PROVIDER_ORDER } from './api/providers';
 import { fetchModels } from './api/providerAdapter';
 import { loadHandle } from './services/idbHandleStore';
+import { getTheme } from './components/edit/editorThemes';
 import { genreSystem, genreDimensionRanges } from './data/genreSystem';
 import { plotStructures, allStructures } from './data/plotStructures';
 
@@ -205,6 +206,61 @@ export default function App() {
       clearTimeout(debounceRef.current);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
+  }, []);
+
+  // Apply accessibility CSS to document root
+  useEffect(() => {
+    const editor = useEditorStore.getState();
+    const apply = () => {
+      const { dyslexiaFont, letterSpacing, lineHeightA11y, reducedMotion, minFontSize } = useEditorStore.getState();
+      const root = document.documentElement;
+
+      // Font family
+      root.style.fontFamily = dyslexiaFont
+        ? '"OpenDyslexic", system-ui, -apple-system, sans-serif'
+        : '';
+
+      // Letter spacing
+      root.style.letterSpacing = letterSpacing > 0 ? `${letterSpacing}em` : '';
+
+      // Line height
+      const lhMap = { normal: '', relaxed: '1.75', loose: '2.0' };
+      root.style.lineHeight = lhMap[lineHeightA11y] || '';
+
+      // Reduced motion
+      root.classList.toggle('reduce-motion', reducedMotion);
+
+      // Minimum font size
+      root.toggleAttribute('data-min-font', minFontSize);
+    };
+
+    apply();
+    const unsub = useEditorStore.subscribe(apply);
+    return () => unsub();
+  }, []);
+
+  // Publish editor theme as CSS custom properties on :root
+  useEffect(() => {
+    const applyTheme = () => {
+      const { editorTheme } = useEditorStore.getState();
+      const theme = getTheme(editorTheme);
+      const c = theme.colors;
+      const root = document.documentElement;
+
+      root.style.setProperty('--g-bg', c.bg);
+      root.style.setProperty('--g-text', c.text);
+      root.style.setProperty('--g-chrome', c.chrome);
+      root.style.setProperty('--g-chrome-border', c.chromeBorder);
+      root.style.setProperty('--g-chrome-text', c.chromeText);
+      root.style.setProperty('--g-status-bg', c.statusBg);
+      root.style.setProperty('--g-status-text', c.statusText);
+      root.style.setProperty('--g-accent', '#7C3AED');
+      root.setAttribute('data-theme-family', theme.family);
+    };
+
+    applyTheme();
+    const unsub = useEditorStore.subscribe(applyTheme);
+    return () => unsub();
   }, []);
 
   // Load model lists for all providers that have API keys

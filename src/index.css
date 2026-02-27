@@ -1,3 +1,57 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── OpenDyslexic font ── */
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('/fonts/OpenDyslexic-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'OpenDyslexic';
+  src: url('/fonts/OpenDyslexic-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── Reduced motion ── */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ── Screen reader only ── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ── Minimum font size enforcement (Tailwind classes) ── */
+/* Inline fontSize values are handled by the zoom setting */
+[data-min-font] .text-\[7px\],
+[data-min-font] .text-\[8px\],
+[data-min-font] .text-\[9px\],
+[data-min-font] .text-\[10px\] {
+  font-size: 12px !important;
+}
+[data-min-font] .text-\[11px\] {
+  font-size: 13px !important;
+}
+[data-min-font] .text-xs {
+  font-size: 13px !important;
+}

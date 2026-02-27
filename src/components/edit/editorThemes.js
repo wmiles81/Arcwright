@@ -84,6 +84,34 @@ const themes = [
     },
   },
 
+  // ── High-Contrast family ──
+  {
+    key: 'highContrastLight',
+    name: 'High Contrast Light',
+    family: 'light',
+    colors: {
+      bg: '#FFFFFF', text: '#000000', placeholder: '#767676', caret: '#000000',
+      chrome: '#F0F0F0', chromeBorder: '#000000', chromeText: '#000000',
+      statusBg: '#E0E0E0', statusText: '#000000',
+      tabActiveBg: '#FFFFFF', tabActiveText: '#000000',
+      tabInactiveBg: '#E0E0E0', tabInactiveText: '#000000', tabHoverBg: '#D0D0D0',
+      toolbarBtn: '#000000', toolbarBtnHover: '#000000', toolbarBtnHoverBg: '#CCCCCC',
+    },
+  },
+  {
+    key: 'highContrastDark',
+    name: 'High Contrast Dark',
+    family: 'dark',
+    colors: {
+      bg: '#000000', text: '#FFFFFF', placeholder: '#AAAAAA', caret: '#FFFFFF',
+      chrome: '#1A1A1A', chromeBorder: '#FFFFFF', chromeText: '#FFFFFF',
+      statusBg: '#1A1A1A', statusText: '#FFFFFF',
+      tabActiveBg: '#000000', tabActiveText: '#FFFFFF',
+      tabInactiveBg: '#1A1A1A', tabInactiveText: '#CCCCCC', tabHoverBg: '#333333',
+      toolbarBtn: '#FFFFFF', toolbarBtnHover: '#FFFFFF', toolbarBtnHoverBg: '#444444',
+    },
+  },
+
   // ── Dark family ──
   {
     key: 'dark',

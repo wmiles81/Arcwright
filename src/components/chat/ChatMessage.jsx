@@ -20,8 +20,8 @@ export default function ChatMessage({ message, onCopy, onRegenerate, onEdit }) {
       <div
         className={`rounded-lg px-3 py-2 text-sm ${
           isUser
-            ? 'max-w-[95%] bg-gray-100 text-black border border-black/20'
-            : 'w-full text-black'
+            ? 'max-w-[95%] bg-g-chrome text-g-text border border-g-border'
+            : 'w-full text-g-text'
         }`}
       >
         <div className="whitespace-pre-wrap break-words leading-relaxed">
@@ -35,10 +35,10 @@ export default function ChatMessage({ message, onCopy, onRegenerate, onEdit }) {
 
         {/* Attached files indicator */}
         {message.attachments && message.attachments.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-black/10">
-            <div className="text-[10px] text-gray-500 font-medium mb-1">Attached files:</div>
+          <div className="mt-2 pt-2 border-t border-g-border">
+            <div className="text-[10px] text-g-muted font-medium mb-1">Attached files:</div>
             {message.attachments.map((att, i) => (
-              <div key={i} className="text-[10px] text-gray-600 truncate">
+              <div key={i} className="text-[10px] text-g-muted truncate">
                 📎 {att.name}
               </div>
             ))}
@@ -72,7 +72,7 @@ export default function ChatMessage({ message, onCopy, onRegenerate, onEdit }) {
       {/* Token usage for assistant messages */}
       {!isUser && message.usage && (
         <div className="mt-1">
-          <span className="text-[9px] text-gray-400 font-mono tabular-nums">
+          <span className="text-[9px] text-g-status font-mono tabular-nums">
             {message.usage.promptTokens?.toLocaleString()}in · {message.usage.completionTokens?.toLocaleString()}out
           </span>
         </div>
@@ -86,9 +86,10 @@ function ActionButton({ icon, title, onClick }) {
     <button
       onClick={onClick}
       title={title}
-      className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors text-xs"
+      aria-label={title}
+      className="w-6 h-6 flex items-center justify-center rounded hover:bg-g-chrome text-g-status hover:text-g-muted transition-colors text-xs"
     >
-      {icon}
+      <span aria-hidden="true">{icon}</span>
     </button>
   );
 }
@@ -102,10 +103,10 @@ function ImagePreview({ artifact }) {
       <img
         src={blobUrl}
         alt={artifact.filename}
-        className="max-w-full rounded-lg border border-black/10"
+        className="max-w-full rounded-lg border border-g-border"
         style={{ maxHeight: 400 }}
       />
-      <div className="text-[10px] text-gray-400 mt-1">
+      <div className="text-[10px] text-g-status mt-1">
         {artifact.filename}
         {artifact.prompt && (
           <span className="ml-2 italic">
@@ -147,7 +148,7 @@ function formatText(text) {
       } else if (match[3]) {
         // Code: `text`
         parts.push(
-          <code key={key++} className="bg-gray-100 border border-black/10 px-1 rounded text-xs">
+          <code key={key++} className="bg-g-chrome border border-g-border px-1 rounded text-xs">
             {match[3]}
           </code>
         );

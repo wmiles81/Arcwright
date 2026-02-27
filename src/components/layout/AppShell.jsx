@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import ChatPanel from '../chat/ChatPanel';
 import useChatStore from '../../store/useChatStore';
 import useProjectStore from '../../store/useProjectStore';
+import useEditorStore from '../../store/useEditorStore';
 import ProjectsDialog from '../projects/ProjectsDialog';
 import SettingsDialog from '../settings/SettingsDialog';
 
@@ -13,6 +14,7 @@ export default function AppShell() {
   const isOpen = useChatStore((s) => s.isOpen);
   const togglePanel = useChatStore((s) => s.togglePanel);
   const location = useLocation();
+  const zoomLevel = useEditorStore((s) => s.zoomLevel);
 
   const isInitialized = useProjectStore((s) => s.isInitialized);
   const activeMode = useProjectStore((s) => s.activeMode);
@@ -89,8 +91,11 @@ export default function AppShell() {
 
   return (
     <SettingsContext.Provider value={openSettings}>
-    <div className="w-full h-screen flex flex-col bg-gradient-to-br from-slate-900 to-purple-900 text-white overflow-hidden">
-      <nav className="bg-slate-900/80 backdrop-blur border-b border-purple-500/30 shrink-0 z-50">
+    <div
+      className="w-full h-screen flex flex-col bg-gradient-to-br from-slate-900 to-purple-900 text-white overflow-hidden"
+      style={zoomLevel !== 1 ? { zoom: zoomLevel } : undefined}
+    >
+      <nav className="bg-slate-900/80 backdrop-blur border-b border-purple-500/30 shrink-0 z-50" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <NavLink to="/" className="flex items-center gap-2 text-xl font-bold text-purple-200 hover:text-white transition-colors">
             <img src="/Arcwright-logotype.png" alt="Arcwright" className="h-full max-h-[40px] w-auto rounded-md" />
@@ -126,6 +131,7 @@ export default function AppShell() {
               onClick={() => setShowSettingsDialog(true)}
               className="px-3 py-2 rounded font-semibold text-sm transition-colors border border-purple-500/30 text-purple-300 hover:bg-purple-800 hover:text-white cursor-pointer"
               title="Settings"
+              aria-label="Settings"
             >
               {'\u2699'}
             </button>
@@ -143,6 +149,7 @@ export default function AppShell() {
             className="absolute top-1/2 -translate-y-1/2 z-50 bg-black hover:bg-gray-800 text-white w-8 h-16 rounded-r-lg flex items-center justify-center shadow-lg transition-all duration-300"
             style={{ left: showGlobalChat ? chatWidth : 0 }}
             title={isOpen ? 'Close chat' : 'Open AI chat'}
+            aria-label={isOpen ? 'Close chat panel' : 'Open AI chat panel'}
           >
             <span className="text-lg">{isOpen ? '\u00AB' : '\u00BB'}</span>
           </button>
@@ -172,6 +179,7 @@ export default function AppShell() {
             ref={mainPaneRef}
             onMouseEnter={() => { activePaneRef.current = mainPaneRef.current; }}
             className="flex-1 min-w-0 min-h-0"
+            aria-label="Main content"
           >
             <Outlet />
           </main>
@@ -180,6 +188,7 @@ export default function AppShell() {
             ref={mainPaneRef}
             onMouseEnter={() => { activePaneRef.current = mainPaneRef.current; }}
             className="flex-1 overflow-y-auto p-6 min-w-0"
+            aria-label="Main content"
           >
             <div className="max-w-7xl mx-auto">
               <Outlet />

@@ -380,6 +380,11 @@ const useAppStore = create(
 
       clearChapters: () => set({ chapters: [], revisionItems: [] }),
 
+      resetChaptersForReanalysis: () =>
+        set((state) => ({
+          chapters: state.chapters.map((ch) => ({ ...ch, status: 'pending' })),
+        })),
+
       setAnalysisInProgress: (v) => set({ analysisInProgress: v }),
 
       updateChapterScores: (chapterId, scores, source = 'ai') => {

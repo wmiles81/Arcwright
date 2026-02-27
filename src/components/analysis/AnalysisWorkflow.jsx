@@ -117,6 +117,7 @@ function sanitizeFilename(title) {
 export default function AnalysisWorkflow() {
   const {
     activeProvider, providers, chapters, analysisInProgress, selectedGenre,
+    resetChaptersForReanalysis,
   } = useAppStore();
 
   const provState = providers[activeProvider] || {};
@@ -199,7 +200,7 @@ export default function AnalysisWorkflow() {
     }
   }, [chapters, navigate]);
 
-  const { analyzeChapters, error, progress } = useClaudeAnalysis();
+  const { analyzeChapters, cancelAnalysis, error, progress } = useClaudeAnalysis();
 
   const hasAnalyzedChapters = chapters.some((ch) => ch.aiScores || ch.userScores);
   const hasPendingChapters = chapters.some((ch) => ch.status === 'pending' || !ch.status);
@@ -243,18 +244,46 @@ export default function AnalysisWorkflow() {
       {/* Text Input */}
       <TextInputPanel />
 
-      {/* Analyze Button */}
-      {chapters.length > 0 && hasPendingChapters && (
-        <div className="mb-6">
-          <button
-            onClick={analyzeChapters}
-            disabled={analysisInProgress || !hasApiKey}
-            className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:opacity-50 py-3 rounded-lg font-bold text-lg"
-          >
-            {analysisInProgress ? 'Analyzing...' : `Analyze ${chapters.filter((ch) => !ch.status || ch.status === 'pending').length} Chapter(s)`}
-          </button>
+      {/* Analyze / Re-analyze Buttons */}
+      {chapters.length > 0 && (
+        <div className="mb-6 flex flex-col gap-2">
+          {analysisInProgress ? (
+            <div className="flex gap-2">
+              <div className="flex-1 bg-slate-600 opacity-50 py-3 rounded-lg font-bold text-lg text-center text-white">
+                Analyzing...
+              </div>
+              <button
+                onClick={cancelAnalysis}
+                className="px-4 py-3 bg-red-800 hover:bg-red-700 rounded-lg font-semibold text-sm text-red-200"
+                title="Stop analysis after the current batch"
+              >
+                Stop
+              </button>
+            </div>
+          ) : (
+            <>
+              {hasPendingChapters && (
+                <button
+                  onClick={analyzeChapters}
+                  disabled={!hasApiKey}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 disabled:opacity-50 py-3 rounded-lg font-bold text-lg"
+                >
+                  {`Analyze ${chapters.filter((ch) => !ch.status || ch.status === 'pending').length} Chapter(s)`}
+                </button>
+              )}
+              {hasAnalyzedChapters && (
+                <button
+                  onClick={() => { resetChaptersForReanalysis(); analyzeChapters(); }}
+                  disabled={!hasApiKey}
+                  className="w-full bg-slate-700 hover:bg-slate-600 disabled:bg-slate-700 disabled:opacity-50 py-2 rounded-lg font-semibold text-sm text-slate-300"
+                >
+                  {`Re-analyze All ${chapters.length} Chapter(s)`}
+                </button>
+              )}
+            </>
+          )}
           {!hasApiKey && (
-            <p className="text-xs text-yellow-400 mt-2 text-center">
+            <p className="text-xs text-yellow-400 mt-1 text-center">
               Configure an API key in Settings to enable AI analysis
             </p>
           )}

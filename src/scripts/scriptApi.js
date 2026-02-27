@@ -81,6 +81,12 @@ export function createScriptContext(options = {}) {
       await walkToDir(rootHandle, path, true);
     },
 
+    deleteFile: async (path) => {
+      const rootHandle = getRootHandle();
+      const { dirHandle, filename } = await walkToParent(rootHandle, path);
+      await dirHandle.removeEntry(filename);
+    },
+
     // ── Editor integration ──
 
     getActiveFileContent: () => {

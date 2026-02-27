@@ -100,8 +100,8 @@ export default function SequencesPanel() {
   // List view
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-black/10 shrink-0 flex items-center justify-between">
-        <span className="text-xs font-bold text-gray-500 uppercase">Sequences</span>
+      <div className="p-3 border-b border-g-border shrink-0 flex items-center justify-between">
+        <span className="text-xs font-bold text-g-muted uppercase">Sequences</span>
         <button
           onClick={handleNewSequence}
           className="text-[11px] px-2 py-1 rounded bg-purple-100 text-purple-700 hover:bg-purple-200 font-medium transition-colors"
@@ -112,25 +112,25 @@ export default function SequencesPanel() {
 
       <div className="flex-1 overflow-y-auto">
         {!isLoaded && (
-          <p className="text-xs text-gray-400 p-4 text-center">Loading…</p>
+          <p className="text-xs text-g-status p-4 text-center">Loading…</p>
         )}
         {isLoaded && customSequences.length === 0 && (
           <div className="p-4 text-center">
-            <p className="text-xs text-gray-400 mb-3">No sequences yet.</p>
-            <p className="text-[11px] text-gray-400">
+            <p className="text-xs text-g-status mb-3">No sequences yet.</p>
+            <p className="text-[11px] text-g-status">
               Create a sequence to build a reusable pipeline of prompt steps.
             </p>
           </div>
         )}
         {customSequences.map((seq) => (
-          <div key={seq.id} className="border-b border-black/5 p-3">
+          <div key={seq.id} className="border-b border-g-border p-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
-                <div className="text-xs font-semibold text-black truncate">{seq.name}</div>
+                <div className="text-xs font-semibold text-g-text truncate">{seq.name}</div>
                 {seq.description && (
-                  <div className="text-[11px] text-gray-500 mt-0.5 truncate">{seq.description}</div>
+                  <div className="text-[11px] text-g-muted mt-0.5 truncate">{seq.description}</div>
                 )}
-                <div className="text-[10px] text-gray-400 mt-0.5">
+                <div className="text-[10px] text-g-status mt-0.5">
                   {seq.steps?.length || 0} step{(seq.steps?.length || 0) !== 1 ? 's' : ''}
                 </div>
               </div>
@@ -145,14 +145,14 @@ export default function SequencesPanel() {
                 </button>
                 <button
                   onClick={() => handleEditSequence(seq)}
-                  className="text-[10px] px-1.5 py-1 rounded hover:bg-gray-100 text-gray-500 transition-colors"
+                  className="text-[10px] px-1.5 py-1 rounded hover:bg-g-chrome text-g-muted transition-colors"
                   title="Edit"
                 >
                   ✏
                 </button>
                 <button
                   onClick={() => handleDeleteSequence(seq.id)}
-                  className="text-[10px] px-1.5 py-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                  className="text-[10px] px-1.5 py-1 rounded hover:bg-red-50 text-g-status hover:text-red-500 transition-colors"
                   title="Delete"
                 >
                   ✕
@@ -172,7 +172,7 @@ function RunningView({ running, isRunning, onBack }) {
   if (!running) {
     return (
       <div className="flex flex-col h-full items-center justify-center p-4">
-        <p className="text-xs text-gray-400 mb-3">No sequence running.</p>
+        <p className="text-xs text-g-status mb-3">No sequence running.</p>
         <button onClick={onBack} className="text-xs text-purple-600 underline">Back to list</button>
       </div>
     );
@@ -184,11 +184,11 @@ function RunningView({ running, isRunning, onBack }) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-3 border-b border-black/10 shrink-0">
+      <div className="p-3 border-b border-g-border shrink-0">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold text-black truncate">{running.sequenceName}</div>
-            <div className="text-[11px] text-gray-500 mt-0.5">
+            <div className="text-xs font-semibold text-g-text truncate">{running.sequenceName}</div>
+            <div className="text-[11px] text-g-muted mt-0.5">
               {isRunning
                 ? `Step ${running.currentStep} of ${running.totalSteps}…`
                 : allDone
@@ -207,7 +207,7 @@ function RunningView({ running, isRunning, onBack }) {
           )}
         </div>
         {isRunning && (
-          <div className="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div className="mt-2 h-1 bg-g-chrome rounded-full overflow-hidden">
             <div
               className="h-full bg-purple-500 transition-all duration-300"
               style={{ width: `${Math.round((running.currentStep / running.totalSteps) * 100)}%` }}
@@ -222,27 +222,27 @@ function RunningView({ running, isRunning, onBack }) {
           return (
             <div key={step.id || i}>
               {/* Main step row */}
-              <div className={`flex items-start gap-2 p-2 rounded text-xs ${step.status === 'running' ? 'bg-purple-50' : 'bg-gray-50'}`}>
+              <div className={`flex items-start gap-2 p-2 rounded text-xs ${step.status === 'running' ? 'bg-purple-50' : 'bg-g-chrome'}`}>
                 <StatusDot status={step.status} />
                 <div className="min-w-0 flex-1">
-                  <div className="font-medium text-black truncate">
+                  <div className="font-medium text-g-text truncate">
                     {step.label}
                     {stepType === 'loop' && step.status !== 'pending' && (
-                      <span className="text-gray-400 font-normal ml-1">
+                      <span className="text-g-status font-normal ml-1">
                         (iteration {step.currentIteration}/{step.totalIterations ?? '?'})
                       </span>
                     )}
                   </div>
                   {/* Action: file + word count */}
                   {stepType === 'action' && step.outputFile && (
-                    <div className="text-[10px] text-gray-400 font-mono truncate mt-0.5">{step.outputFile}</div>
+                    <div className="text-[10px] text-g-status font-mono truncate mt-0.5">{step.outputFile}</div>
                   )}
                   {stepType === 'action' && step.status === 'done' && step.wordCount > 0 && (
-                    <div className="text-[10px] text-gray-400 mt-0.5">{step.wordCount.toLocaleString()} words</div>
+                    <div className="text-[10px] text-g-status mt-0.5">{step.wordCount.toLocaleString()} words</div>
                   )}
                   {/* Condition: decision */}
                   {stepType === 'condition' && step.decision && (
-                    <div className="text-[10px] text-gray-500 mt-0.5">{step.decision}</div>
+                    <div className="text-[10px] text-g-muted mt-0.5">{step.decision}</div>
                   )}
                 </div>
               </div>
@@ -250,13 +250,13 @@ function RunningView({ running, isRunning, onBack }) {
               {stepType === 'loop' && step.iterations && step.iterations.length > 0 && (
                 <div className="ml-4 mt-0.5 space-y-0.5">
                   {step.iterations.map((it, ii) => (
-                    <div key={ii} className={`flex items-start gap-2 px-2 py-1 rounded text-[11px] ${it.status === 'running' ? 'bg-purple-50/70' : 'bg-gray-50/70'}`}>
+                    <div key={ii} className={`flex items-start gap-2 px-2 py-1 rounded text-[11px] ${it.status === 'running' ? 'bg-purple-50/70' : 'bg-g-chrome/70'}`}>
                       <StatusDot status={it.status} />
                       <div className="min-w-0 flex-1">
-                        <span className="text-black">{it.label}</span>
-                        {it.outputFile && <span className="text-gray-400 font-mono ml-1 text-[10px]">→ {it.outputFile}</span>}
+                        <span className="text-g-text">{it.label}</span>
+                        {it.outputFile && <span className="text-g-status font-mono ml-1 text-[10px]">→ {it.outputFile}</span>}
                         {it.status === 'done' && it.wordCount > 0 && (
-                          <span className="text-gray-400 ml-1 text-[10px]">({it.wordCount.toLocaleString()} words)</span>
+                          <span className="text-g-status ml-1 text-[10px]">({it.wordCount.toLocaleString()} words)</span>
                         )}
                       </div>
                     </div>
@@ -282,7 +282,7 @@ function StatusDot({ status }) {
   if (status === 'done') return <span className="text-green-500 shrink-0 mt-0.5 text-[10px] leading-none">✓</span>;
   if (status === 'error') return <span className="text-red-500 shrink-0 mt-0.5 text-[10px] leading-none">✕</span>;
   // pending
-  return <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0 mt-1" />;
+  return <span className="w-2 h-2 rounded-full bg-g-border shrink-0 mt-1" />;
 }
 
 // ── Edit View ─────────────────────────────────────────────────────────────────
@@ -339,14 +339,14 @@ function EditView({ initialDraft, isNew, onSave, onCancel }) {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="p-3 border-b border-black/10 shrink-0 flex items-center justify-between">
-        <span className="text-xs font-bold text-gray-500 uppercase">
+      <div className="p-3 border-b border-g-border shrink-0 flex items-center justify-between">
+        <span className="text-xs font-bold text-g-muted uppercase">
           {isNew ? 'New Sequence' : 'Edit Sequence'}
         </span>
         <div className="flex gap-1">
           <button
             onClick={onCancel}
-            className="text-[11px] px-2 py-1 rounded hover:bg-gray-100 text-gray-500 transition-colors"
+            className="text-[11px] px-2 py-1 rounded hover:bg-g-chrome text-g-muted transition-colors"
           >
             Cancel
           </button>
@@ -364,7 +364,7 @@ function EditView({ initialDraft, isNew, onSave, onCancel }) {
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {/* Name */}
         <div>
-          <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Name *</label>
+          <label className="block text-[10px] font-bold text-g-status uppercase mb-1">Name *</label>
           <input
             type="text"
             value={draft.name}
@@ -372,13 +372,13 @@ function EditView({ initialDraft, isNew, onSave, onCancel }) {
             placeholder="My Sequence"
             autoComplete="off"
             spellCheck={false}
-            className="w-full text-xs text-black bg-white px-2 py-1.5 border border-black/20 rounded focus:outline-none focus:border-black/50"
+            className="w-full text-xs text-g-text bg-g-bg px-2 py-1.5 border border-black/20 rounded focus:outline-none focus:border-g-border0"
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Description</label>
+          <label className="block text-[10px] font-bold text-g-status uppercase mb-1">Description</label>
           <input
             type="text"
             value={draft.description}
@@ -386,24 +386,24 @@ function EditView({ initialDraft, isNew, onSave, onCancel }) {
             placeholder="Optional description"
             autoComplete="off"
             spellCheck={false}
-            className="w-full text-xs text-black bg-white px-2 py-1.5 border border-black/20 rounded focus:outline-none focus:border-black/50"
+            className="w-full text-xs text-g-text bg-g-bg px-2 py-1.5 border border-black/20 rounded focus:outline-none focus:border-g-border0"
           />
         </div>
 
         {/* Steps */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-[10px] font-bold text-gray-400 uppercase">Steps</label>
+            <label className="text-[10px] font-bold text-g-status uppercase">Steps</label>
             <button
               onClick={addStep}
-              className="text-[10px] px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+              className="text-[10px] px-2 py-0.5 rounded bg-g-chrome hover:bg-gray-200 text-g-muted transition-colors"
             >
               + Add Step
             </button>
           </div>
 
           {draft.steps.length === 0 && (
-            <p className="text-[11px] text-gray-400 text-center py-3">No steps yet. Add a step to get started.</p>
+            <p className="text-[11px] text-g-status text-center py-3">No steps yet. Add a step to get started.</p>
           )}
 
           <div className="space-y-3">
@@ -460,32 +460,32 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
   };
 
   return (
-    <div className={`border border-black/10 rounded-lg p-2.5 space-y-2 ${depth === 0 ? 'bg-gray-50/50' : 'bg-white'}`}>
+    <div className={`border border-g-border rounded-lg p-2.5 space-y-2 ${depth === 0 ? 'bg-g-chrome/50' : 'bg-g-bg'}`}>
       {/* Step header: number + name + reorder + delete */}
       <div className="flex items-center gap-1.5">
-        <span className="text-[10px] font-bold text-gray-400 shrink-0 w-4">{idx + 1}.</span>
+        <span className="text-[10px] font-bold text-g-status shrink-0 w-4">{idx + 1}.</span>
         <input
           type="text"
           value={step.name || ''}
           onChange={(e) => onChange({ name: e.target.value })}
           placeholder={`Step ${idx + 1} label`}
-          className="flex-1 min-w-0 text-xs text-black px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-white"
+          className="flex-1 min-w-0 text-xs text-g-text px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-g-bg"
         />
         <button onClick={onMoveUp} disabled={idx === 0}
-          className="text-gray-400 hover:text-black disabled:opacity-20 text-xs px-1 transition-colors" title="Move up">↑</button>
+          className="text-g-status hover:text-g-text disabled:opacity-20 text-xs px-1 transition-colors" title="Move up">↑</button>
         <button onClick={onMoveDown} disabled={idx === total - 1}
-          className="text-gray-400 hover:text-black disabled:opacity-20 text-xs px-1 transition-colors" title="Move down">↓</button>
+          className="text-g-status hover:text-g-text disabled:opacity-20 text-xs px-1 transition-colors" title="Move down">↓</button>
         <button onClick={onRemove}
-          className="text-gray-400 hover:text-red-500 text-xs px-1 transition-colors" title="Remove step">✕</button>
+          className="text-g-status hover:text-red-500 text-xs px-1 transition-colors" title="Remove step">✕</button>
       </div>
 
       {/* Type selector */}
-      <div className="flex rounded overflow-hidden border border-black/10 text-[10px] font-medium">
+      <div className="flex rounded overflow-hidden border border-g-border text-[10px] font-medium">
         {['action', ...(depth === 0 ? ['loop'] : []), 'condition'].map((t) => (
           <button
             key={t}
             onClick={() => setType(t)}
-            className={`flex-1 py-1 capitalize transition-colors ${type === t ? 'bg-black text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+            className={`flex-1 py-1 capitalize transition-colors ${type === t ? 'bg-black text-white' : 'bg-g-bg text-g-muted hover:bg-g-chrome'}`}
           >
             {t}
           </button>
@@ -495,14 +495,14 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
       {/* ── Action content ── */}
       {type === 'action' && (<>
         {/* Source mode toggle */}
-        <div className="flex rounded overflow-hidden border border-black/10 text-[10px] font-medium">
+        <div className="flex rounded overflow-hidden border border-g-border text-[10px] font-medium">
           <button
             onClick={() => onChange({ promptRef: '', template: step.template })}
-            className={`flex-1 py-1 transition-colors ${sourceMode === 'inline' ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+            className={`flex-1 py-1 transition-colors ${sourceMode === 'inline' ? 'bg-purple-600 text-white' : 'bg-g-bg text-g-muted hover:bg-g-chrome'}`}
           >Inline</button>
           <button
             onClick={() => onChange({ promptRef: allPrompts[0]?.id || '', template: '' })}
-            className={`flex-1 py-1 transition-colors ${sourceMode === 'prompt' ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+            className={`flex-1 py-1 transition-colors ${sourceMode === 'prompt' ? 'bg-purple-600 text-white' : 'bg-g-bg text-g-muted hover:bg-g-chrome'}`}
           >Prompt Tool</button>
         </div>
 
@@ -512,14 +512,14 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
             onChange={(e) => onChange({ template: e.target.value })}
             placeholder={"Enter template… Use {{variable}}, {{loop_index}}, {{loop_count}}"}
             rows={3}
-            className="w-full text-xs text-black px-2 py-1.5 border border-black/15 rounded focus:outline-none focus:border-black/40 resize-none bg-white font-mono"
+            className="w-full text-xs text-g-text px-2 py-1.5 border border-black/15 rounded focus:outline-none focus:border-black/40 resize-none bg-g-bg font-mono"
           />
         )}
         {sourceMode === 'prompt' && (
           <select
             value={step.promptRef || ''}
             onChange={(e) => onChange({ promptRef: e.target.value })}
-            className="w-full text-xs text-black px-2 py-1.5 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-white"
+            className="w-full text-xs text-g-text px-2 py-1.5 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-g-bg"
           >
             <option value="">— Select a Prompt Tool —</option>
             {allPrompts.map((p) => (
@@ -529,7 +529,7 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
         )}
 
         <div>
-          <label className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">
+          <label className="block text-[9px] font-bold text-g-status uppercase mb-0.5">
             Output File (optional) — use ## for loop index
           </label>
           <input
@@ -537,27 +537,27 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
             value={step.outputFile || ''}
             onChange={(e) => onChange({ outputFile: e.target.value })}
             placeholder="chapters/Chapter_##.md"
-            className="w-full text-xs text-black px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 font-mono bg-white"
+            className="w-full text-xs text-g-text px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 font-mono bg-g-bg"
           />
         </div>
 
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={!!step.chain} onChange={(e) => onChange({ chain: e.target.checked })} className="w-3 h-3 rounded" />
-          <span className="text-[11px] text-gray-600">Pass output to next step <span className="text-gray-400">(chain)</span></span>
+          <span className="text-[11px] text-g-muted">Pass output to next step <span className="text-g-status">(chain)</span></span>
         </label>
 
-        <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
+        <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-[10px] text-g-status hover:text-g-muted transition-colors">
           {showAdvanced ? '▲ Less' : '▼ More'}
         </button>
         {showAdvanced && (
           <div>
-            <label className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">Model Override</label>
+            <label className="block text-[9px] font-bold text-g-status uppercase mb-0.5">Model Override</label>
             <input
               type="text"
               value={step.modelOverride || ''}
               onChange={(e) => onChange({ modelOverride: e.target.value })}
               placeholder="e.g. anthropic/claude-haiku-4-5"
-              className="w-full text-xs text-black px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 font-mono bg-white"
+              className="w-full text-xs text-g-text px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 font-mono bg-g-bg"
             />
           </div>
         )}
@@ -566,34 +566,34 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
       {/* ── Loop content ── */}
       {type === 'loop' && (<>
         {/* Count mode toggle */}
-        <div className="flex rounded overflow-hidden border border-black/10 text-[10px] font-medium">
+        <div className="flex rounded overflow-hidden border border-g-border text-[10px] font-medium">
           <button
             onClick={() => onChange({ exitTemplate: null, count: step.count ?? 3 })}
-            className={`flex-1 py-1 transition-colors ${loopCountMode === 'fixed' ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+            className={`flex-1 py-1 transition-colors ${loopCountMode === 'fixed' ? 'bg-purple-600 text-white' : 'bg-g-bg text-g-muted hover:bg-g-chrome'}`}
           >Fixed Count</button>
           <button
             onClick={() => onChange({ exitTemplate: '', count: null })}
-            className={`flex-1 py-1 transition-colors ${loopCountMode === 'exit' ? 'bg-purple-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+            className={`flex-1 py-1 transition-colors ${loopCountMode === 'exit' ? 'bg-purple-600 text-white' : 'bg-g-bg text-g-muted hover:bg-g-chrome'}`}
           >Exit Condition</button>
         </div>
 
         {loopCountMode === 'fixed' && (
           <div className="flex items-center gap-2">
-            <label className="text-[10px] font-bold text-gray-400 uppercase shrink-0">Repeat</label>
+            <label className="text-[10px] font-bold text-g-status uppercase shrink-0">Repeat</label>
             <input
               type="number"
               min={1} max={100}
               value={step.count ?? 3}
               onChange={(e) => onChange({ count: Math.max(1, parseInt(e.target.value) || 1) })}
-              className="w-16 text-xs text-black px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-white text-center"
+              className="w-16 text-xs text-g-text px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-g-bg text-center"
             />
-            <span className="text-[10px] text-gray-400">times</span>
+            <span className="text-[10px] text-g-status">times</span>
           </div>
         )}
 
         {loopCountMode === 'exit' && (<>
           <div>
-            <label className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">
+            <label className="block text-[9px] font-bold text-g-status uppercase mb-0.5">
               Exit Condition — LLM answers CONTINUE or STOP
             </label>
             <textarea
@@ -601,17 +601,17 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
               onChange={(e) => onChange({ exitTemplate: e.target.value })}
               placeholder={"Should I continue? Use {{chained_context}} for last output. Answer CONTINUE or STOP."}
               rows={2}
-              className="w-full text-xs text-black px-2 py-1.5 border border-black/15 rounded focus:outline-none focus:border-black/40 resize-none bg-white font-mono"
+              className="w-full text-xs text-g-text px-2 py-1.5 border border-black/15 rounded focus:outline-none focus:border-black/40 resize-none bg-g-bg font-mono"
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-[10px] font-bold text-gray-400 uppercase shrink-0">Max iterations</label>
+            <label className="text-[10px] font-bold text-g-status uppercase shrink-0">Max iterations</label>
             <input
               type="number"
               min={1} max={100}
               value={step.maxIterations ?? 20}
               onChange={(e) => onChange({ maxIterations: Math.max(1, parseInt(e.target.value) || 20) })}
-              className="w-16 text-xs text-black px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-white text-center"
+              className="w-16 text-xs text-g-text px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-g-bg text-center"
             />
           </div>
         </>)}
@@ -619,17 +619,17 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
         {/* Loop body steps */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-[9px] font-bold text-gray-400 uppercase">Body Steps</label>
+            <label className="text-[9px] font-bold text-g-status uppercase">Body Steps</label>
             <button
               onClick={() => {
                 const body = step.steps ? [...step.steps, makeBodyStep()] : [makeBodyStep()];
                 onChange({ steps: body });
               }}
-              className="text-[9px] px-1.5 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors"
+              className="text-[9px] px-1.5 py-0.5 rounded bg-g-chrome hover:bg-gray-200 text-g-muted transition-colors"
             >+ Add</button>
           </div>
           {(!step.steps || step.steps.length === 0) && (
-            <p className="text-[10px] text-gray-400 text-center py-2">No body steps. Add at least one action step.</p>
+            <p className="text-[10px] text-g-status text-center py-2">No body steps. Add at least one action step.</p>
           )}
           <div className="space-y-2">
             {(step.steps || []).map((bodyStep, bi) => (
@@ -662,14 +662,14 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
 
         <label className="flex items-center gap-2 cursor-pointer">
           <input type="checkbox" checked={!!step.chain} onChange={(e) => onChange({ chain: e.target.checked })} className="w-3 h-3 rounded" />
-          <span className="text-[11px] text-gray-600">Pass last iteration to next step <span className="text-gray-400">(chain)</span></span>
+          <span className="text-[11px] text-g-muted">Pass last iteration to next step <span className="text-g-status">(chain)</span></span>
         </label>
       </>)}
 
       {/* ── Condition content ── */}
       {type === 'condition' && (<>
         <div>
-          <label className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">
+          <label className="block text-[9px] font-bold text-g-status uppercase mb-0.5">
             Question — LLM answers YES or NO
           </label>
           <textarea
@@ -677,27 +677,27 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
             onChange={(e) => onChange({ template: e.target.value })}
             placeholder={"Is the output satisfactory? Use {{chained_context}} for prior output."}
             rows={3}
-            className="w-full text-xs text-black px-2 py-1.5 border border-black/15 rounded focus:outline-none focus:border-black/40 resize-none bg-white font-mono"
+            className="w-full text-xs text-g-text px-2 py-1.5 border border-black/15 rounded focus:outline-none focus:border-black/40 resize-none bg-g-bg font-mono"
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">If YES</label>
+            <label className="block text-[9px] font-bold text-g-status uppercase mb-0.5">If YES</label>
             <select
               value={step.ifYes || 'continue'}
               onChange={(e) => onChange({ ifYes: e.target.value })}
-              className="w-full text-xs text-black px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-white"
+              className="w-full text-xs text-g-text px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-g-bg"
             >
               <option value="continue">Continue</option>
               <option value="end">End sequence</option>
             </select>
           </div>
           <div>
-            <label className="block text-[9px] font-bold text-gray-400 uppercase mb-0.5">If NO</label>
+            <label className="block text-[9px] font-bold text-g-status uppercase mb-0.5">If NO</label>
             <select
               value={step.ifNo || 'end'}
               onChange={(e) => onChange({ ifNo: e.target.value })}
-              className="w-full text-xs text-black px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-white"
+              className="w-full text-xs text-g-text px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-g-bg"
             >
               <option value="continue">Continue</option>
               <option value="end">End sequence</option>
@@ -707,13 +707,13 @@ function StepEditor({ step, idx, total, allPrompts, onChange, onRemove, onMoveUp
         </div>
         {(step.ifNo || 'end') === 'retry' && (
           <div className="flex items-center gap-2">
-            <label className="text-[10px] font-bold text-gray-400 uppercase shrink-0">Max retries</label>
+            <label className="text-[10px] font-bold text-g-status uppercase shrink-0">Max retries</label>
             <input
               type="number"
               min={1} max={10}
               value={step.maxRetries ?? 3}
               onChange={(e) => onChange({ maxRetries: Math.max(1, parseInt(e.target.value) || 3) })}
-              className="w-12 text-xs text-black px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-white text-center"
+              className="w-12 text-xs text-g-text px-1.5 py-1 border border-black/15 rounded focus:outline-none focus:border-black/40 bg-g-bg text-center"
             />
           </div>
         )}

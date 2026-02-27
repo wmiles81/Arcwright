@@ -217,6 +217,7 @@ export default function ProviderCard({
                   const outPrice = m.pricing ? formatPrice(m.pricing.completion) : null;
                   const hasPricing = inPrice || outPrice;
 
+                  const supportsTools = m.supportedParameters?.includes('tools');
                   return (
                     <div
                       key={m.id}
@@ -240,8 +241,8 @@ export default function ProviderCard({
                         {isSelected ? '\u2713' : ''}
                       </span>
 
-                      {/* Model name */}
-                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {/* Model name — green if tool-capable */}
+                      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: supportsTools ? '#16a34a' : undefined }}>
                         {m.name || m.id}
                       </span>
 

@@ -328,7 +328,7 @@ export default function ChatPanel() {
         <div className="p-3 border-b border-black/15 shrink-0 bg-white">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 min-w-0 flex-1">
-              <h2 className="text-sm font-bold text-black shrink-0">AI</h2>
+              <h2 className={`text-sm font-bold shrink-0 px-1.5 py-0.5 rounded ${toolsActive ? 'bg-green-500 text-white' : 'text-black'}`}>AI</h2>
               <span
                 className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-mono truncate max-w-[200px] cursor-pointer hover:bg-gray-200 transition-colors"
                 title={`${providerConfig?.name || activeProvider} / ${providerState.selectedModel || 'none'}\nClick to open Settings`}

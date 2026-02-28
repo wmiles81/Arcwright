@@ -868,7 +868,7 @@ export default function MarkdownEditor() {
               borderTop: dualPane ? `2px solid ${focusedPane === 'primary' ? '#7C3AED' : 'transparent'}` : 'none',
             }}
             data-placeholder="Start writing..."
-            spellCheck={false}
+            spellCheck={true}
           />
         )}
 
@@ -916,7 +916,7 @@ export default function MarkdownEditor() {
                   borderTop: `2px solid ${focusedPane === 'secondary' ? '#7C3AED' : 'transparent'}`,
                 }}
                 data-placeholder="Click a file to open in this pane..."
-                spellCheck={false}
+                spellCheck={true}
               />
             )}
           </>

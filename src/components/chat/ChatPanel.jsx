@@ -579,27 +579,27 @@ export default function ChatPanel() {
 
           {/* Streaming: show partial response */}
           {isStreaming && streamBuffer && (
-            <div className="bg-g-bg rounded-lg border border-g-border p-3 text-sm text-g-text">
+            <div className="bg-g-chrome rounded-lg border border-g-border p-3 text-sm text-g-text">
               <div className="whitespace-pre-wrap break-words leading-relaxed">
                 {stripActionBlocks(streamBuffer)}
               </div>
-              <span className="inline-block w-1.5 h-4 bg-black ml-0.5 animate-pulse" />
+              <span className="inline-block w-1.5 h-4 bg-g-accent ml-0.5 animate-pulse" />
             </div>
           )}
 
           {/* Streaming: waiting for first chunk */}
           {isStreaming && !streamBuffer && (
             <div className="flex gap-1.5 p-3">
-              <span className="w-2 h-2 bg-black/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} aria-hidden="true" />
-              <span className="w-2 h-2 bg-black/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} aria-hidden="true" />
-              <span className="w-2 h-2 bg-black/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} aria-hidden="true" />
+              <span className="w-2 h-2 bg-g-muted rounded-full animate-bounce" style={{ animationDelay: '0ms' }} aria-hidden="true" />
+              <span className="w-2 h-2 bg-g-muted rounded-full animate-bounce" style={{ animationDelay: '150ms' }} aria-hidden="true" />
+              <span className="w-2 h-2 bg-g-muted rounded-full animate-bounce" style={{ animationDelay: '300ms' }} aria-hidden="true" />
               <span className="sr-only">AI is generating a response...</span>
             </div>
           )}
 
           {/* Error display */}
           {error && (
-            <div className="bg-red-50 border border-red-300 rounded p-3 text-xs text-red-700">
+            <div className="bg-red-900/30 border border-red-500/50 rounded p-3 text-xs text-red-300">
               {error}
             </div>
           )}

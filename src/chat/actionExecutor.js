@@ -7,7 +7,10 @@ import useChatStore from '../store/useChatStore';
 import { buildFileTree } from '../components/edit/FilePanel';
 import { readFileByPath, readJsonFile, writeJsonFile } from '../services/arcwriteFS';
 import { callCompletionSync, callCompletionWithProvider } from '../api/providerAdapter';
-import { buildAiProjectSystemPrompt, buildSequenceStepSystemPrompt } from './contextBuilder';
+import { buildChatSystemPrompt, buildAiProjectSystemPrompt, buildSequenceStepSystemPrompt } from './contextBuilder';
+import { buildEditModePrompt } from './editPrompts';
+import { buildRevisionSystemPrompt, buildRevisionUserPrompt } from './revisionPrompts';
+import { buildScoringSystemPrompt, buildGetWellSystemPrompt } from '../api/prompts';
 import { genreSystem } from '../data/genreSystem';
 import { plotStructures, allStructures } from '../data/plotStructures';
 import { dimensions, DIMENSION_KEYS } from '../data/dimensions';
@@ -349,6 +352,55 @@ export const ACTION_HANDLERS = {
       result.secondaryPane = { tabId: secondaryTab.id, title: secondaryTab.title, dirty: !!secondaryTab.dirty, wordCount: words, content: secondaryTab.content || '' };
     }
     return JSON.stringify(result, null, 2);
+  },
+
+  getSystemPrompts: ({ name } = {}) => {
+    const editorState = useEditorStore.getState();
+    const appState = useAppStore.getState();
+    const genre = genreSystem[appState.selectedGenre];
+    const genreName = genre?.name || appState.selectedGenre || 'General Fiction';
+    const subgenreName = genre?.subgenres[appState.selectedSubgenre]?.name || appState.selectedSubgenre || 'General';
+    const structureName = appState.plotStructure || 'threeAct';
+
+    const promptBuilders = {
+      // --- Analysis & Scoring ---
+      scoring: { label: 'Analysis: Chapter Scoring', build: () => buildScoringSystemPrompt(genreName, subgenreName, structureName) },
+      getwell: { label: 'Analysis: Get-Well Plan (Editorial)', build: () => buildGetWellSystemPrompt(genreName, subgenreName) },
+      revision: { label: 'Revision System Prompt', build: () => buildRevisionSystemPrompt(genreName, subgenreName) },
+      revisionUser: { label: 'Revision User Prompt (template)', build: () => buildRevisionUserPrompt('(chapter text)', 'custom', null) },
+      // --- Chat modes ---
+      chat: { label: 'Chat System Prompt (Full Context)', build: () => buildChatSystemPrompt('/edit', { nativeToolsActive: true }) },
+      orchestrator: { label: 'Chat: Orchestrator Mode', build: () => buildEditModePrompt('orchestrator', editorState) },
+      editor: { label: 'Chat: Line Editor Mode', build: () => buildEditModePrompt('editor', editorState) },
+      writer: { label: 'Chat: Writing Partner Mode', build: () => buildEditModePrompt('writer', editorState) },
+      critic: { label: 'Chat: Critic Mode', build: () => buildEditModePrompt('critic', editorState) },
+      comparator: { label: 'Chat: Version Compare Mode', build: () => buildEditModePrompt('comparator', editorState) },
+      // --- Operational ---
+      sequence: { label: 'Sequence Step Prompt', build: () => buildSequenceStepSystemPrompt() },
+      inlineEdit: { label: 'Inline Edit Prompt', build: () => 'You are an inline text editor. The user has selected a passage and given you an editing instruction.\n\nRULES:\n1. Output ONLY the revised text. No preamble, no explanation, no markdown code fences.\n2. Preserve the author\'s voice, style, tone, and register.\n3. Apply the instruction precisely — nothing more, nothing less.\n4. If the instruction is to rewrite or rephrase, keep approximately the same length unless told otherwise.\n5. Maintain any existing formatting (bold, italic, etc.) where appropriate.\n6. Never add commentary like "Here is the revised text:" — just output the text directly.' },
+      voiceAnalysis: { label: 'Voice Analysis Prompt', build: () => 'You are a literary voice analyst. Analyze the provided prose sample and produce a structured voice style guide that an AI writing model can use as a reference to match this author\'s voice.\n\nOutput a markdown document with these sections:\n## Voice Signature\n## Sentence Rhythm\n## Internal Voice\n## What Draws Reader In\n## Dialogue\n## Sentence-Level Patterns\n## What to Avoid' },
+      // --- AI Project ---
+      aiProject: { label: 'AI Project System Prompt', build: () => {
+        const { activeAiProject } = useProjectStore.getState();
+        return activeAiProject ? buildAiProjectSystemPrompt(activeAiProject, editorState, '/edit') : '(No AI project active — activate one to see its prompt)';
+      }},
+    };
+
+    if (!name || name === 'all') {
+      const summary = Object.entries(promptBuilders).map(([key, { label, build }]) => {
+        try {
+          const text = build();
+          return { key, label, length: text.length };
+        } catch {
+          return { key, label, length: 0, note: 'error building prompt' };
+        }
+      });
+      return JSON.stringify(summary, null, 2);
+    }
+
+    const entry = promptBuilders[name];
+    if (!entry) return JSON.stringify({ error: `Unknown prompt: "${name}". Available: ${Object.keys(promptBuilders).join(', ')}` });
+    return entry.build();
   },
 
   // --- Scaffold ---

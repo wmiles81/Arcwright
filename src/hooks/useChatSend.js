@@ -16,6 +16,31 @@ import useEditorStore from '../store/useEditorStore';
 const MAX_TOOL_ITERATIONS = 5;
 const MAX_TOOL_RESULT_CHARS = 6000;
 
+/**
+ * When display text is empty but tool results exist, format results as readable text
+ * so the user sees the actual output instead of a blank message.
+ */
+function formatToolResultsAsText(text, actionResults) {
+  if (text && text.trim()) return text;
+  if (!actionResults || actionResults.length === 0) return text;
+
+  const parts = [];
+  for (const r of actionResults) {
+    if (r.success && r.description) {
+      // Try to pretty-print JSON results
+      try {
+        const parsed = JSON.parse(r.description);
+        parts.push(JSON.stringify(parsed, null, 2));
+      } catch {
+        parts.push(r.description);
+      }
+    } else if (!r.success) {
+      parts.push(`Error (${r.type}): ${r.error}`);
+    }
+  }
+  return parts.join('\n\n') || text;
+}
+
 export default function useChatSend() {
   const location = useLocation();
 
@@ -101,117 +126,133 @@ export default function useChatSend() {
       let iterations = 0;
       let totalUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0 };
 
-      while (iterations < MAX_TOOL_ITERATIONS) {
-        iterations++;
-        fullResponse = '';
+      try {
+        while (iterations < MAX_TOOL_ITERATIONS) {
+          iterations++;
+          fullResponse = '';
 
-        const iterResult = await new Promise((resolve) => {
-          callCompletion(
-            apiMessages,
-            { ...settings, tools: toolDefinitions, signal: abortController.signal },
-            (chunk) => {
-              fullResponse += chunk;
-              useChatStore.getState().updateStreamBuffer(fullResponse);
-            },
-            (toolCalls, usage) => resolve({ toolCalls, usage }),
-            (err) => {
-              useChatStore.getState().setError(err.message);
-              resolve(null);
-            }
-          );
-        });
-
-        // Error → done
-        if (!iterResult) break;
-        const { toolCalls: toolCallsResult, usage: iterUsage } = iterResult;
-        if (iterUsage) {
-          totalUsage.promptTokens += iterUsage.promptTokens || 0;
-          totalUsage.completionTokens += iterUsage.completionTokens || 0;
-          totalUsage.totalTokens += iterUsage.totalTokens || 0;
-        }
-
-        // Check for <tool_call> tags in text (some models output these as text instead of using structured tool_calls)
-        const textToolCalls = parseToolCallTags(fullResponse);
-        if (textToolCalls.length > 0) {
-          // Execute tool calls from text tags
-          for (const tc of textToolCalls) {
-            const handler = ACTION_HANDLERS[tc.name];
-            if (handler) {
-              try {
-                const desc = await handler({ ...tc.arguments, type: tc.name });
-                allActionResults.push({ success: true, description: desc, type: tc.name });
-              } catch (e) {
-                allActionResults.push({ success: false, error: e.message, type: tc.name });
+          const iterResult = await new Promise((resolve) => {
+            callCompletion(
+              apiMessages,
+              { ...settings, tools: toolDefinitions, signal: abortController.signal },
+              (chunk) => {
+                fullResponse += chunk;
+                // Show accumulated text from prior iterations + current stream
+                const display = accumulatedText
+                  ? accumulatedText + '\n' + fullResponse
+                  : fullResponse;
+                useChatStore.getState().updateStreamBuffer(display);
+              },
+              (toolCalls, usage) => resolve({ toolCalls, usage }),
+              (err) => {
+                useChatStore.getState().setError(err.message);
+                resolve(null);
               }
-            } else {
-              allActionResults.push({ success: false, error: `Unknown action: ${tc.name}`, type: tc.name });
-            }
-          }
-          // Strip tags from display text and finalize
-          fullResponse = stripToolCallTags(fullResponse);
-          break;
-        }
+            );
+          });
 
-        // Check for {"tool": "..."} inline JSON (some models output this format)
-        const inlineToolCalls = parseInlineToolJson(fullResponse);
-        if (inlineToolCalls.length > 0) {
-          for (const tc of inlineToolCalls) {
-            const handler = ACTION_HANDLERS[tc.name];
-            if (handler) {
-              try {
-                const desc = await handler({ ...tc.arguments, type: tc.name });
-                allActionResults.push({ success: true, description: desc, type: tc.name });
-              } catch (e) {
-                allActionResults.push({ success: false, error: e.message, type: tc.name });
+          // Preserve text from this iteration (do this early, before any break)
+          if (fullResponse.trim()) {
+            accumulatedText += (accumulatedText ? '\n' : '') + fullResponse.trim();
+          }
+
+          // Error → done
+          if (!iterResult) break;
+          const { toolCalls: toolCallsResult = {}, usage: iterUsage } = iterResult;
+          if (iterUsage) {
+            totalUsage.promptTokens += iterUsage.promptTokens || 0;
+            totalUsage.completionTokens += iterUsage.completionTokens || 0;
+            totalUsage.totalTokens += iterUsage.totalTokens || 0;
+          }
+
+          // Check for <tool_call> tags in text (some models output these as text instead of using structured tool_calls)
+          const textToolCalls = parseToolCallTags(fullResponse);
+          if (textToolCalls.length > 0) {
+            for (const tc of textToolCalls) {
+              const handler = ACTION_HANDLERS[tc.name];
+              if (handler) {
+                try {
+                  const desc = await handler({ ...tc.arguments, type: tc.name });
+                  allActionResults.push({ success: true, description: desc, type: tc.name });
+                } catch (e) {
+                  allActionResults.push({ success: false, error: e.message, type: tc.name });
+                }
+              } else {
+                allActionResults.push({ success: false, error: `Unknown action: ${tc.name}`, type: tc.name });
               }
-            } else {
-              allActionResults.push({ success: false, error: `Unknown action: ${tc.name}`, type: tc.name });
             }
+            // Re-accumulate with tags stripped
+            accumulatedText = (accumulatedText ? accumulatedText.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim() : '');
+            break;
           }
-          fullResponse = stripInlineToolJson(fullResponse);
-          break;
-        }
 
-        // No structured tool calls and no text tags → done
-        if (Object.keys(toolCallsResult).length === 0) break;
-
-        // Execute structured tool calls
-        const toolCallsArr = Object.values(toolCallsResult);
-        const assistantMsg = {
-          role: 'assistant',
-          content: fullResponse || null,
-          tool_calls: toolCallsArr,
-        };
-        apiMessages.push(assistantMsg);
-
-        for (const tc of toolCallsArr) {
-          let result;
-          try {
-            const args = JSON.parse(tc.function.arguments);
-            const handler = ACTION_HANDLERS[tc.function.name];
-            if (!handler) throw new Error(`Unknown action: ${tc.function.name}`);
-            const desc = await handler({ ...args, type: tc.function.name });
-            result = JSON.stringify({ success: true, description: desc });
-            allActionResults.push({ success: true, description: desc, type: tc.function.name });
-          } catch (e) {
-            result = JSON.stringify({ success: false, error: e.message });
-            allActionResults.push({ success: false, error: e.message, type: tc.function.name });
+          // Check for {"tool": "..."} inline JSON (some models output this format)
+          const inlineToolCalls = parseInlineToolJson(fullResponse);
+          if (inlineToolCalls.length > 0) {
+            for (const tc of inlineToolCalls) {
+              const handler = ACTION_HANDLERS[tc.name];
+              if (handler) {
+                try {
+                  const desc = await handler({ ...tc.arguments, type: tc.name });
+                  allActionResults.push({ success: true, description: desc, type: tc.name });
+                } catch (e) {
+                  allActionResults.push({ success: false, error: e.message, type: tc.name });
+                }
+              } else {
+                allActionResults.push({ success: false, error: `Unknown action: ${tc.name}`, type: tc.name });
+              }
+            }
+            // Strip the tool call JSON from accumulated text so results show instead
+            accumulatedText = stripInlineToolJson(accumulatedText).trim();
+            break;
           }
-          // Cap large tool results to avoid ballooning context
-          if (result.length > MAX_TOOL_RESULT_CHARS) {
-            result = result.substring(0, MAX_TOOL_RESULT_CHARS) + '...[truncated]';
+
+          // No structured tool calls and no text tags → done
+          if (Object.keys(toolCallsResult).length === 0) break;
+
+          // Execute structured tool calls
+          const toolCallsArr = Object.values(toolCallsResult);
+          const assistantMsg = {
+            role: 'assistant',
+            content: fullResponse || null,
+            tool_calls: toolCallsArr,
+          };
+          apiMessages.push(assistantMsg);
+
+          for (const tc of toolCallsArr) {
+            let result;
+            try {
+              const args = JSON.parse(tc.function.arguments);
+              const handler = ACTION_HANDLERS[tc.function.name];
+              if (!handler) throw new Error(`Unknown action: ${tc.function.name}`);
+              const desc = await handler({ ...args, type: tc.function.name });
+              result = JSON.stringify({ success: true, description: desc });
+              allActionResults.push({ success: true, description: desc, type: tc.function.name });
+            } catch (e) {
+              result = JSON.stringify({ success: false, error: e.message });
+              allActionResults.push({ success: false, error: e.message, type: tc.function.name });
+            }
+            // Cap large tool results to avoid ballooning context
+            if (result.length > MAX_TOOL_RESULT_CHARS) {
+              result = result.substring(0, MAX_TOOL_RESULT_CHARS) + '...[truncated]';
+            }
+            apiMessages.push({ role: 'tool', tool_call_id: tc.id, content: result });
           }
-          apiMessages.push({ role: 'tool', tool_call_id: tc.id, content: result });
+          // Loop back — model sees tool results and may respond or call more tools
         }
-        // Preserve text from this iteration before looping
-        if (fullResponse.trim()) {
-          accumulatedText += (accumulatedText ? '\n' : '') + fullResponse.trim();
-        }
-        // Loop back — model sees tool results and may respond or call more tools
+      } catch (err) {
+        console.error('[ChatSend] Native tools loop error:', err);
+        useChatStore.getState().setError(err.message || 'An unexpected error occurred.');
       }
 
-      // Use accumulated text from all iterations; fall back to last iteration's text
-      const finalText = accumulatedText || fullResponse;
+      // Finalize — accumulatedText has all text from all iterations
+      // Strip any residual tool call patterns from display text
+      let rawText = accumulatedText || fullResponse;
+      rawText = stripToolCallTags(rawText);
+      rawText = stripInlineToolJson(rawText);
+      rawText = stripActionBlocks(rawText);
+      // If text is empty but tools ran, show their results directly
+      const finalText = formatToolResultsAsText(rawText, allActionResults);
       useChatStore.getState().finalizeStream(finalText, allActionResults, totalUsage.totalTokens > 0 ? totalUsage : null);
       // Auto-persist so history survives browser close without switching projects
       useProjectStore.getState().saveCurrentChatHistory().catch(() => {});
@@ -275,7 +316,9 @@ export default function useChatSend() {
             displayText = stripInlineToolJson(displayText);
           }
 
-          useChatStore.getState().finalizeStream(displayText, actionResults, usage || null);
+          // If text is empty but tools ran, show their results directly
+          const finalDisplay = formatToolResultsAsText(displayText, actionResults);
+          useChatStore.getState().finalizeStream(finalDisplay, actionResults, usage || null);
           // Auto-persist so history survives browser close without switching projects
           useProjectStore.getState().saveCurrentChatHistory().catch(() => {});
         },

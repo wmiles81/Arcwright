@@ -77,6 +77,23 @@ export const toolDefinitions = [
     },
   },
 
+  {
+    type: 'function',
+    function: {
+      name: 'getSystemPrompts',
+      description: 'Get the full text of one or all system prompts used by the application. Categories: ANALYSIS: "scoring" (chapter dimension scoring), "getwell" (editorial get-well plan), "revision" (revision system), "revisionUser" (revision user template). CHAT MODES: "chat" (full context), "orchestrator", "editor" (line editor), "writer", "critic", "comparator" (version compare). OPERATIONAL: "sequence" (sequence step), "inlineEdit", "voiceAnalysis". AI PROJECT: "aiProject". Pass "all" or omit to list all with sizes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'Prompt name to retrieve (e.g., "chat", "editor", "revision"), or "all" for a summary list.',
+          },
+        },
+      },
+    },
+  },
+
   // --- Scaffold ---
   {
     type: 'function',

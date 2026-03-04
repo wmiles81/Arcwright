@@ -11,6 +11,8 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   server: {
+    port: 5173,
+    strictPort: true,
     proxy: {
       '/or-image-models': OR_IMAGE_PROXY,
       '/api': {

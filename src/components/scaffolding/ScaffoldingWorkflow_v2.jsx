@@ -237,6 +237,7 @@ export default function ScaffoldingWorkflow() {
                                     modifier: selectedModifier || '',
                                     pacing: useAppStore.getState().selectedPacing || '',
                                 });
+                                useChatStore.getState().clearMessages();
                                 useChatStore.getState().setDraftInput(prompt);
                                 useChatStore.getState().openPanel();
                             }}

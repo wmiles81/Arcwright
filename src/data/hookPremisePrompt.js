@@ -6,7 +6,9 @@
  */
 
 export default function buildHookPremisePrompt({ genre, subgenre, modifier, pacing }) {
-    return `# HOOK & PREMISE ARCHITECT — Scaffold-Driven Novel Concept Generator
+    return `**IMPORTANT: This prompt is self-contained. Do NOT call any tools (getGenreConfig, listAgents, readAgentDefinition, getScaffoldBeats, etc.) — all required inputs are provided below. Respond directly with your analysis and creative output.**
+
+# HOOK & PREMISE ARCHITECT — Scaffold-Driven Novel Concept Generator
 
 You are a senior acquisitions editor and market strategist with deep expertise in commercial and literary fiction. Your job is to generate a compelling, market-informed hook and premise for a novel based on the genre scaffold settings provided below.
 

@@ -14,26 +14,39 @@ It combines story scaffolding tools, AI-assisted narrative analysis, and a multi
 ## Tech stack
 
 - **Frontend:** React 18, Vite 5, Tailwind CSS, Zustand
-- **Local static serving for distribution builds:** Node.js `server.js`
+- **Backend:** Node.js, Express, better-sqlite3
+- **Architecture:** Dual-process development (Vite dev server + Express API), single-process production
 
 ## Prerequisites
 
-Install the following on your local machine:
-
-- **Node.js 18+** (Node.js 20 LTS recommended)
+- **Node.js 18+** (Node.js 20 LTS or later recommended)
 - **npm 9+** (ships with Node)
 - A modern browser (Chrome, Edge, Firefox, or Safari)
-
-Check your versions:
 
 ```bash
 node -v
 npm -v
 ```
 
+## Data directory
+
+Arcwright stores all project data (settings, prompts, sequences, projects, chat history) in:
+
+```
+~/.arcwright/
+```
+
+This directory is created automatically on first run. If you have an existing Arcwrite folder from a previous version, the app will prompt you to import that data.
+
+The data directory can be overridden for development/testing:
+
+```bash
+ARCWRIGHT_DATA=/path/to/custom/dir npm run dev
+```
+
 ## Run locally (development)
 
-1. Clone the repository and move into it:
+1. Clone the repository:
 
    ```bash
    git clone <your-repo-url>
@@ -46,69 +59,49 @@ npm -v
    npm install
    ```
 
-3. Start the Vite dev server:
+3. Start the development server:
 
    ```bash
    npm run dev
    ```
 
-4. Open the URL shown in your terminal (typically `http://localhost:5173`).
+4. Open `http://localhost:5173`.
 
-### Convenience scripts
+In development, two processes run in parallel:
+- **Vite** on port 5173 (frontend with HMR)
+- **Express API** on port 5174 (database + filesystem)
 
-You can also use included launcher scripts:
-
-- **macOS/Linux:**
-
-  ```bash
-  ./start.sh
-  ```
-
-- **Windows (Command Prompt):**
-
-  ```bat
-  start.bat
-  ```
+Vite proxies `/api/*` requests to the Express server automatically.
 
 ## Build for production
-
-Create a production build:
 
 ```bash
 npm run build
 ```
 
-This command creates/updates:
+This creates optimized static assets in `dist/`.
 
-- `dist/` (Vite output)
-- `Arcwright-dist/` (packaged static app files + `server.js`)
-
-Preview the Vite production build locally:
+## Run in production
 
 ```bash
-npm run preview
+npm start
 ```
 
-## Run packaged distribution locally
+The Express server serves both the API and the static frontend on a single port (default 3000). Override with:
 
-The packaged output is intended to run behind a local web server (not via double-clicking `index.html`).
+```bash
+PORT=4000 npm start
+```
 
-1. Build first:
+## npm scripts
 
-   ```bash
-   npm run build
-   ```
-
-2. Start the packaged server:
-
-   ```bash
-   cd Arcwright-dist
-   node server.js
-   ```
-
-3. Open `http://localhost:3000`.
-
-> The included `server.js` also provides an `/or-image-models` proxy endpoint used by OpenRouter image-model discovery.
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Development server (Vite HMR + API) |
+| `npm run build` | Build static assets to `dist/` |
+| `npm start` | Production server (single port) |
+| `npm test` | Run unit tests (Vitest) |
+| `npm run preview` | Preview build with Vite preview server |
 
 ## AI provider setup
 
@@ -118,37 +111,32 @@ Many features (chat, analysis, inline editing, revision pipeline) require an API
 2. Open **Settings** (gear icon).
 3. Choose a provider and paste your API key.
 
-Supported providers in the current codebase:
+Supported providers:
 
 - OpenRouter
 - OpenAI
 - Anthropic
 - Perplexity
 
-API keys are stored in local browser storage for the running app.
-
-## Useful npm scripts
-
-- `npm run dev` — start development server
-- `npm run build` — build and package distribution artifacts
-- `npm run preview` — preview built app with Vite preview server
+API keys are stored in `~/.arcwright/settings.json`.
 
 ## Troubleshooting
 
-- If the app appears blank after opening `index.html` directly, run a server (`npm run dev`, `npm run preview`, or `node server.js`).
-- If ports are in use, stop other local servers or set `PORT` when running `server.js`:
+- **Port in use:** Kill existing processes or set `PORT` for production:
 
   ```bash
-  PORT=4000 node server.js
+  PORT=4000 npm start
   ```
 
-- If dependencies fail to install, delete `node_modules` and `package-lock.json`, then reinstall:
+- **Dependencies fail:** Delete and reinstall:
 
   ```bash
-  rm -rf node_modules
+  rm -rf node_modules package-lock.json
   npm install
   ```
 
+- **Data migration:** If upgrading from the browser-based version, use the import banner on the landing page to copy data from your old Arcwrite folder.
+
 ## License
 
-No license file is currently included in this repository. Add one if you plan to distribute publicly.
+See [LICENSE](LICENSE) for details.

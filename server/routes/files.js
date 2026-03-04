@@ -449,4 +449,63 @@ function walkTree(dirPath, parentRelative = '') {
     });
 }
 
+// ---------------------------------------------------------------------------
+// Data-status & Migration
+// ---------------------------------------------------------------------------
+
+router.get('/data-status', (_req, res) => {
+    const hasSettings = fs.existsSync(dataPath('settings.json'));
+    const hasDb = fs.existsSync(dataPath('arcwright.db'));
+    const hasProjects = fs.existsSync(dataPath('projects'));
+    res.json({
+        fresh: !hasSettings && !hasProjects,
+        dataDir: DATA_DIR,
+        hasSettings,
+        hasDb,
+    });
+});
+
+router.post('/migrate', (req, res) => {
+    const { sourcePath } = req.body;
+    if (!sourcePath) return res.status(400).json({ error: 'sourcePath required' });
+
+    // Validate source
+    if (!fs.existsSync(sourcePath)) {
+        return res.status(400).json({ error: `Source path not found: ${sourcePath}` });
+    }
+    const stat = fs.statSync(sourcePath);
+    if (!stat.isDirectory()) {
+        return res.status(400).json({ error: 'Source path must be a directory' });
+    }
+
+    // Copy eligible items (skip dotfiles, arcwright.db — server manages its own)
+    const SKIP = new Set(['.DS_Store', '.contextinclude', '.contextignore', 'arcwright.db']);
+    let filesCopied = 0;
+
+    try {
+        const entries = fs.readdirSync(sourcePath, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.name.startsWith('.') || SKIP.has(entry.name)) continue;
+            const src = path.join(sourcePath, entry.name);
+            const dst = dataPath(entry.name);
+
+            // Skip if destination already exists (don't overwrite)
+            if (fs.existsSync(dst)) continue;
+
+            if (entry.isDirectory()) {
+                fs.cpSync(src, dst, { recursive: true });
+            } else {
+                fs.copyFileSync(src, dst);
+            }
+            filesCopied++;
+        }
+
+        console.log(`[migrate] Copied ${filesCopied} items from ${sourcePath} → ${DATA_DIR}`);
+        res.json({ ok: true, filesCopied, dataDir: DATA_DIR });
+    } catch (e) {
+        console.error('[migrate] Error:', e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 export default router;

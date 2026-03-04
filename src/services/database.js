@@ -298,3 +298,17 @@ export async function insertSnapshot({ sceneId, scores, source = 'ai' }) {
 export async function deleteSnapshot(id) {
   await apiDelete(`/snapshots/${id}`);
 }
+
+// ---------------------------------------------------------------------------
+// Aggregate queries (cross-entity)
+// ---------------------------------------------------------------------------
+
+/** Get all scenes for a book with their chapter and character info. */
+export async function getScenesWithDetails(bookId) {
+  return apiGet(`/books/${bookId}/scenes/detailed`);
+}
+
+/** Get book summary statistics. */
+export async function getBookStats(bookId) {
+  return apiGet(`/books/${bookId}/stats`);
+}

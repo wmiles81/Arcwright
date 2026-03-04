@@ -544,3 +544,45 @@ export function insertSnapshot({ sceneId, scores, source = 'ai' }) {
 export function deleteSnapshot(id) {
     getDb().prepare('DELETE FROM analysis_snapshots WHERE id = ?').run(id);
 }
+
+// ---------------------------------------------------------------------------
+// Aggregate queries (cross-entity)
+// ---------------------------------------------------------------------------
+
+/** Get all scenes for a book with their chapter and character info. */
+export function getScenesWithDetails(bookId) {
+    return getDb().prepare(
+        `SELECT s.*,
+                ch.title AS chapter_title,
+                ch.number AS chapter_number,
+                c.name AS pov_character_name,
+                st.name AS setting_name
+         FROM scenes s
+         LEFT JOIN chapters ch ON s.chapter_id = ch.id
+         LEFT JOIN characters c ON s.pov_character_id = c.id
+         LEFT JOIN settings st ON s.setting_id = st.id
+         WHERE s.book_id = ?
+         ORDER BY s.time_position, s.order_in_chapter`
+    ).all(bookId);
+}
+
+/** Get book summary statistics. */
+export function getBookStats(bookId) {
+    const d = getDb();
+    const scenes = d.prepare('SELECT COUNT(*) as count FROM scenes WHERE book_id = ?').get(bookId);
+    const chapters = d.prepare('SELECT COUNT(*) as count FROM chapters WHERE book_id = ?').get(bookId);
+    const characters = d.prepare('SELECT COUNT(*) as count FROM characters WHERE book_id = ?').get(bookId);
+    const mappedScenes = d.prepare('SELECT COUNT(*) as count FROM scenes WHERE book_id = ? AND beat_id IS NOT NULL').get(bookId);
+    const snapshots = d.prepare(
+        `SELECT COUNT(*) as count FROM analysis_snapshots a
+         JOIN scenes s ON a.scene_id = s.id
+         WHERE s.book_id = ?`
+    ).get(bookId);
+    return {
+        sceneCount: scenes?.count || 0,
+        chapterCount: chapters?.count || 0,
+        characterCount: characters?.count || 0,
+        mappedSceneCount: mappedScenes?.count || 0,
+        snapshotCount: snapshots?.count || 0,
+    };
+}

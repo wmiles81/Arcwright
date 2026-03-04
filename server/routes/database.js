@@ -272,4 +272,16 @@ router.delete('/snapshots/:id', (req, res) => {
     res.json({ ok: true });
 });
 
+// ---------------------------------------------------------------------------
+// Aggregate queries
+// ---------------------------------------------------------------------------
+
+router.get('/books/:bookId/scenes/detailed', (req, res) => {
+    res.json(db.getScenesWithDetails(req.params.bookId));
+});
+
+router.get('/books/:bookId/stats', (req, res) => {
+    res.json(db.getBookStats(req.params.bookId));
+});
+
 export default router;

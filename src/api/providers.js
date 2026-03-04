@@ -171,16 +171,15 @@ export const PROVIDERS = {
     protocol: 'acp',
     baseUrl: '',  // Uses local server endpoint
     completionsEndpoint: '/api/acp/chat',
-    defaultModel: 'gemini',
+    defaultModel: 'claude-code-acp',
     extraHeaders: () => ({}),
     supportsModelFetch: false,
     supportsStreamOptions: false,
     requiresApiKey: false,
-    localSetup: 'Install an ACP agent CLI (e.g., npm install -g @google/gemini-cli) then select its command as the model.',
+    localSetup: 'Install an ACP agent adapter (e.g., npm install @zed-industries/claude-code-acp) then select it as the model.',
     hardcodedModels: [
+      { id: 'claude-code-acp', name: 'Claude Code (ACP)', supportedParameters: [], contextLength: 200000, maxCompletionTokens: 16384, acpArgs: [] },
       { id: 'gemini', name: 'Gemini CLI', supportedParameters: [], contextLength: 1000000, maxCompletionTokens: 8192, acpArgs: ['--experimental-acp'] },
-      { id: 'claude-agent-acp', name: 'Claude Agent (ACP)', supportedParameters: [], contextLength: 200000, maxCompletionTokens: 16384, acpArgs: [] },
-      { id: 'codex', name: 'Codex CLI', supportedParameters: [], contextLength: 200000, maxCompletionTokens: 16384, acpArgs: [] },
     ],
   },
 };

@@ -5,11 +5,11 @@
  * Replaces `npx serve` in the dist package, adding a server-side proxy for
  * the OpenRouter image model list endpoint (which is CORS-blocked from browsers).
  */
-import http  from 'http';
+import http from 'http';
 import https from 'https';
-import fs    from 'fs';
-import path  from 'path';
-import cp    from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import cp from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -18,17 +18,17 @@ const ROOT = __dirname;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
-  '.js':   'application/javascript',
-  '.css':  'text/css',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
   '.json': 'application/json',
-  '.png':  'image/png',
-  '.jpg':  'image/jpeg',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
-  '.svg':  'image/svg+xml',
-  '.ico':  'image/x-icon',
-  '.woff2':'font/woff2',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
   '.woff': 'font/woff',
-  '.ttf':  'font/ttf',
+  '.ttf': 'font/ttf',
 };
 
 // Proxy /or-image-models → OpenRouter frontend endpoint (server-side, no CORS)
@@ -94,10 +94,14 @@ async function handleACPChat(req, res) {
     const { createACPProvider } = await import('@mcpc-tech/acp-ai-provider');
     const { streamText } = await import('ai');
 
+    // Add node_modules/.bin to PATH so local agent binaries are found
+    const localBinPath = path.join(process.cwd(), 'node_modules', '.bin');
+    const envPath = `${localBinPath}${path.delimiter}${process.env.PATH || ''}`;
+
     provider = createACPProvider({
       command,
       args,
-      env,
+      env: { ...env, PATH: envPath },
       session: {
         cwd: process.cwd(),
         mcpServers: [],
@@ -194,7 +198,7 @@ server.listen(PORT, () => {
   console.log('Press Ctrl+C to stop.\n');
   // Open browser
   const cmd = process.platform === 'win32' ? `start ${url}`
-            : process.platform === 'darwin' ? `open ${url}`
-            : `xdg-open ${url}`;
+    : process.platform === 'darwin' ? `open ${url}`
+      : `xdg-open ${url}`;
   setTimeout(() => cp.exec(cmd), 800);
 });

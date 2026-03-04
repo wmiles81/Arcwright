@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { loadHandle, removeHandle } from '../services/idbHandleStore';
 import {
   readSettings, writeSettings,
   listBookProjects as fsListBookProjects,

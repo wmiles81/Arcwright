@@ -11,7 +11,13 @@ export default defineConfig({
   plugins: [react()],
   base: './',
   server: {
-    proxy: { '/or-image-models': OR_IMAGE_PROXY },
+    proxy: {
+      '/or-image-models': OR_IMAGE_PROXY,
+      '/api': {
+        target: 'http://localhost:5174',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     proxy: { '/or-image-models': OR_IMAGE_PROXY },

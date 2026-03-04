@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-03  
 **Branch:** `spike/zed-acp-web-browser`  
-**Status:** Step 1 Complete — Package Inspection  
+**Status:** PoC Complete — Platform Awareness Paths Documented  
 
 ---
 
@@ -184,7 +184,83 @@ This is the same pattern Zed uses — the editor (client) spawns agents locally 
 ## Recommended Next Steps
 
 1. ~~**Install & inspect** `@mcpc-tech/acp-ai-provider`~~ ✅ Done
-2. **Decide on architecture** — Is adding a server layer acceptable for Arcwright?
-3. **Build a minimal PoC** — Add a `/api/acp` endpoint to `server.js` that spawns a Gemini CLI agent and streams responses
-4. **Test with Gemini CLI** (reference ACP implementation) to validate the round-trip
-5. **Evaluate UX** — determine if the agent loop model works for fiction editing
+2. ~~**Decide on architecture** — Is adding a server layer acceptable?~~ ✅ Done — server.js extended
+3. ~~**Build a minimal PoC**~~ ✅ Done — ACP endpoint, provider, streaming all working
+4. ~~**Test with agent**~~ ✅ Done — Claude Code via `@zed-industries/claude-code-acp`
+5. **Evaluate UX** — see findings below
+
+---
+
+## PoC Results (2026-03-03)
+
+### What Was Built
+
+- `POST /api/acp/chat` endpoint in `server.js` (SSE streaming)
+- ACP provider in frontend registry (`providers.js`)
+- `callACPStreaming()` SSE reader in `providerAdapter.js`
+- Vite dev proxy for `/api/acp` → `localhost:3000`
+- Used `@zed-industries/claude-code-acp` adapter to connect Claude Code
+
+### Outcome
+
+**Round-trip works.** Claude Code responds to prompts through Arcwright's chat UI via ACP. However, the agent has **no awareness of Arcwright's platform** — it operates as a generic Claude session with no context about the user's project, editor state, or available tools.
+
+---
+
+## Key Finding: Platform Awareness Gap
+
+The ACP agent runs as an isolated process. It doesn't know:
+- What Arcwright is (fiction planning/editing tool)
+- The user's open project (story arcs, chapters, characters)
+- The editor state (active file, cursor position)
+- Arcwright's built-in tools (scaffolding, analysis, inline edits)
+
+### Three Paths to Platform Awareness
+
+#### Path 1 — System Prompt Injection (Low effort)
+
+Pass Arcwright's existing system prompt (from `buildChatSystemPrompt()`) into the ACP request body. The agent would understand the platform conceptually and could give fiction-aware responses, but cannot *act* on the platform.
+
+**Effort:** ~1 hour. Modify `callACPStreaming()` to include system prompt in the messages array.
+
+**Gain:** Contextual replies. Agent knows it's helping with fiction editing.
+
+**Limit:** Read-only awareness. No ability to read files, run analysis, or modify content.
+
+#### Path 2 — MCP Server Exposure (Medium effort)
+
+ACP supports passing MCP server configs in the `session` object at provider creation. Build a lightweight MCP server that exposes Arcwright project data:
+
+- `project://files` — list project files
+- `project://chapter/{id}` — read chapter content
+- `project://analysis/{id}` — read analysis results
+- `project://outline` — story structure / beat sheets
+
+The agent could then *read* project data during its reasoning.
+
+**Effort:** 1–2 weeks. Requires building an MCP server, defining the resource schema, and wiring it into the ACP session config.
+
+**Gain:** Agent can read and query project data. Enables context-aware analysis and suggestions.
+
+**Limit:** Still read-only by default. Agent can reference content but not modify it without tool bridging (Path 3).
+
+#### Path 3 — Tool Bridging (High effort)
+
+Expose Arcwright's action handlers as ACP tools using the `acpTools()` function from the SDK. The agent could then:
+
+- Read and write project files
+- Run analysis workflows
+- Apply inline edits
+- Execute scaffolding operations
+
+This is the "full agent" vision — the ACP agent becomes a peer to Arcwright's built-in AI, with the same capabilities but running in its own reasoning loop.
+
+**Effort:** 3–4 weeks. Requires mapping Arcwright's `ACTION_HANDLERS` to ACP tool definitions, handling the TCP callback pattern for host-side tools, and building safety guardrails.
+
+**Gain:** Full agent capabilities. Multi-step editing pipelines, autonomous analysis, etc.
+
+**Limit:** Complexity. Host-side tools use a TCP socket callback pattern that adds architectural overhead. Safety and permission concerns increase significantly.
+
+### Recommendation
+
+Start with **Path 1** to validate the UX of a context-aware ACP agent in Arcwright. If it proves valuable, pursue **Path 2** to give the agent read access to project data. Path 3 should only be considered after Paths 1 and 2 have been evaluated.

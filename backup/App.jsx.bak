@@ -106,18 +106,19 @@ export default function App() {
   // Trial expiration check
   if (Date.now() > TRIAL_EXPIRES) return <TrialExpired />;
 
-  // Initialize: connect to API server and restore project state
+  // Initialize database and restore Arcwrite FS from IndexedDB on startup
   useEffect(() => {
-    // Init database (server-backed — no WASM needed)
+    // Init SQLite database (from IndexedDB) — independent of Arcwrite FS
     initDatabase().catch((err) => console.warn('[App] Database init failed:', err));
 
-    // Connect to API server and restore project state
     useProjectStore.getState().restoreFromIDB().then(async (restored) => {
       if (restored) {
-        console.log('[App] Connected to API server');
+        console.log('[App] Restored .arcwrite/ from IndexedDB');
+        // Load custom prompts and sequences after project store is initialized
         usePromptStore.getState().loadPrompts();
         useSequenceStore.getState().loadSequences();
 
+        // Load and apply extension data packs
         await useProjectStore.getState().loadDataPacks();
         applyDataPacks();
       }

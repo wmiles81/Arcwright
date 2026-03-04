@@ -7,7 +7,8 @@
     "dev": "node server/index.js & vite",
     "dev:api": "node server/index.js",
     "dev:vite-only": "vite",
-    "build": "vite build && cp start.sh dist/start.sh && cp start.bat dist/start.bat && chmod +x dist/start.sh && cp server.js Arcwright-dist/server.js && cp dist/index.html Arcwright-dist/index.html && rm -rf Arcwright-dist/assets && cp -r dist/assets Arcwright-dist/assets && cp dist/Arcwright-1600.png Arcwright-dist/Arcwright-1600.png && cp dist/favicon.png Arcwright-dist/favicon.png && cp dist/mascot.png Arcwright-dist/mascot.png",
+    "build": "vite build",
+    "start": "NODE_ENV=production node server/index.js",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -21,7 +22,6 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
     "recharts": "^2.13.0",
-    "sql.js": "^1.14.0",
     "zustand": "^4.5.5"
   },
   "devDependencies": {

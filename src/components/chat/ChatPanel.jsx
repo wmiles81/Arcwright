@@ -145,9 +145,10 @@ export default function ChatPanel() {
   };
 
   // Display name for the current AI project (book projects don't go here)
+  const promptMode = chatSettings.promptMode || 'full';
   const promptLabel = activeMode === 'ai' && activeAiProject
     ? activeAiProject.name
-    : 'Full Context';
+    : promptMode === 'off' ? 'Plain' : 'Full Context';
 
   // Auto-scroll to bottom on new messages or stream updates
   useEffect(() => {
@@ -354,12 +355,25 @@ export default function ChatPanel() {
                 <button
                   onClick={() => {
                     useProjectStore.getState().deactivateProject();
+                    useAppStore.getState().updateChatSettings({ promptMode: 'full' });
                     setShowProjectDropdown(false);
                   }}
-                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-g-chrome transition-colors ${!activeMode || activeMode === 'book' ? 'font-semibold text-purple-700 bg-purple-50' : 'text-g-text'
+                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-g-chrome transition-colors ${(!activeMode || activeMode === 'book') && promptMode === 'full' ? 'font-semibold text-purple-700 bg-purple-50' : 'text-g-text'
                     }`}
                 >
                   Full Context
+                </button>
+                {/* Plain — no system instructions */}
+                <button
+                  onClick={() => {
+                    useProjectStore.getState().deactivateProject();
+                    useAppStore.getState().updateChatSettings({ promptMode: 'off' });
+                    setShowProjectDropdown(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-g-chrome transition-colors ${(!activeMode || activeMode === 'book') && promptMode === 'off' ? 'font-semibold text-purple-700 bg-purple-50' : 'text-g-text'
+                    }`}
+                >
+                  Plain (no instructions)
                 </button>
                 {/* Presets */}
                 {AI_PROJECT_PRESETS.length > 0 && (

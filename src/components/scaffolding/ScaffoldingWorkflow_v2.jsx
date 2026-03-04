@@ -2,6 +2,8 @@ import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react'
 import useAppStore from '../../store/useAppStore';
 import useSeriesStore from '../../store/useSeriesStore';
 import useBookStore from '../../store/useBookStore';
+import useChatStore from '../../store/useChatStore';
+import buildHookPremisePrompt from '../../data/hookPremisePrompt';
 import { genreSystem } from '../../data/genreSystem';
 import { allStructures, beatSelectorGroups, actSelectorGroups } from '../../data/plotStructures';
 import { getIdealCurve } from '../../data/presetArcs';
@@ -227,6 +229,22 @@ export default function ScaffoldingWorkflow() {
                             exportFilename={`scaffold-${selectedGenre}-${selectedSubgenre}.json`}
                             label="Scaffold"
                         />
+                        <button
+                            onClick={() => {
+                                const prompt = buildHookPremisePrompt({
+                                    genre: currentGenre.name,
+                                    subgenre: currentSubgenre.name,
+                                    modifier: selectedModifier || '',
+                                    pacing: useAppStore.getState().selectedPacing || '',
+                                });
+                                useChatStore.getState().setDraftInput(prompt);
+                                useChatStore.getState().openPanel();
+                            }}
+                            className="text-sm bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded font-semibold"
+                            title="Generate a hook & premise using your current scaffold settings"
+                        >
+                            🪝 Hook & Premise
+                        </button>
                     </div>
 
                     {/* Resizable split: beat editor | drag handle | chart */}

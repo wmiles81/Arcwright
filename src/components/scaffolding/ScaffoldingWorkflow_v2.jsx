@@ -3,6 +3,7 @@ import useAppStore from '../../store/useAppStore';
 import useSeriesStore from '../../store/useSeriesStore';
 import useBookStore from '../../store/useBookStore';
 import useChatStore from '../../store/useChatStore';
+import useProjectStore from '../../store/useProjectStore';
 import buildHookPremisePrompt from '../../data/hookPremisePrompt';
 import { genreSystem } from '../../data/genreSystem';
 import { allStructures, beatSelectorGroups, actSelectorGroups } from '../../data/plotStructures';
@@ -237,6 +238,10 @@ export default function ScaffoldingWorkflow() {
                                     modifier: selectedModifier || '',
                                     pacing: useAppStore.getState().selectedPacing || '',
                                 });
+                                // Switch to no-system-prompt mode so the self-contained
+                                // prompt sends clean without Arcwright tool instructions
+                                useAppStore.getState().updateChatSettings({ promptMode: 'off' });
+                                useProjectStore.getState().deactivateProject();
                                 useChatStore.getState().clearMessages();
                                 useChatStore.getState().setDraftInput(prompt);
                                 useChatStore.getState().openPanel();

@@ -241,18 +241,12 @@ function isImageModel(m) {
  */
 export async function callCompletion(messages, options, onChunk, onDone, onError) {
   const { config, apiKey, selectedModel } = getActiveProvider();
-
-  const model = options.model || selectedModel;
-
-  // ── ACP protocol ────────────────────────────────────────────
-  if (config.protocol === 'acp') {
-    return callACPStreaming(config, model, messages, options, onChunk, onDone, onError);
-  }
-
   if (!apiKey) {
     onError(new Error('No API key configured. Open Settings to add one.'));
     return;
   }
+
+  const model = options.model || selectedModel;
 
   if (config.protocol === 'anthropic-native') {
     return callAnthropicStreaming(apiKey, messages, { ...options, model }, onChunk, onDone, onError);
@@ -339,96 +333,4 @@ export async function callCompletionWithProvider(providerId, systemPrompt, userM
     _apiUrl: apiUrl,
     _extraHeaders: extraHeaders,
   });
-}
-
-// ── ACP Streaming ─────────────────────────────────────────────────────────────
-//
-// Sends a request to the local /api/acp/chat server endpoint, which spawns
-// an ACP agent and streams the response back as SSE.
-//
-async function callACPStreaming(config, agentCommand, messages, options, onChunk, onDone, onError) {
-  // Find the acpArgs for this agent from the hardcoded model list
-  const modelEntry = (config.hardcodedModels || []).find(m => m.id === agentCommand);
-  const acpArgs = modelEntry?.acpArgs || [];
-
-  // Separate system prompt from conversation messages
-  const systemMsg = messages.find(m => m.role === 'system');
-  const conversationMsgs = messages.filter(m => m.role !== 'system');
-
-  // Extract last user message as fallback prompt (backwards compat)
-  const lastUserMsg = [...conversationMsgs].reverse().find(m => m.role === 'user');
-  const prompt = typeof lastUserMsg?.content === 'string'
-    ? lastUserMsg.content
-    : lastUserMsg?.content?.map(c => c.text || '').join('') || '';
-
-  try {
-    // Include user-configured MCP servers from chatSettings
-    const { chatSettings } = (await import('../store/useAppStore')).default.getState();
-    const mcpServers = chatSettings?.mcpServers || [];
-
-    const response = await fetch(config.completionsEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        command: agentCommand,
-        args: acpArgs,
-        prompt,
-        systemPrompt: systemMsg?.content || null,
-        messages: conversationMsgs,
-        mcpServers,
-      }),
-      signal: options.signal,
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
-      onError(new Error(err.error || `ACP request failed (${response.status})`));
-      return;
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';  // Keep incomplete line in buffer
-
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        const payload = line.slice(6).trim();
-
-        if (payload === '[DONE]') {
-          onDone({});
-          return;
-        }
-
-        try {
-          const parsed = JSON.parse(payload);
-          if (parsed.error) {
-            onError(new Error(parsed.error));
-            return;
-          }
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) onChunk(content);
-        } catch {
-          // Skip malformed JSON lines
-        }
-      }
-    }
-
-    // If we got here without [DONE], still signal completion
-    onDone({});
-
-  } catch (err) {
-    if (err.name === 'AbortError') {
-      onDone({});
-    } else {
-      onError(err);
-    }
-  }
 }

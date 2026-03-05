@@ -307,6 +307,7 @@ const useAppStore = create(
         activeVoiceContent: '',
         activeNarratorGender: null,       // null | 'female' | 'male'
         activeGenderMechanicsContent: '', // loaded from Arcwrite/gender-mechanics/<gender>.md
+        mcpServers: [],                   // [{ name, command, args, env }] — external MCP servers for ACP
       },
       updateChatSettings: (updates) => set((s) => ({
         chatSettings: { ...s.chatSettings, ...updates },

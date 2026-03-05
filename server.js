@@ -56,7 +56,7 @@ function proxyImageModels(res) {
 // ── ACP Agent Streaming Endpoint ──────────────────────────────────────────────
 //
 // POST /api/acp/chat
-// Body: { command, args?, prompt, messages?, env?, sessionId? }
+// Body: { command, args?, prompt, systemPrompt?, messages?, env?, sessionId? }
 // Response: SSE stream (text/event-stream) with data: JSON lines
 //
 // Spawns an ACP agent as a child process, sends the prompt via AI SDK's
@@ -75,7 +75,7 @@ async function handleACPChat(req, res) {
     return;
   }
 
-  const { command, args = [], prompt, messages, env = {} } = parsed;
+  const { command, args = [], prompt, systemPrompt, messages, env = {}, mcpServers: clientMcpServers = [] } = parsed;
 
   if (!command) {
     res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -88,6 +88,31 @@ async function handleACPChat(req, res) {
     return;
   }
 
+  // Build messages array for streamText — prepend system prompt if provided
+  // Normalize systemPrompt to a plain string (frontend may send array content)
+  let systemText = '';
+  if (systemPrompt) {
+    systemText = typeof systemPrompt === 'string'
+      ? systemPrompt
+      : (Array.isArray(systemPrompt)
+        ? systemPrompt.map(p => (typeof p === 'string' ? p : p.text || '')).join('')
+        : String(systemPrompt));
+    console.log(`[ACP] Platform context injected (${systemText.length} chars)`);
+  }
+
+  // Normalize conversation messages — flatten content arrays to plain strings
+  const normalizedMessages = (messages || [])
+    .filter(m => m.role !== 'system')
+    .map(m => ({
+      role: m.role,
+      content: typeof m.content === 'string'
+        ? m.content
+        : (Array.isArray(m.content)
+          ? m.content.map(p => (typeof p === 'string' ? p : p.text || '')).join('')
+          : String(m.content || '')),
+    }))
+    .filter(m => m.content);  // Drop empty messages
+
   let provider;
   try {
     // Dynamic import — these are ESM packages brought in by @mcpc-tech/acp-ai-provider
@@ -98,13 +123,38 @@ async function handleACPChat(req, res) {
     const localBinPath = path.join(process.cwd(), 'node_modules', '.bin');
     const envPath = `${localBinPath}${path.delimiter}${process.env.PATH || ''}`;
 
+    // Built-in Arcwright MCP server — gives the agent read access to project data
+    // Note: ACP protocol requires env as array of { name, value } objects
+    const arcwrightMcp = {
+      name: 'arcwright',
+      command: 'node',
+      args: [path.join(__dirname, 'mcp', 'arcwright-mcp-server.js')],
+      env: [
+        { name: 'ARCWRITE_DATA_DIR', value: process.env.ARCWRITE_DATA_DIR || '/Volumes/home/Arcwrite' },
+      ],
+    };
+
+    // Merge any external MCP servers configured by the user
+    // Convert env objects to ACP-required [{name, value}] format
+    const externalMcp = (clientMcpServers || []).map(s => ({
+      name: s.name || 'unnamed',
+      command: s.command,
+      args: s.args || [],
+      env: s.env
+        ? (Array.isArray(s.env) ? s.env : Object.entries(s.env).map(([k, v]) => ({ name: k, value: v })))
+        : undefined,
+    })).filter(s => s.command);
+
+    const allMcpServers = [arcwrightMcp, ...externalMcp];
+    console.log(`[ACP] MCP servers: ${allMcpServers.map(s => s.name).join(', ')}`);
+
     provider = createACPProvider({
       command,
       args,
       env: { ...env, PATH: envPath },
       session: {
         cwd: process.cwd(),
-        mcpServers: [],
+        mcpServers: allMcpServers,
       },
     });
 
@@ -118,8 +168,9 @@ async function handleACPChat(req, res) {
 
     const { textStream } = streamText({
       model: provider.languageModel(),
-      prompt: prompt || undefined,
-      messages: messages || undefined,
+      system: systemText || undefined,
+      prompt: normalizedMessages.length === 0 ? prompt : undefined,
+      messages: normalizedMessages.length > 0 ? normalizedMessages : undefined,
       tools: provider.tools,
     });
 

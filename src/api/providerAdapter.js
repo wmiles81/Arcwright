@@ -351,13 +351,21 @@ async function callACPStreaming(config, agentCommand, messages, options, onChunk
   const modelEntry = (config.hardcodedModels || []).find(m => m.id === agentCommand);
   const acpArgs = modelEntry?.acpArgs || [];
 
-  // Extract the last user message as the prompt
-  const lastUserMsg = [...messages].reverse().find(m => m.role === 'user');
+  // Separate system prompt from conversation messages
+  const systemMsg = messages.find(m => m.role === 'system');
+  const conversationMsgs = messages.filter(m => m.role !== 'system');
+
+  // Extract last user message as fallback prompt (backwards compat)
+  const lastUserMsg = [...conversationMsgs].reverse().find(m => m.role === 'user');
   const prompt = typeof lastUserMsg?.content === 'string'
     ? lastUserMsg.content
     : lastUserMsg?.content?.map(c => c.text || '').join('') || '';
 
   try {
+    // Include user-configured MCP servers from chatSettings
+    const { chatSettings } = (await import('../store/useAppStore')).default.getState();
+    const mcpServers = chatSettings?.mcpServers || [];
+
     const response = await fetch(config.completionsEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -365,6 +373,9 @@ async function callACPStreaming(config, agentCommand, messages, options, onChunk
         command: agentCommand,
         args: acpArgs,
         prompt,
+        systemPrompt: systemMsg?.content || null,
+        messages: conversationMsgs,
+        mcpServers,
       }),
       signal: options.signal,
     });

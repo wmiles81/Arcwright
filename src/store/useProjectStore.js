@@ -90,6 +90,16 @@ const useProjectStore = create((set, get) => ({
     // Register handle with database for FS backups
     dbSetArcwriteHandle(arcwriteHandle);
 
+    // Auto-set the editor file tree to the Arcwrite root
+    try {
+      const { buildFileTree } = await import('../components/edit/FilePanel');
+      const rawTree = await buildFileTree(arcwriteHandle);
+      useEditorStore.getState().setDirectoryHandle(arcwriteHandle);
+      useEditorStore.getState().setFileTree(rawTree);
+    } catch (e) {
+      console.warn('[ProjectStore] Failed to set editor file tree:', e.message);
+    }
+
     // Migrate settings from localStorage if this is first setup
     await get().migrateFromLocalStorage();
 
@@ -124,6 +134,7 @@ const useProjectStore = create((set, get) => ({
         // Permission persisted (user chose "Allow on every visit")
         await ensureDir(arcwriteHandle, 'projects', 'books');
         await ensureDir(arcwriteHandle, 'projects', 'ai');
+        await ensureDir(arcwriteHandle, 'projects', 'series');
         const settings = await readSettings(arcwriteHandle);
         set({ arcwriteHandle, isInitialized: true, needsReconnect: false, settings });
 
@@ -140,18 +151,32 @@ const useProjectStore = create((set, get) => ({
 
         // Restore active project from localStorage
         const saved = loadActiveProject();
+        let restoredProject = false;
         if (saved) {
           try {
             if (saved.mode === 'book') {
               await get().activateBookProject(saved.name);
+              restoredProject = true;
             } else if (saved.mode === 'ai') {
               const aiProjects = get().aiProjects;
               const project = aiProjects.find((p) => p.name === saved.name);
-              if (project) await get().activateAiProject(project);
+              if (project) { await get().activateAiProject(project); restoredProject = true; }
             }
           } catch (e) {
             console.warn('[ProjectStore] Failed to restore active project:', e.message);
             saveActiveProject(null, null);
+          }
+        }
+
+        // If no project was restored, default the Files tab to the Arcwrite root
+        if (!restoredProject && !useEditorStore.getState().directoryHandle) {
+          try {
+            const { buildFileTree } = await import('../components/edit/FilePanel');
+            const rawTree = await buildFileTree(arcwriteHandle);
+            useEditorStore.getState().setDirectoryHandle(arcwriteHandle);
+            useEditorStore.getState().setFileTree(rawTree);
+          } catch (e) {
+            console.warn('[ProjectStore] Failed to set default file tree:', e.message);
           }
         }
 
@@ -182,6 +207,7 @@ const useProjectStore = create((set, get) => ({
 
       await ensureDir(arcwriteHandle, 'projects', 'books');
       await ensureDir(arcwriteHandle, 'projects', 'ai');
+      await ensureDir(arcwriteHandle, 'projects', 'series');
       const settings = await readSettings(arcwriteHandle);
       set({ isInitialized: true, needsReconnect: false, settings });
 

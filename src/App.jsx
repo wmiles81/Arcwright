@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect, useRef } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import AppShell from './components/layout/AppShell';
+import AppShell from './components/layout/AppShell_v2';
 import WorkflowSelector from './components/layout/WorkflowSelector';
 import useAppStore from './store/useAppStore';
 import useEditorStore from './store/useEditorStore';

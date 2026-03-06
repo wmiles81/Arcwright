@@ -277,9 +277,9 @@ export async function initDatabase() {
   if (db) return db;
 
   try {
-    // Load sql.js WASM - use CDN for the wasm binary
+    // Load sql.js WASM - serve from local public/ directory (CDN unreliable)
     SQL = await initSqlJs({
-      locateFile: (file) => `https://sql.js.org/dist/${file}`,
+      locateFile: (file) => `/${file}`,
     });
 
     // Try to restore from IndexedDB first
@@ -388,12 +388,15 @@ export async function persistDbNow() {
 
 /** Run a SELECT and return array of row objects. */
 function queryAll(sql, params = []) {
-  const result = getDb().exec(sql, params);
-  if (result.length === 0) return [];
-  const { columns, values } = result[0];
-  return values.map((row) =>
-    Object.fromEntries(columns.map((col, i) => [col, row[i]]))
-  );
+  const d = getDb();
+  const stmt = d.prepare(sql);
+  if (params.length > 0) stmt.bind(params);
+  const rows = [];
+  while (stmt.step()) {
+    rows.push(stmt.getAsObject());
+  }
+  stmt.free();
+  return rows;
 }
 
 /** Run a SELECT and return first row object or null. */
@@ -404,7 +407,15 @@ function queryOne(sql, params = []) {
 
 /** Run INSERT/UPDATE/DELETE statement. */
 function execute(sql, params = []) {
-  getDb().run(sql, params);
+  const d = getDb();
+  if (params.length === 0) {
+    d.run(sql);
+  } else {
+    const stmt = d.prepare(sql);
+    stmt.bind(params);
+    stmt.step();
+    stmt.free();
+  }
   persistDb();
 }
 

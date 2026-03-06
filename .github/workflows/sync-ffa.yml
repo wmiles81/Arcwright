@@ -15,5 +15,7 @@ jobs:
 
       - name: Push to Future-Fiction-Academy
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote add ffa https://x-access-token:${{ secrets.FFA_PAT }}@github.com/Future-Fiction-Academy/Arcwright.git
           git push ffa main --force

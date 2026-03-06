@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import useProjectStore from '../../store/useProjectStore';
-import SeriesManager from './SeriesManager';
+import SeriesManager from './SeriesManager_v2';
 
 export default function BookProjectList({ selected, onSelect, colors: c, isDark }) {
   const bookProjects = useProjectStore((s) => s.bookProjects);
@@ -15,7 +15,7 @@ export default function BookProjectList({ selected, onSelect, colors: c, isDark 
   const refreshData = useCallback(async () => {
     try {
       const db = await import('../../services/database');
-      const dbInstance = await db.waitForDb();
+      const dbInstance = await db.initDatabase();
       if (!dbInstance) return;
       const series = db.getAllSeries();
       setAllSeries(series);
@@ -182,7 +182,7 @@ export default function BookProjectList({ selected, onSelect, colors: c, isDark 
                     <span style={{ fontSize: 10, color: c.chromeText, whiteSpace: 'nowrap' }}>Series:</span>
                     <select
                       value={currentSeriesId}
-                      onChange={(e) => handleSeriesChange(p.name, e.target.value ? parseInt(e.target.value, 10) : null)}
+                      onChange={(e) => handleSeriesChange(p.name, e.target.value || null)}
                       style={{
                         flex: 1,
                         background: inputBg,

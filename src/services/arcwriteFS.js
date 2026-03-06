@@ -125,6 +125,7 @@ export async function initArcwrite(parentHandle, { direct = false } = {}) {
     : await parentHandle.getDirectoryHandle('Arcwrite', { create: true });
 
   await ensureDir(arcwriteHandle, 'projects', 'books');
+  await ensureDir(arcwriteHandle, 'projects', 'series');
   await ensureDir(arcwriteHandle, 'chat-history');
 
   let settings = await readJsonFile(arcwriteHandle, 'settings.json');
@@ -182,6 +183,34 @@ export async function listBookProjects(arcwriteHandle) {
 export async function createBookProject(arcwriteHandle, name) {
   const booksDir = await ensureDir(arcwriteHandle, 'projects', 'books');
   return await booksDir.getDirectoryHandle(name, { create: true });
+}
+
+/**
+ * Create a series folder structure.
+ * Creates: projects/series/{SeriesName}/
+ * Returns the series directory handle.
+ */
+export async function createSeriesFolder(arcwriteHandle, seriesName) {
+  const seriesDir = await ensureDir(arcwriteHandle, 'projects', 'series', seriesName);
+  return seriesDir;
+}
+
+/**
+ * List series folders in Arcwrite/projects/series/.
+ */
+export async function listSeriesFolders(arcwriteHandle) {
+  try {
+    const seriesDir = await ensureDir(arcwriteHandle, 'projects', 'series');
+    const folders = [];
+    for await (const [name, handle] of seriesDir.entries()) {
+      if (handle.kind === 'directory') {
+        folders.push({ name, handle });
+      }
+    }
+    return folders.sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -286,10 +315,10 @@ export async function readAiChatHistory(arcwriteHandle, projectName) {
     const legacy = await readJsonFile(chatsDir, `${slug}.json`);
     if (legacy && legacy.length > 0) {
       await writeJsonFile(chatDir, 'active.json', legacy);
-      try { await chatsDir.removeEntry(`${slug}.json`); } catch (_) {}
+      try { await chatsDir.removeEntry(`${slug}.json`); } catch (_) { }
       return legacy;
     }
-  } catch (_) {}
+  } catch (_) { }
 
   return [];
 }
@@ -457,14 +486,14 @@ export async function loadPackContent(packDirHandle, includes) {
         delete data._dimensionRanges;
       }
       result.genres = data;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   if (includes.structures) {
     try {
       const fh = await packDirHandle.getFileHandle(includes.structures);
       result.structures = JSON.parse(await (await fh.getFile()).text());
-    } catch (_) {}
+    } catch (_) { }
   }
 
   for (const [type, dirName] of [['prompts', includes.prompts], ['sequences', includes.sequences]]) {
@@ -476,10 +505,10 @@ export async function loadPackContent(packDirHandle, includes) {
           try {
             const parsed = JSON.parse(await (await fhandle.getFile()).text());
             result[type].push(parsed);
-          } catch (_) {}
+          } catch (_) { }
         }
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   return result;

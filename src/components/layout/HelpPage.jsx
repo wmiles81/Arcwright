@@ -143,7 +143,7 @@ function AboutTab() {
             <h4 className="font-bold text-white mb-2">Projects</h4>
             <p>
               Manage book projects with AI-assisted metadata editing. All data is persisted in
-              <strong> SQLite</strong> with dual backup to IndexedDB and the Arcwrite filesystem.
+              <strong> SQLite</strong> via the local Express API server.
             </p>
           </div>
         </div>
@@ -155,34 +155,31 @@ function AboutTab() {
         </p>
         <MermaidDiagram id="getting-started" chart={`
 flowchart TD
-    A([Open Arcwright]) --> B{Storage\\nconfigured?}
+    A([Open Arcwright]) --> B{First run?}
 
-    B -- No --> C[Click the Setup banner]
-    C --> D{Pick a folder}
-    D -- "Folder named Arcwrite or Arcwright" --> E{Is this your\\nhome folder?}
-    E -- Yes --> F[Use folder as-is]
-    E -- No --> G["Create Arcwrite/ subfolder\\ninside the selected folder"]
-    D -- Any other folder --> G
-    F & G --> H
+    B -- Yes --> C{Have existing\\nArcwrite data?}
+    C -- Yes --> D["Enter path in Setup banner\\nClick Import"]
+    C -- No --> E["Click Skip —\\nstart with empty data"]
+    D & E --> F
 
-    B -- Yes --> H{Provider\\nconfigured?}
-    H -- No --> I["Settings ⚙ → Providers tab\\nAdd API key for OpenRouter,\\nAnthropic, or OpenAI"]
-    I --> J
-    H -- Yes --> J{What do you\\nwant to do?}
+    B -- No --> F{Provider\\nconfigured?}
+    F -- No --> G["Settings ⚙ → Providers tab\\nAdd API key for OpenRouter,\\nAnthropic, or OpenAI"]
+    G --> H
+    F -- Yes --> H{What do you\\nwant to do?}
 
-    J -- Write a book --> K["Projects → New Book\\nOpen a folder → start editing"]
-    J -- Chat with AI --> L["Open AI panel →\\njust start typing"]
-    J -- Use an AI assistant --> M["Projects → AI Projects\\nCreate → add knowledge files → Activate"]
+    H -- Write a book --> I["Projects → New Book\\nOpen a folder → start editing"]
+    H -- Chat with AI --> J["Open AI panel →\\njust start typing"]
+    H -- Use an AI assistant --> K["Projects → AI Projects\\nCreate → add knowledge files → Activate"]
 
-    K & L & M --> N([You're ready!])
+    I & J & K --> L([You're ready!])
 
     style A fill:#7C3AED,color:#fff,stroke:#9333ea
-    style N fill:#059669,color:#fff,stroke:#10b981
-    style I fill:#b45309,color:#fff,stroke:#d97706
-    style C fill:#b45309,color:#fff,stroke:#d97706
+    style L fill:#059669,color:#fff,stroke:#10b981
+    style G fill:#b45309,color:#fff,stroke:#d97706
+    style D fill:#b45309,color:#fff,stroke:#d97706
 `} />
         <p className="text-xs text-purple-400 mt-1">
-          Storage is set once and remembered across sessions via IndexedDB. Your Arcwrite folder holds all projects, chat history, prompts, sequences, and images.
+          Data is stored in <code className="text-purple-200 bg-slate-700/50 px-1 rounded">~/.arcwright</code> automatically. Override with the <code className="text-purple-200 bg-slate-700/50 px-1 rounded">ARCWRIGHT_DATA</code> environment variable for development.
         </p>
       </Section>
 
@@ -337,7 +334,7 @@ function InterfaceGuideTab() {
         {sub === 'settings' && (
           <>
             <Section title="Settings Dialog">
-              <p className="mb-3">Opened via the gear icon in the nav bar. Six tabs: Providers, Chat, Appearance, Voice, Image, and Packs.</p>
+              <p className="mb-3">Opened via the gear icon in the nav bar. Seven tabs: Providers, Chat, Appearance, Voice, Image, Packs, and Accessibility.</p>
             </Section>
 
             <Section title="Providers Tab">
@@ -397,6 +394,18 @@ function InterfaceGuideTab() {
                 <ControlRow name="Pack Cards">Each installed pack displays its name, author, version, description, and content summary (genres, structures, prompts, sequences).</ControlRow>
                 <ControlRow name="Pack Count">Header showing total installed packs and the extensions directory path.</ControlRow>
                 <ControlRow name="Empty State">Instructions for installing packs when none are present.</ControlRow>
+              </div>
+            </Section>
+
+            <Section title="Accessibility Tab">
+              <p className="mb-2">Adjust display settings for better readability and comfort. All changes take effect immediately.</p>
+              <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+                <ControlRow name="Zoom Level">Button group: 100%, 115%, 130%, 150%. Scales the entire interface &mdash; text, buttons, and panels.</ControlRow>
+                <ControlRow name="Dyslexia-Friendly Font">Toggle switch. Enables OpenDyslexic font for improved letter recognition throughout the app.</ControlRow>
+                <ControlRow name="Letter Spacing">Dropdown: Normal, Wide (+0.05em), Extra Wide (+0.1em). Increases space between letters for readability.</ControlRow>
+                <ControlRow name="Line Height">Dropdown: Normal (1.5), Relaxed (1.75), Loose (2.0). Increases space between lines of text.</ControlRow>
+                <ControlRow name="Minimum Font Size">Toggle switch. Prevents any text in the interface from being smaller than 12px.</ControlRow>
+                <ControlRow name="Reduce Motion">Toggle switch. Minimizes animations and transitions throughout the interface.</ControlRow>
               </div>
             </Section>
           </>
@@ -1011,9 +1020,8 @@ function EditGuideTab() {
       <Section title="Getting Started">
         <ol className="list-decimal list-inside space-y-2">
           <li>
-            <strong>Open a folder</strong> &mdash; Click <em>"Open Folder"</em> to grant the app access
-            to a directory on your computer via the File System Access API. This loads your files
-            into the file panel on the left.
+            <strong>Open a folder</strong> &mdash; Click <em>"Open Folder"</em> to load a directory
+            from your computer into the file panel on the left.
           </li>
           <li>
             <strong>Click any .md or .txt file</strong> to open it in a tab. Multiple files can
@@ -1849,9 +1857,9 @@ function DataPacksTab() {
         <DiagramBox>{`
   App Startup
   ─────────────────────────────────────────────────────
-  1. restoreFromIDB()
-     └─ Load Arcwrite/ handle from IndexedDB
-     └─ Read settings, load projects
+  1. Server health check → /api/health
+     └─ Verify Express API is running
+     └─ Load settings from ~/.arcwright
 
   2. loadPrompts() + loadSequences()
      └─ Load user-created prompts and sequences
@@ -1903,10 +1911,10 @@ function ChangelogTab() {
               <div>
                 <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">SQLite Database Layer</h5>
                 <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
-                  <li>Persistent storage via sql.js (SQLite compiled to WebAssembly) with dual backup: IndexedDB + Arcwrite filesystem</li>
+                  <li>Persistent storage via better-sqlite3 on the local Express API server</li>
                   <li>Complete data model: books, characters, scenes, chapters, settings, series, series beats, character arc points, analysis snapshots</li>
                   <li>Zustand stores (<code className="text-purple-200 bg-slate-700/50 px-1 rounded">useBookStore</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">useSeriesStore</code>) for reactive access to all entities</li>
-                  <li>Cross-platform: Windows, macOS, and Linux support via browser-based WebAssembly</li>
+                  <li>Cross-platform: Windows, macOS, and Linux support via Node.js</li>
                 </ul>
               </div>
               <div>
@@ -2225,7 +2233,7 @@ function ChangelogTab() {
                 <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mb-1">Edit Workflow</h5>
                 <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5">
                   <li>New Edit workflow: full-featured writing environment with file browser and markdown editor</li>
-                  <li>File System Access API integration &mdash; open, read, write, rename, and create files/folders directly from the browser</li>
+                  <li>Server-side file system integration &mdash; open, read, write, rename, and create files/folders via the Express API</li>
                   <li>File panel with tree view, expand/collapse folders, and tabbed file editing</li>
                   <li>Rich-text toolbar: bold, italic, underline, strikethrough, headers (H1&ndash;H4), lists, blockquotes, text color, background highlight</li>
                   <li>Color picker with reset-to-default for both text color and highlight</li>

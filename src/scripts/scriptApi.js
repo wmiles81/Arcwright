@@ -1,5 +1,6 @@
 import useEditorStore from '../store/useEditorStore';
 import useAppStore from '../store/useAppStore';
+import { confirm as asyncConfirm } from '../store/useConfirmStore';
 import { callCompletionSync } from '../api/providerAdapter';
 import { buildFileTree } from '../components/edit/FilePanel';
 
@@ -114,7 +115,7 @@ export function createScriptContext(options = {}) {
     // ── UI ──
 
     prompt: (msg, defaultValue) => window.prompt(msg, defaultValue ?? ''),
-    confirm: (msg) => window.confirm(msg),
+    confirm: (msg) => asyncConfirm(msg),
     askAI: async (prompt, systemPrompt) => {
       const app = useAppStore.getState();
       const provState = app.providers[app.activeProvider] || {};

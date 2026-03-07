@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import useFocusTrap from '../../hooks/useFocusTrap';
 import useEditorStore from '../../store/useEditorStore';
 import useAppStore from '../../store/useAppStore';
 import useProjectStore from '../../store/useProjectStore';
@@ -135,6 +136,8 @@ export default function RevisionModal({ isOpen, onClose, pipeline }) {
     onClose();
   };
 
+  const trapRef = useFocusTrap(isOpen);
+
   if (!isOpen) return null;
 
   const isDark = t.family === 'dark';
@@ -163,6 +166,10 @@ export default function RevisionModal({ isOpen, onClose, pipeline }) {
       }}
     >
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="AI Chapter Revision"
         style={{
           background: c.chrome,
           color: c.text,

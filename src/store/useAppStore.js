@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { pushUndo } from './useUndoStore';
 import { genreSystem } from '../data/genreSystem';
 import { allStructures } from '../data/plotStructures';
 import { DIMENSION_KEYS } from '../data/dimensions';
@@ -245,12 +246,16 @@ const useAppStore = create(
       },
 
       removeBeat: (id) => {
+        pushUndo('Beat deleted', 'app', { scaffoldBeats: [...get().scaffoldBeats] });
         set((state) => ({
           scaffoldBeats: state.scaffoldBeats.filter((b) => b.id !== id),
         }));
       },
 
-      clearScaffold: () => set({ scaffoldBeats: [] }),
+      clearScaffold: () => {
+        pushUndo('Scaffold cleared', 'app', { scaffoldBeats: [...get().scaffoldBeats] });
+        set({ scaffoldBeats: [] });
+      },
 
       // --- Custom Structures ---
       customStructures: [],
@@ -269,6 +274,7 @@ const useAppStore = create(
       },
 
       deleteCustomStructure: (id) => {
+        pushUndo('Structure deleted', 'app', { customStructures: [...get().customStructures] });
         set((state) => ({
           customStructures: state.customStructures.filter((s) => s.id !== id),
         }));
@@ -307,6 +313,7 @@ const useAppStore = create(
         activeVoiceContent: '',
         activeNarratorGender: null,       // null | 'female' | 'male'
         activeGenderMechanicsContent: '', // loaded from Arcwrite/gender-mechanics/<gender>.md
+        mcpServers: [],                   // [{ name, command, args, env }] — external MCP servers for ACP
       },
       updateChatSettings: (updates) => set((s) => ({
         chatSettings: { ...s.chatSettings, ...updates },
@@ -377,12 +384,16 @@ const useAppStore = create(
       },
 
       removeChapter: (id) => {
+        pushUndo('Chapter removed', 'app', { chapters: [...get().chapters] });
         set((state) => ({
           chapters: state.chapters.filter((ch) => ch.id !== id),
         }));
       },
 
-      clearChapters: () => set({ chapters: [], revisionItems: [] }),
+      clearChapters: () => {
+        pushUndo('Chapters cleared', 'app', { chapters: [...get().chapters], revisionItems: [...get().revisionItems] });
+        set({ chapters: [], revisionItems: [] });
+      },
 
       resetChaptersForReanalysis: () =>
         set((state) => ({
@@ -509,5 +520,8 @@ const useAppStore = create(
     }
   )
 );
+
+import { registerUndoSource } from './useUndoStore';
+registerUndoSource('app', useAppStore);
 
 export default useAppStore;

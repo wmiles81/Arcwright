@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useProjectStore from '../../store/useProjectStore';
 import { walkDirectoryTree, readFileByPath } from '../../services/arcwriteFS';
 import { saveHandle } from '../../services/idbHandleStore';
@@ -87,7 +88,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
       }
 
       if (duplicates.length > 0) {
-        alert(`${duplicates.length} file(s) already in project:\n${duplicates.join('\n')}`);
+        alert(`${duplicates.length} file(s) already in project: \n${duplicates.join('\n')} `);
       }
     } catch (e) {
       // User cancelled picker — ignore
@@ -117,7 +118,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
       } catch (_) { /* no SKILL.md */ }
 
       const hasSkill = !!skillMdContent;
-      const idbKey = `skillFolder__${(name || 'unnamed').replace(/[^a-zA-Z0-9_-]/g, '_')}__${folderName.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+      const idbKey = `skillFolder__${(name || 'unnamed').replace(/[^a-zA-Z0-9_-]/g, '_')}__${folderName.replace(/[^a-zA-Z0-9_-]/g, '_')} `;
 
       // Store handle in memory for IDB persistence on save
       folderHandlesRef.current[idbKey] = dirHandle;
@@ -139,7 +140,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
       if (hasSkill) {
         if (!systemPrompt.trim()) {
           setSystemPrompt(skillMdContent);
-        } else if (window.confirm('SKILL.md found. Replace current system prompt with its contents?')) {
+        } else if (await confirm('SKILL.md found. Replace current system prompt with its contents?')) {
           setSystemPrompt(skillMdContent);
         }
       }
@@ -193,7 +194,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
   return (
     <div>
       <h3 style={{ fontSize: 14, fontWeight: 700, margin: '0 0 12px' }}>
-        {isNew ? 'New AI Project' : `Edit: ${project.name}`}
+        {isNew ? 'New AI Project' : `Edit: ${project.name} `}
       </h3>
 
       {/* Project name */}
@@ -210,7 +211,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
           style={{
             width: '100%',
             background: inputBg,
-            border: `1px solid ${nameError ? '#DC2626' : inputBorder}`,
+            border: `1px solid ${nameError ? '#DC2626' : inputBorder} `,
             borderRadius: 6,
             padding: '6px 10px',
             fontSize: 12,
@@ -237,7 +238,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
           style={{
             width: '100%',
             background: inputBg,
-            border: `1px solid ${inputBorder}`,
+            border: `1px solid ${inputBorder} `,
             borderRadius: 6,
             padding: '8px 10px',
             fontSize: 12,
@@ -292,7 +293,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
             fontSize: 11,
             color: c.chromeText,
             textAlign: 'center',
-            border: `1px solid ${inputBorder}`,
+            border: `1px solid ${inputBorder} `,
             borderRadius: 6,
             background: inputBg,
           }}>
@@ -300,7 +301,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
           </div>
         ) : (
           <div style={{
-            border: `1px solid ${inputBorder}`,
+            border: `1px solid ${inputBorder} `,
             borderRadius: 6,
             background: inputBg,
             maxHeight: 200,
@@ -311,18 +312,20 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
                 key={i}
                 style={{
                   padding: '8px 10px',
-                  borderBottom: i < files.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` : 'none',
+                  borderBottom: i < files.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} ` : 'none',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                   <span style={{ fontSize: 11, fontFamily: 'monospace', color: c.chromeText, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {f.type === 'folder' ? `${f.path}/` : f.path}
-                    {f.type === 'folder' && (
-                      <span style={{ fontSize: 9, color: '#10B981', marginLeft: 6 }}>
-                        {countTreeFiles(f.fileTree)} files
-                      </span>
-                    )}
-                  </span>
+                    {
+                      f.type === 'folder' && (
+                        <span style={{ fontSize: 9, color: '#10B981', marginLeft: 6 }}>
+                          {countTreeFiles(f.fileTree)} files
+                        </span>
+                      )
+                    }
+                  </span >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     <select
                       value={f.includeMode || 'auto'}
@@ -351,27 +354,29 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
                       {'\u2715'}
                     </button>
                   </div>
-                </div>
-                {f.type !== 'folder' && (
-                  <input
-                    type="text"
-                    value={f.title}
-                    onChange={(e) => updateFile(i, 'title', e.target.value)}
-                    placeholder="Title (optional)"
-                    style={{
-                      width: '100%',
-                      background: 'transparent',
-                      border: `1px solid ${inputBorder}`,
-                      borderRadius: 4,
-                      padding: '3px 6px',
-                      fontSize: 11,
-                      color: c.text,
-                      outline: 'none',
-                      marginBottom: 3,
-                    }}
-                  />
-                )}
-                <input
+                </div >
+                {
+                  f.type !== 'folder' && (
+                    <input
+                      type="text"
+                      value={f.title}
+                      onChange={(e) => updateFile(i, 'title', e.target.value)}
+                      placeholder="Title (optional)"
+                      style={{
+                        width: '100%',
+                        background: 'transparent',
+                        border: `1px solid ${inputBorder}`,
+                        borderRadius: 4,
+                        padding: '3px 6px',
+                        fontSize: 11,
+                        color: c.text,
+                        outline: 'none',
+                        marginBottom: 3,
+                      }}
+                    />
+                  )
+                }
+                < input
                   type="text"
                   value={f.description}
                   onChange={(e) => updateFile(i, 'description', e.target.value)}
@@ -388,14 +393,14 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
                     marginTop: f.type === 'folder' ? 4 : 0,
                   }}
                 />
-              </div>
+              </div >
             ))}
-          </div>
+          </div >
         )}
-      </div>
+      </div >
 
       {/* Footer buttons */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+      < div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
         <button
           onClick={onCancel}
           style={{
@@ -428,7 +433,7 @@ export default function AiProjectEditor({ project, onSave, onCancel, colors: c, 
         >
           {isNew ? 'Create' : 'Save'}
         </button>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

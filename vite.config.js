@@ -7,13 +7,27 @@ const OR_IMAGE_PROXY = {
   rewrite: () => '/api/frontend/models/find?q=&output_modalities=image&limit=200',
 };
 
+// ACP endpoint runs on server.js (port 5174 by default)
+const ACP_PROXY = {
+  target: 'http://localhost:5174',
+  changeOrigin: true,
+};
+
 export default defineConfig({
   plugins: [react()],
   base: './',
   server: {
-    proxy: { '/or-image-models': OR_IMAGE_PROXY },
+    port: 5173,
+    strictPort: true,
+    proxy: {
+      '/or-image-models': OR_IMAGE_PROXY,
+      '/api': ACP_PROXY,
+    },
   },
   preview: {
-    proxy: { '/or-image-models': OR_IMAGE_PROXY },
+    proxy: {
+      '/or-image-models': OR_IMAGE_PROXY,
+      '/api': ACP_PROXY,
+    },
   },
 });

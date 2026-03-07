@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useChatStore from '../../store/useChatStore';
 import useAppStore from '../../store/useAppStore';
@@ -145,9 +146,10 @@ export default function ChatPanel() {
   };
 
   // Display name for the current AI project (book projects don't go here)
+  const promptMode = chatSettings.promptMode || 'full';
   const promptLabel = activeMode === 'ai' && activeAiProject
     ? activeAiProject.name
-    : 'Full Context';
+    : promptMode === 'off' ? 'Plain' : 'Full Context';
 
   // Auto-scroll to bottom on new messages or stream updates
   useEffect(() => {
@@ -354,12 +356,25 @@ export default function ChatPanel() {
                 <button
                   onClick={() => {
                     useProjectStore.getState().deactivateProject();
+                    useAppStore.getState().updateChatSettings({ promptMode: 'full' });
                     setShowProjectDropdown(false);
                   }}
-                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-g-chrome transition-colors ${!activeMode || activeMode === 'book' ? 'font-semibold text-purple-700 bg-purple-50' : 'text-g-text'
+                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-g-chrome transition-colors ${(!activeMode || activeMode === 'book') && promptMode === 'full' ? 'font-semibold text-purple-700 bg-purple-50' : 'text-g-text'
                     }`}
                 >
                   Full Context
+                </button>
+                {/* Plain — no system instructions */}
+                <button
+                  onClick={() => {
+                    useProjectStore.getState().deactivateProject();
+                    useAppStore.getState().updateChatSettings({ promptMode: 'off' });
+                    setShowProjectDropdown(false);
+                  }}
+                  className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-g-chrome transition-colors ${(!activeMode || activeMode === 'book') && promptMode === 'off' ? 'font-semibold text-purple-700 bg-purple-50' : 'text-g-text'
+                    }`}
+                >
+                  Plain (no instructions)
                 </button>
                 {/* Presets */}
                 {AI_PROJECT_PRESETS.length > 0 && (
@@ -430,8 +445,8 @@ export default function ChatPanel() {
           </button>
 
           <button
-            onClick={() => {
-              if (messages.length === 0 || window.confirm('Start a new chat? Current messages will be cleared.')) {
+            onClick={async () => {
+              if (messages.length === 0 || await confirm('Start a new chat? Current messages will be cleared.')) {
                 clearMessages();
                 useProjectStore.getState().clearProjectHistory().catch(() => { });
               }
@@ -587,8 +602,8 @@ export default function ChatPanel() {
                   {trimOptions.map((n) => (
                     <button
                       key={n}
-                      onClick={() => {
-                        if (window.confirm(`Keep only the last ${n} messages? Older messages will be removed from this session.`)) {
+                      onClick={async () => {
+                        if (await confirm(`Keep only the last ${n} messages? Older messages will be removed from this session.`)) {
                           trimToLast(n);
                           useProjectStore.getState().saveCurrentChatHistory().catch(() => { });
                         }

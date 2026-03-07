@@ -1,0 +1,735 @@
+<mxfile host="65bd71144e">
+    <diagram id="p1-overview" name="3.0 Overview">
+        <mxGraphModel dx="774" dy="411" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="ScaffoldingWorkflow.jsx  (UI Layer)" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="10" y="20" width="500" height="340" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="useAppStore  (State)" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="20" width="220" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="Narrative Engine  (src/engine/)" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=13;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="580" y="360" width="220" height="240" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Static Data  (src/data/)" style="rounded=1;arcSize=3;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;verticalAlign=top;" parent="1" vertex="1">
+                    <mxGeometry x="860" y="20" width="200" height="220" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="GenreSelector" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="75" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="GenreBlender" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="130" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="StructureSelector" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="185" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="BeatEditor / BeatEditorRow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="270" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="NarrativeChart" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="75" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="ValidationPanel" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="130" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="ScaffoldOutput" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="185" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="TemplateLoader" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="270" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="genre, subgenre, modifier, pacing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="65" width="180" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="activeWeights  (per-dim 0–3)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="115" width="180" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="scaffoldBeats[]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="165" width="180" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="blendEnabled, secondaryGenre, ratio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="215" width="180" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" value="tension.js — calculateTension()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="405" width="180" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="validation.js — validateAgainstGenre()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="450" width="180" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="blending.js — blendArcs(), blendWeights()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="495" width="180" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="scaffoldOutput.js — formatScaffold()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="540" width="180" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="genreSystem.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="875" y="65" width="165" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="plotStructures.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="875" y="110" width="165" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="presetArcs.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="875" y="155" width="165" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" value="dimensions.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="875" y="200" width="165" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="50" value="setGenre / setSubgenre" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.3;" parent="1" source="10" target="3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" value="addBeat / updateBeat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.7;" parent="1" source="13" target="3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="52" value="state change→&#10;useMemo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="3" target="4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="53" value="enrichedData" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.25;entryX=1;entryY=0.5;" parent="1" source="4" target="14" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="54" value="validation" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.4;entryX=1;entryY=0.5;" parent="1" source="4" target="15" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="55" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.6;entryX=1;entryY=0.5;" parent="1" source="4" target="16" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="56" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.7;entryX=1;entryY=0.3;" parent="1" source="5" target="4" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="57" value="loaded on init" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.3;entryX=1;entryY=0.3;" parent="1" source="5" target="3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="p2-genre" name="3.1 Genre Selection">
+        <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="1654" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <!-- ── Main path: genre dropdown → useMemo chain ── -->
+                <mxCell id="2" value="User changes Genre dropdown" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="300" y="40" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="useAppStore.setGenre(genre)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="120" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="Look up genreSystem[genre]&#10;→ get default subgenre, modifier" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="220" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="setSubgenre(default)&#10;setModifier(default)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="320" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="remapBeatsToStructure()&#10;Update each beat's .beat key" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="420" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <!-- Convergence node -->
+                <mxCell id="7" value="useMemo recomputes&#10;in ScaffoldingWorkflow" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;">
+                    <mxGeometry x="300" y="540" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="activeWeights =&#10;genre weights + modifier scaling" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;">
+                    <mxGeometry x="300" y="640" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="idealCurve =&#10;presetArcs[genre][subgenre]" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;">
+                    <mxGeometry x="300" y="740" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="enrichedData = beats.map&#10;→ calculateTension(beat, weights)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;">
+                    <mxGeometry x="300" y="840" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="validation =&#10;validateAgainstGenre(enrichedData)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;">
+                    <mxGeometry x="300" y="940" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="NarrativeChart, ValidationPanel,&#10;BeatSheetView re-render" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="300" y="1050" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <!-- ── Side triggers: Subgenre ── -->
+                <mxCell id="20" value="User changes Subgenre dropdown" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="600" y="40" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="useAppStore.setSubgenre(sub)&#10;Look up subgenreRequirements" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="600" y="120" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <!-- ── Side triggers: Modifier ── -->
+                <mxCell id="22" value="User changes Modifier dropdown" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="600" y="240" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="useAppStore.setModifier(mod)&#10;Apply modifierEffects[mod]&#10;Scale weights up/down" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="600" y="320" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: main path ── -->
+                <mxCell id="30" value="" edge="1" source="2" target="3" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="" edge="1" source="3" target="4" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="" edge="1" source="4" target="5" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="" edge="1" source="5" target="6" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="" edge="1" source="6" target="7" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" value="" edge="1" source="7" target="8" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="" edge="1" source="8" target="9" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" value="" edge="1" source="9" target="10" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" value="" edge="1" source="10" target="11" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="39" value="" edge="1" source="11" target="12" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: side triggers converge to useMemo node ── -->
+                <mxCell id="40" value="" edge="1" source="20" target="21" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="" edge="1" source="21" target="7" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.3;exitX=0;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="" edge="1" source="22" target="23" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" value="" edge="1" source="23" target="7" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.6;exitX=0;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="p3-beats" name="3.2 Beat Editing">
+        <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <!-- ── COLUMN A: Add Beat ── -->
+                <mxCell id="2" value="ADD BEAT" vertex="1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1;">
+                    <mxGeometry x="60" y="10" width="200" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="User clicks '+ Add Beat' button" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="40" y="50" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="Find largest gap in&#10;scaffoldBeats[].time array" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="40" y="130" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Create new beat:&#10;{id:uuid, time:midpoint,&#10;label:'Beat N', dims:0}" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="40" y="230" width="200" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="useAppStore.addBeat(beat)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="40" y="340" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="scaffoldBeats[] = [...existing, newBeat]&#10;sorted by time" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="40" y="440" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="BeatSheetView re-renders&#10;new row appears" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="40" y="540" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <!-- Hover insertion path -->
+                <mxCell id="9" value="User hovers between two beats" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="290" y="50" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="InsertionZone '+' appears" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="290" y="130" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="Compute midpoint time&#10;Average surrounding dims" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="290" y="220" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <!-- ── COLUMN B: Edit Beat (Expand Row) ── -->
+                <mxCell id="20" value="EDIT BEAT  (Expand Row)" vertex="1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1;">
+                    <mxGeometry x="590" y="10" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="User clicks Beat Row header" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="590" y="50" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="BeatEditorRow: setExpanded(true)&#10;Expanded view renders:&#10;Label · Time% · Beat Type&#10;11 Dimension Sliders&#10;Live Tension bar" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="590" y="130" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="User drags DimensionSlider" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="590" y="280" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="DimensionSlider onChange(key, value)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="590" y="360" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="BeatEditorRow.handleDimChange()" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="590" y="460" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value="onUpdate(beat.id, {key:val})&#10;→ useAppStore.updateBeat()" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="590" y="560" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="scaffoldBeats updated&#10;(new array reference)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="590" y="660" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="useMemo(enrichedData) recomputes&#10;calculateTension() for this beat" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;">
+                    <mxGeometry x="590" y="760" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <!-- Split outcomes -->
+                <mxCell id="29" value="T:x.x badge + tension bar&#10;update in BeatEditorRow" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="490" y="880" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="30" value="NarrativeChart tension line&#10;re-renders" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="710" y="880" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <!-- Label change path -->
+                <mxCell id="31" value="User changes Label input" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="860" y="280" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="updateBeat(id, {label:newLabel})" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="860" y="360" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <!-- Time % change path -->
+                <mxCell id="33" value="User changes Time% input" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="860" y="460" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="Parse int, clamp 0–100" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="860" y="540" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" value="updateBeat(id, {time:clamped})" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="860" y="640" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="scaffoldBeats re-sorted by time&#10;Row may reorder in list" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="860" y="750" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: Add Beat ── -->
+                <mxCell id="50" value="" edge="1" source="3" target="4" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" value="" edge="1" source="4" target="5" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="52" value="" edge="1" source="5" target="6" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="53" value="" edge="1" source="6" target="7" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="54" value="" edge="1" source="7" target="8" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- hover path converges into addBeat -->
+                <mxCell id="55" value="" edge="1" source="9" target="10" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="56" value="" edge="1" source="10" target="11" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="57" value="" edge="1" source="11" target="6" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: Edit Beat ── -->
+                <mxCell id="60" value="" edge="1" source="21" target="22" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="61" value="" edge="1" source="23" target="24" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="62" value="" edge="1" source="24" target="25" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="63" value="" edge="1" source="25" target="26" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="64" value="" edge="1" source="26" target="27" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="65" value="" edge="1" source="27" target="28" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="66" value="" edge="1" source="28" target="29" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=1;entryX=0.5;entryY=0;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="67" value="" edge="1" source="28" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=1;entryX=0.5;entryY=0;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- label + time paths -->
+                <mxCell id="68" value="" edge="1" source="31" target="32" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="69" value="" edge="1" source="33" target="34" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="70" value="" edge="1" source="34" target="35" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="71" value="" edge="1" source="35" target="36" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- label/time updateBeat both converge to main updateBeat in store -->
+                <mxCell id="72" value="" edge="1" source="32" target="27" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.5;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="73" value="" edge="1" source="35" target="27" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.7;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="p4-drag" name="3.3 Drag Reorder">
+        <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="User drags grip handle on BeatEditorRow" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="300" y="40" width="220" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="onDragStart(index)&#10;Store dragIndex in BeatEditor state" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="120" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="Dragging row shows opacity:50%&#10;(isDragging = true)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="220" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="User drags over another row" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="300" y="320" width="220" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="onDragOver(targetIndex)&#10;Store dropIndex" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="400" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="Target row shows green top border&#10;(isDropTarget = true)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="500" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="User releases mouse" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="300" y="600" width="220" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="onDrop(dropIndex)&#10;Remove from dragIndex&#10;Insert at dropIndex" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="680" width="220" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="Recalculate time% values&#10;Evenly redistribute by new order" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="300" y="790" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="useAppStore.setScaffoldBeats(reordered)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="300" y="890" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="BeatSheetView re-renders&#10;beats in new order" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="300" y="990" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="" edge="1" source="2" target="3" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="" edge="1" source="3" target="4" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="" edge="1" source="4" target="5" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="" edge="1" source="5" target="6" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="" edge="1" source="6" target="7" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="" edge="1" source="7" target="8" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value="" edge="1" source="8" target="9" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="27" value="" edge="1" source="9" target="10" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="28" value="" edge="1" source="10" target="11" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="29" value="" edge="1" source="11" target="12" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="p5-template-export-blend" name="3.4-3.6 Template · Export · Blend">
+        <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <!-- ── COLUMN A: Template Load ── -->
+                <mxCell id="2" value="3.4  TEMPLATE LOAD" vertex="1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=13;">
+                    <mxGeometry x="50" y="10" width="200" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="User opens Template dropdown&#10;+ selects a template" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="50" y="50" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="TemplateLoader: fetch definition&#10;from presetArcs / customStructures" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="50" y="140" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="Confirm overwrite?" vertex="1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;">
+                    <mxGeometry x="65" y="250" width="170" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="No-op" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#f4f4f4;strokeColor=#999999;">
+                    <mxGeometry x="290" y="265" width="100" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="useAppStore.setScaffoldBeats(template.beats)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="50" y="370" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="Recompute enrichedData, idealCurve&#10;Chart + beat list update" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="50" y="470" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <!-- ── COLUMN B: Export ── -->
+                <mxCell id="20" value="3.5  EXPORT" vertex="1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=13;">
+                    <mxGeometry x="450" y="10" width="200" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" value="User clicks Export Markdown / HTML" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="450" y="50" width="200" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" value="engine/scaffoldOutput.js&#10;formatScaffold(enrichedData, genre, weights)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;">
+                    <mxGeometry x="450" y="140" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="Build markdown:&#10;· Beat table + dimensions&#10;· Tension drivers per beat&#10;· Writing guidance (beatGuidance.js)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="450" y="240" width="200" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="Export format?" vertex="1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;">
+                    <mxGeometry x="465" y="370" width="170" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="Blob download  .md" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="380" y="490" width="160" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" value="Wrap in HTML template&#10;Blob download  .html" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="560" y="490" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <!-- ── COLUMN C: Blend Mode ── -->
+                <mxCell id="40" value="3.6  BLEND MODE" vertex="1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=13;">
+                    <mxGeometry x="870" y="10" width="220" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="User toggles Blend Mode switch" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="870" y="50" width="220" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="useAppStore.setBlendEnabled(true)&#10;GenreBlender panel shown" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;">
+                    <mxGeometry x="870" y="130" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" value="User selects secondary genre" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="870" y="230" width="220" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="44" value="useAppStore.setSecondaryGenre(genre)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="870" y="310" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="45" value="useMemo recomputes:&#10;blendedWeights = blending.blendWeights(&#10;  primary, secondary, ratio)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;">
+                    <mxGeometry x="870" y="410" width="220" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="46" value="blendedIdealCurve = blending.blendArcs(&#10;  primaryArc, secondaryArc, ratio)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;">
+                    <mxGeometry x="870" y="520" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="47" value="Chart shows blended ideal curve&#10;Weights reflect blend" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="870" y="620" width="220" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="48" value="User moves Blend Ratio slider" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;">
+                    <mxGeometry x="1140" y="410" width="200" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="49" value="useAppStore.setBlendRatio(value)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;">
+                    <mxGeometry x="1140" y="490" width="200" height="60" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: Template ── -->
+                <mxCell id="60" value="" edge="1" source="3" target="4" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="61" value="" edge="1" source="4" target="5" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="62" value="Cancel" edge="1" source="5" target="6" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="63" value="OK" edge="1" source="5" target="7" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="64" value="" edge="1" source="7" target="8" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: Export ── -->
+                <mxCell id="65" value="" edge="1" source="21" target="22" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="66" value="" edge="1" source="22" target="23" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="67" value="" edge="1" source="23" target="24" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="68" value="Markdown" edge="1" source="24" target="25" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="69" value="HTML" edge="1" source="24" target="26" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: Blend ── -->
+                <mxCell id="70" value="" edge="1" source="41" target="42" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="71" value="" edge="1" source="42" target="43" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="72" value="" edge="1" source="43" target="44" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="73" value="" edge="1" source="44" target="45" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="74" value="" edge="1" source="45" target="46" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="75" value="" edge="1" source="46" target="47" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="76" value="" edge="1" source="48" target="49" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="77" value="also triggers recompute" edge="1" source="49" target="45" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;entryX=1;entryY=0.5;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+    <diagram id="p6-tension" name="3.7 Tension Engine">
+        <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <!-- Entry -->
+                <mxCell id="2" value="calculateTension(beat, weights)" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=12;">
+                    <mxGeometry x="520" y="30" width="260" height="50" as="geometry"/>
+                </mxCell>
+                <!-- 9 channel computations — fan out -->
+                <mxCell id="10" value="infoAsym × weights.infoAsym" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="20" y="150" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="stakes × weights.stakes" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="220" y="150" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="(10 − alignment) × weights.misalignment" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="420" y="150" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="abs(powerDiff) × weights.powerDiff" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="620" y="150" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="vulnerability × (10−trust)/10&#10;× weights.vulnerability" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="820" y="150" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="desire × (10−intimacy)/10&#10;× weights.desire" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="1020" y="150" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="proximity × (10−trust)/10&#10;× weights.proximity" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="20" y="250" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="danger × weights.danger" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="220" y="250" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="mystery × weights.mystery" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;">
+                    <mxGeometry x="420" y="250" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <!-- Summation -->
+                <mxCell id="30" value="rawTension = sum of all 9 channels" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=11;">
+                    <mxGeometry x="420" y="370" width="460" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="31" value="maxPossible = Σ (maxDimValue × weight) per channel&#10;(represents maximum achievable rawTension)" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;">
+                    <mxGeometry x="420" y="470" width="460" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="tension = (rawTension / maxPossible) × 10" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=12;">
+                    <mxGeometry x="420" y="570" width="460" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="Clamp result to  0 – 10" vertex="1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;">
+                    <mxGeometry x="520" y="670" width="260" height="50" as="geometry"/>
+                </mxCell>
+                <!-- Consumer outputs -->
+                <mxCell id="40" value="T:x.x badge in&#10;BeatEditorRow (collapsed)" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;">
+                    <mxGeometry x="200" y="790" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="Live tension bar in&#10;BeatEditorRow (expanded)" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;">
+                    <mxGeometry x="380" y="790" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="42" value="TENSION line in&#10;NarrativeChart" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;">
+                    <mxGeometry x="560" y="790" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="43" value="validateAgainstGenre()&#10;tension threshold check" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;">
+                    <mxGeometry x="740" y="790" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="44" value="Gap analysis in&#10;AnalysisWorkflow" vertex="1" parent="1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;">
+                    <mxGeometry x="920" y="790" width="160" height="50" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: entry → channels ── -->
+                <mxCell id="50" value="" edge="1" source="2" target="10" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="51" value="" edge="1" source="2" target="11" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="52" value="" edge="1" source="2" target="12" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="53" value="" edge="1" source="2" target="13" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="54" value="" edge="1" source="2" target="14" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="55" value="" edge="1" source="2" target="15" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="56" value="" edge="1" source="2" target="16" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="57" value="" edge="1" source="2" target="17" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="58" value="" edge="1" source="2" target="18" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: channels → summation ── -->
+                <mxCell id="60" value="" edge="1" source="10" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="61" value="" edge="1" source="11" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="62" value="" edge="1" source="12" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="63" value="" edge="1" source="13" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="64" value="" edge="1" source="14" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="65" value="" edge="1" source="15" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="66" value="" edge="1" source="16" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="67" value="" edge="1" source="17" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="68" value="" edge="1" source="18" target="30" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: summation chain ── -->
+                <mxCell id="70" value="" edge="1" source="30" target="31" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="71" value="" edge="1" source="31" target="32" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="72" value="" edge="1" source="32" target="33" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- ── Edges: result → consumers ── -->
+                <mxCell id="73" value="" edge="1" source="33" target="40" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="74" value="" edge="1" source="33" target="41" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="75" value="" edge="1" source="33" target="42" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="76" value="" edge="1" source="33" target="43" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="77" value="" edge="1" source="33" target="44" parent="1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useSeriesStore from '../../store/useSeriesStore';
 
 const SERIES_TYPES = [
@@ -48,8 +49,8 @@ export default function SeriesManager({ colors: c, isDark, onSeriesChanged }) {
         }
     };
 
-    const handleDelete = (id, name) => {
-        if (!window.confirm(`Delete series "${name}"? Books will be unlinked but not deleted.`)) return;
+    const handleDelete = async (id, name) => {
+        if (!await confirm(`Delete series "${name}"? Books will be unlinked but not deleted.`)) return;
         try {
             removeSeries(id);
             if (onSeriesChanged) onSeriesChanged();

@@ -32,8 +32,12 @@ const useSeriesStore = create((set, get) => ({
 
     /** Load all series for listing. */
     loadAllSeries: () => {
-        const allSeries = getAllSeries();
-        set({ allSeries });
+        try {
+            const allSeries = getAllSeries() || [];
+            set({ allSeries: Array.isArray(allSeries) ? allSeries : [] });
+        } catch {
+            set({ allSeries: [] });
+        }
     },
 
     /** Activate a series by ID. */

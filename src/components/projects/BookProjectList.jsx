@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useProjectStore from '../../store/useProjectStore';
 import SeriesManager from './SeriesManager_v2';
 
@@ -78,7 +79,7 @@ export default function BookProjectList({ selected, onSelect, colors: c, isDark 
   };
 
   const handleDelete = async (name) => {
-    if (!window.confirm(`Delete book project "${name}" and all its files?`)) return;
+    if (!await confirm(`Delete book project "${name}" and all its files?`)) return;
     await useProjectStore.getState().deleteBookProject(name);
     if (selected === name) onSelect(null);
   };

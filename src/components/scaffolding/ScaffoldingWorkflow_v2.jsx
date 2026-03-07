@@ -1,7 +1,11 @@
 import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useAppStore from '../../store/useAppStore';
 import useSeriesStore from '../../store/useSeriesStore';
 import useBookStore from '../../store/useBookStore';
+import useChatStore from '../../store/useChatStore';
+import useProjectStore from '../../store/useProjectStore';
+import buildHookPremisePrompt from '../../data/hookPremisePrompt';
 import { genreSystem } from '../../data/genreSystem';
 import { allStructures, beatSelectorGroups, actSelectorGroups } from '../../data/plotStructures';
 import { getIdealCurve } from '../../data/presetArcs';
@@ -212,8 +216,8 @@ export default function ScaffoldingWorkflow() {
                         />
                         <TemplateLoader />
                         <button
-                            onClick={() => {
-                                if (scaffoldBeats.length === 0 || window.confirm('Clear all beats?')) {
+                            onClick={async () => {
+                                if (scaffoldBeats.length === 0 || await confirm('Clear all beats?')) {
                                     clearScaffold();
                                 }
                             }}
@@ -227,6 +231,27 @@ export default function ScaffoldingWorkflow() {
                             exportFilename={`scaffold-${selectedGenre}-${selectedSubgenre}.json`}
                             label="Scaffold"
                         />
+                        <button
+                            onClick={() => {
+                                const prompt = buildHookPremisePrompt({
+                                    genre: currentGenre.name,
+                                    subgenre: currentSubgenre.name,
+                                    modifier: selectedModifier || '',
+                                    pacing: useAppStore.getState().selectedPacing || '',
+                                });
+                                // Switch to no-system-prompt mode so the self-contained
+                                // prompt sends clean without Arcwright tool instructions
+                                useAppStore.getState().updateChatSettings({ promptMode: 'off' });
+                                useProjectStore.getState().deactivateProject();
+                                useChatStore.getState().clearMessages();
+                                useChatStore.getState().setDraftInput(prompt);
+                                useChatStore.getState().openPanel();
+                            }}
+                            className="text-sm bg-amber-600 hover:bg-amber-700 px-4 py-2 rounded font-semibold"
+                            title="Generate a hook & premise using your current scaffold settings"
+                        >
+                            🪝 Hook & Premise
+                        </button>
                     </div>
 
                     {/* Resizable split: beat editor | drag handle | chart */}

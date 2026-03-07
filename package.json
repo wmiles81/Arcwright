@@ -4,25 +4,38 @@
   "version": "3.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && cp start.sh dist/start.sh && cp start.bat dist/start.bat && chmod +x dist/start.sh && cp server.js Arcwright-dist/server.js && cp dist/index.html Arcwright-dist/index.html && rm -rf Arcwright-dist/assets && cp -r dist/assets Arcwright-dist/assets && cp dist/Arcwright-1600.png Arcwright-dist/Arcwright-1600.png && cp dist/favicon.png Arcwright-dist/favicon.png && cp dist/mascot.png Arcwright-dist/mascot.png",
-    "preview": "vite preview"
+    "dev": "node server/index.js & vite",
+    "dev:api": "node server/index.js",
+    "dev:vite-only": "vite",
+    "build": "vite build",
+    "start": "NODE_ENV=production node server/index.js",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@mcpc-tech/acp-ai-provider": "^0.2.5",
+    "@zed-industries/claude-code-acp": "^0.16.2",
+    "better-sqlite3": "^12.6.2",
     "diff": "^8.0.3",
+    "express": "^5.2.1",
     "mermaid": "^11.12.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
     "recharts": "^2.13.0",
-    "sql.js": "^1.14.0",
+    "zundo": "^2.3.0",
     "zustand": "^4.5.5"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "jsdom": "^28.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "vitest": "^4.0.18"
   }
 }

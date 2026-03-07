@@ -13,6 +13,8 @@ import { fetchModels } from './api/providerAdapter';
 import { loadHandle } from './services/idbHandleStore';
 import { initDatabase } from './services/database';
 import { getTheme } from './components/edit/editorThemes';
+import ConfirmDialog from './components/shared/ConfirmDialog';
+import UndoNotification from './components/shared/UndoNotification';
 import { genreSystem, genreDimensionRanges } from './data/genreSystem';
 import { plotStructures, allStructures } from './data/plotStructures';
 
@@ -106,19 +108,18 @@ export default function App() {
   // Trial expiration check
   if (Date.now() > TRIAL_EXPIRES) return <TrialExpired />;
 
-  // Initialize database and restore Arcwrite FS from IndexedDB on startup
+  // Initialize: connect to API server and restore project state
   useEffect(() => {
-    // Init SQLite database (from IndexedDB) — independent of Arcwrite FS
+    // Init database (server-backed — no WASM needed)
     initDatabase().catch((err) => console.warn('[App] Database init failed:', err));
 
+    // Connect to API server and restore project state
     useProjectStore.getState().restoreFromIDB().then(async (restored) => {
       if (restored) {
-        console.log('[App] Restored .arcwrite/ from IndexedDB');
-        // Load custom prompts and sequences after project store is initialized
+        console.log('[App] Connected to API server');
         usePromptStore.getState().loadPrompts();
         useSequenceStore.getState().loadSequences();
 
-        // Load and apply extension data packs
         await useProjectStore.getState().loadDataPacks();
         applyDataPacks();
       }
@@ -306,19 +307,23 @@ export default function App() {
   }, []); // run once on mount
 
   return (
-    <ErrorBoundary>
-      <Suspense fallback={<Loading />}>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route index element={<WorkflowSelector />} />
-            <Route path="scaffold" element={<ScaffoldingWorkflow />} />
-            <Route path="analyze" element={<AnalysisWorkflow />} />
-            <Route path="edit" element={<EditWorkflow />} />
-            <Route path="help" element={<HelpPage />} />
-            <Route path="dashboard" element={<ProjectDashboard />} />
-          </Route>
-        </Routes>
-      </Suspense>
-    </ErrorBoundary>
+    <>
+      <ConfirmDialog />
+      <UndoNotification />
+      <ErrorBoundary>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route index element={<WorkflowSelector />} />
+              <Route path="scaffold" element={<ScaffoldingWorkflow />} />
+              <Route path="analyze" element={<AnalysisWorkflow />} />
+              <Route path="edit" element={<EditWorkflow />} />
+              <Route path="help" element={<HelpPage />} />
+              <Route path="dashboard" element={<ProjectDashboard />} />
+            </Route>
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
+    </>
   );
 }

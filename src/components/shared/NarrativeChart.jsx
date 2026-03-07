@@ -49,7 +49,11 @@ export default function NarrativeChart({
     : structureName || actStructureName || 'Story Progress (%)';
 
   return (
-    <div className="bg-white/10 backdrop-blur rounded-lg p-6 mb-6">
+    <div
+      className="bg-white/10 backdrop-blur rounded-lg p-6 mb-6"
+      role="img"
+      aria-label="Story progression chart showing narrative dimension intensities over time"
+    >
       <h2 className="text-2xl font-bold mb-4 text-center">Story Progression</h2>
 
       {/* Act Structure Legend */}
@@ -240,6 +244,44 @@ export default function NarrativeChart({
           )}
         </LineChart>
       </ResponsiveContainer>
+
+      {/* Visually-hidden data table for screen readers (F-004) */}
+      {chartData && chartData.length > 0 && (
+        <table
+          className="sr-only"
+          style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)', whiteSpace: 'nowrap' }}
+        >
+          <caption>Story progression data values</caption>
+          <thead>
+            <tr>
+              <th>Time (%)</th>
+              {Object.entries(dimensions).map(([key, dim]) =>
+                visibleDims[key] ? <th key={key}>{dim.name}</th> : null
+              )}
+              {visibleDims.tension && <th>Tension</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((row, i) => (
+              <tr key={i}>
+                <td>{row.time}</td>
+                {Object.entries(dimensions).map(([key]) =>
+                  visibleDims[key] ? (
+                    <td key={key}>
+                      {isOverlay
+                        ? `${row[`actual_${key}`] ?? '—'} / ${row[`ideal_${key}`] ?? '—'}`
+                        : row[key] ?? '—'}
+                    </td>
+                  ) : null
+                )}
+                {visibleDims.tension && (
+                  <td>{isOverlay ? `${row.actual_tension ?? '—'} / ${row.ideal_tension ?? '—'}` : row.tension ?? '—'}</td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

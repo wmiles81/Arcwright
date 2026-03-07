@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useAppStore from '../../store/useAppStore';
 import useProjectStore from '../../store/useProjectStore';
 import { callCompletionWithProvider } from '../../api/providerAdapter';
@@ -179,7 +180,7 @@ export default function VoiceTab({ colors: c }) {
   };
 
   const handleDelete = async (voice) => {
-    if (!window.confirm(`Delete "${voice.path}"?`)) return;
+    if (!await confirm(`Delete "${voice.path}"?`)) return;
     try {
       await deleteVoiceFile(arcwriteHandle, voice.path);
       setVoices((prev) => prev.filter((v) => v.path !== voice.path));
@@ -276,10 +277,10 @@ export default function VoiceTab({ colors: c }) {
     cursor: 'pointer',
     background: variant === 'primary' ? '#7C3AED'
       : variant === 'danger' ? 'transparent'
-      : 'transparent',
+        : 'transparent',
     color: variant === 'primary' ? '#fff'
       : variant === 'danger' ? '#EF4444'
-      : c.chromeText,
+        : c.chromeText,
   });
 
   if (!arcwriteHandle) {

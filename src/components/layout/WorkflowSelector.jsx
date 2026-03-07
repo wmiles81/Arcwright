@@ -8,20 +8,20 @@ function WelcomeModal({ onClose }) {
       <div className="bg-slate-800 border border-purple-500/40 rounded-2xl shadow-2xl max-w-lg w-full mx-4 p-8">
         <h2 className="text-2xl font-bold text-white mb-4">Welcome to Arcwright</h2>
         <p className="text-purple-200 text-sm mb-5">
-          Before you get started, here are a few setup steps:
+          Here are a few things to know:
         </p>
         <ol className="text-purple-100 text-sm space-y-3 mb-6 list-decimal list-inside">
           <li>
-            <span className="font-semibold text-white">Select a project folder</span> — use the
-            folder icon in the sidebar to choose a directory for your book and AI projects.
+            <span className="font-semibold text-white">Your data lives in <code className="bg-purple-800/50 px-1 rounded text-xs">~/.arcwright</code></span> — settings,
+            projects, and prompts are stored there automatically.
           </li>
           <li>
             <span className="font-semibold text-white">Set up your API key</span> — click the
-            settings gear button and enter your API key so the AI features work.
+            settings gear and enter your API key so the AI features work.
           </li>
           <li>
-            <span className="font-semibold text-white">Connect to your book folder</span> — go
-            to the file pane and open the folder that contains your manuscript files.
+            <span className="font-semibold text-white">Import existing data</span> — if you have
+            an Arcwrite folder from a previous version, use the banner on this page to import it.
           </li>
           <li>
             <span className="font-semibold text-white">Check out Help</span> — use the help page

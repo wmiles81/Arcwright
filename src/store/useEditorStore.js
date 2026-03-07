@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { confirm } from './useConfirmStore';
+import { pushUndo } from './useUndoStore';
 
 const useEditorStore = create(
   persist(
@@ -54,12 +56,13 @@ const useEditorStore = create(
         });
       },
 
-      closeTab: (id) => {
+      closeTab: async (id) => {
         const { tabs, activeTabId, secondaryTabId } = get();
         const tab = tabs.find((t) => t.id === id);
         if (tab?.dirty) {
-          if (!window.confirm(`"${tab.title}" has unsaved changes. Close anyway?`)) return;
+          if (!await confirm(`"${tab.title}" has unsaved changes. Close anyway?`)) return;
         }
+        pushUndo('Tab closed', 'editor', { tabs: tabs.map((t) => ({ ...t })), activeTabId, secondaryTabId });
         const filtered = tabs.filter((t) => t.id !== id);
         const updates = { tabs: filtered };
         if (activeTabId === id) {
@@ -74,13 +77,14 @@ const useEditorStore = create(
       setActiveTab: (id) => set({ activeTabId: id }),
       setSecondaryTab: (id) => set({ secondaryTabId: id }),
 
-      clearAllTabs: () => {
+      clearAllTabs: async () => {
         const { tabs } = get();
         const dirty = tabs.filter((t) => t.dirty);
         if (dirty.length > 0) {
           const names = dirty.map((t) => `"${t.title}"`).join(', ');
-          if (!window.confirm(`${dirty.length} unsaved file${dirty.length > 1 ? 's' : ''}: ${names}. Close all tabs anyway?`)) return;
+          if (!await confirm(`${dirty.length} unsaved file${dirty.length > 1 ? 's' : ''}: ${names}. Close all tabs anyway?`)) return;
         }
+        pushUndo('All tabs closed', 'editor', { tabs: tabs.map((t) => ({ ...t })), activeTabId: get().activeTabId, secondaryTabId: get().secondaryTabId });
         set({ tabs: [], activeTabId: null, secondaryTabId: null, dualPane: false });
       },
 
@@ -280,5 +284,8 @@ const useEditorStore = create(
     }
   )
 );
+
+import { registerUndoSource } from './useUndoStore';
+registerUndoSource('editor', useEditorStore);
 
 export default useEditorStore;

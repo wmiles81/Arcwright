@@ -74,7 +74,7 @@ function wordDiffSpans(oldText, newText) {
     if (part.added) {
       hasChanges = true;
       right.push(
-        <span key={i} style={{ background: 'rgba(34,197,94,0.3)', borderRadius: 2, padding: '0 1px' }}>
+        <span key={i} style={{ background: 'rgba(34,197,94,0.3)', fontWeight: 600, borderRadius: 2, padding: '0 1px' }}>
           {part.value}
         </span>
       );

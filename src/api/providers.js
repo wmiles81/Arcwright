@@ -57,14 +57,14 @@ export const PROVIDERS = {
     supportsModelFetch: true,
     // Metadata for enriching fetched models (API doesn't return these)
     knownModelMeta: {
-      'claude-opus-4-6':     { supportedParameters: ['temperature', 'tools', 'reasoning'], contextLength: 200000, maxCompletionTokens: 32768 },
-      'claude-sonnet-4-5':   { supportedParameters: ['temperature', 'tools', 'reasoning'], contextLength: 200000, maxCompletionTokens: 16384 },
-      'claude-opus-4':       { supportedParameters: ['temperature', 'tools', 'reasoning'], contextLength: 200000, maxCompletionTokens: 32768 },
-      'claude-sonnet-4':     { supportedParameters: ['temperature', 'tools', 'reasoning'], contextLength: 200000, maxCompletionTokens: 16384 },
-      'claude-haiku-4-5':    { supportedParameters: ['temperature', 'tools'], contextLength: 200000, maxCompletionTokens: 8192 },
-      'claude-3-5-sonnet':   { supportedParameters: ['temperature', 'tools'], contextLength: 200000, maxCompletionTokens: 8192 },
-      'claude-3-5-haiku':    { supportedParameters: ['temperature', 'tools'], contextLength: 200000, maxCompletionTokens: 8192 },
-      'claude-3-opus':       { supportedParameters: ['temperature', 'tools'], contextLength: 200000, maxCompletionTokens: 4096 },
+      'claude-opus-4-6': { supportedParameters: ['temperature', 'tools', 'reasoning'], contextLength: 200000, maxCompletionTokens: 32768 },
+      'claude-sonnet-4-5': { supportedParameters: ['temperature', 'tools', 'reasoning'], contextLength: 200000, maxCompletionTokens: 16384 },
+      'claude-opus-4': { supportedParameters: ['temperature', 'tools', 'reasoning'], contextLength: 200000, maxCompletionTokens: 32768 },
+      'claude-sonnet-4': { supportedParameters: ['temperature', 'tools', 'reasoning'], contextLength: 200000, maxCompletionTokens: 16384 },
+      'claude-haiku-4-5': { supportedParameters: ['temperature', 'tools'], contextLength: 200000, maxCompletionTokens: 8192 },
+      'claude-3-5-sonnet': { supportedParameters: ['temperature', 'tools'], contextLength: 200000, maxCompletionTokens: 8192 },
+      'claude-3-5-haiku': { supportedParameters: ['temperature', 'tools'], contextLength: 200000, maxCompletionTokens: 8192 },
+      'claude-3-opus': { supportedParameters: ['temperature', 'tools'], contextLength: 200000, maxCompletionTokens: 4096 },
     },
     // Fallback if fetch fails
     hardcodedModels: [
@@ -160,6 +160,28 @@ export const PROVIDERS = {
     requiresApiKey: false,
     localSetup: 'LocalAI enables CORS by default. Run: docker run -p 8080:8080 localai/localai',
   },
+
+  // ── ACP (Agent Client Protocol) ────────────────────────────────────────────
+  acp: {
+    id: 'acp',
+    name: 'ACP (Local Agent)',
+    description: 'Use any ACP-compatible agent (Gemini CLI, Claude Agent, Codex, etc.)',
+    keyPlaceholder: '(no key required)',
+    keyUrl: 'https://agentclientprotocol.com',
+    protocol: 'acp',
+    baseUrl: '',  // Uses local server endpoint
+    completionsEndpoint: '/api/acp/chat',
+    defaultModel: 'claude-code-acp',
+    extraHeaders: () => ({}),
+    supportsModelFetch: false,
+    supportsStreamOptions: false,
+    requiresApiKey: false,
+    localSetup: 'Install an ACP agent adapter (e.g., npm install @zed-industries/claude-code-acp) then select it as the model.',
+    hardcodedModels: [
+      { id: 'claude-code-acp', name: 'Claude Code (ACP)', supportedParameters: [], contextLength: 200000, maxCompletionTokens: 16384, acpArgs: [] },
+      { id: 'gemini', name: 'Gemini CLI', supportedParameters: [], contextLength: 1000000, maxCompletionTokens: 8192, acpArgs: ['--experimental-acp'] },
+    ],
+  },
 };
 
-export const PROVIDER_ORDER = ['openrouter', 'openai', 'anthropic', 'perplexity', 'ollama', 'lmstudio', 'janai', 'localai'];
+export const PROVIDER_ORDER = ['openrouter', 'openai', 'anthropic', 'perplexity', 'ollama', 'lmstudio', 'janai', 'localai', 'acp'];

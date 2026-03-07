@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import useEditorStore from '../../store/useEditorStore';
+import { matchesShortcut } from '../../store/useShortcutStore';
 import useAppStore from '../../store/useAppStore';
 import useSequenceStore from '../../store/useSequenceStore';
 import ChatPanel from '../chat/ChatPanel';
@@ -20,6 +21,8 @@ const LEFT_TABS = [
 export default function EditWorkflow() {
     const leftPanelTab = useEditorStore((s) => s.leftPanelTab);
     const setLeftPanelTab = useEditorStore((s) => s.setLeftPanelTab);
+    const focusMode = useEditorStore((s) => s.focusMode);
+    const toggleFocusMode = useEditorStore((s) => s.toggleFocusMode);
     const runningSequence = useSequenceStore((s) => s.runningSequence);
 
     // --- Resizable left panel ---
@@ -48,44 +51,56 @@ export default function EditWorkflow() {
         };
     }, []);
 
+    // F-008: Escape exits focus mode (F-012: remappable)
+    useEffect(() => {
+        if (!focusMode) return;
+        const handler = (e) => {
+            if (matchesShortcut('editor.focusMode', e)) toggleFocusMode();
+        };
+        document.addEventListener('keydown', handler);
+        return () => document.removeEventListener('keydown', handler);
+    }, [focusMode, toggleFocusMode]);
+
     return (
         <div ref={containerRef} className="flex h-full">
-            {/* Left panel */}
-            <div style={{ width: leftWidth }} className="shrink-0 flex flex-col min-h-0 bg-g-bg border-r border-g-border">
-                {/* Tab bar */}
-                <div className="flex border-b border-g-border shrink-0">
-                    {LEFT_TABS.map((tab) => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setLeftPanelTab(tab.key)}
-                            className={`flex-1 px-2 py-2 text-xs font-semibold transition-colors flex items-center justify-center gap-1 ${leftPanelTab === tab.key
+            {/* Left panel — hidden in focus mode (F-008) */}
+            {!focusMode && (<>
+                <div style={{ width: leftWidth }} className="shrink-0 flex flex-col min-h-0 bg-g-bg border-r border-g-border">
+                    {/* Tab bar */}
+                    <div className="flex border-b border-g-border shrink-0">
+                        {LEFT_TABS.map((tab) => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setLeftPanelTab(tab.key)}
+                                className={`flex-1 px-2 py-2 text-xs font-semibold transition-colors flex items-center justify-center gap-1 ${leftPanelTab === tab.key
                                     ? 'bg-g-bg text-g-text border-b-2 border-g-text'
                                     : 'bg-g-chrome text-g-muted hover:text-g-text hover:bg-g-bg'
-                                }`}
-                        >
-                            {tab.label}
-                            {tab.key === 'sequences' && runningSequence && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
-                            )}
-                        </button>
-                    ))}
+                                    }`}
+                            >
+                                {tab.label}
+                                {tab.key === 'sequences' && runningSequence && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Panel content */}
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                        {leftPanelTab === 'chat' && <ChatPanel />}
+                        {leftPanelTab === 'files' && <FilePanel />}
+                        {leftPanelTab === 'scenes' && <SceneMappingPanel />}
+                        {leftPanelTab === 'variables' && <VariablesPanel />}
+                        {leftPanelTab === 'sequences' && <SequencesPanel />}
+                    </div>
                 </div>
 
-                {/* Panel content */}
-                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                    {leftPanelTab === 'chat' && <ChatPanel />}
-                    {leftPanelTab === 'files' && <FilePanel />}
-                    {leftPanelTab === 'scenes' && <SceneMappingPanel />}
-                    {leftPanelTab === 'variables' && <VariablesPanel />}
-                    {leftPanelTab === 'sequences' && <SequencesPanel />}
-                </div>
-            </div>
-
-            {/* Drag divider */}
-            <div
-                onMouseDown={handleDividerDown}
-                className="w-1.5 cursor-col-resize bg-purple-500/30 hover:bg-purple-500/60 flex-shrink-0 transition-colors"
-            />
+                {/* Drag divider */}
+                <div
+                    onMouseDown={handleDividerDown}
+                    className="w-1.5 cursor-col-resize bg-purple-500/30 hover:bg-purple-500/60 flex-shrink-0 transition-colors"
+                />
+            </>)}
 
             {/* Editor area */}
             <div className="flex-1 min-w-0 flex flex-col bg-g-bg">

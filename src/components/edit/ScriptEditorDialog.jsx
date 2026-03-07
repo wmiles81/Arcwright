@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useScriptStore from '../../store/useScriptStore';
 import { runScript } from '../../scripts/scriptRunner';
 import useFocusTrap from '../../hooks/useFocusTrap';
@@ -41,15 +42,15 @@ export default function ScriptEditorDialog({ isOpen, onClose, colors: c }) {
 
   if (!isOpen) return null;
 
-  const selectScript = (script) => {
-    if (dirty && !window.confirm('Discard unsaved changes?')) return;
+  const selectScript = async (script) => {
+    if (dirty && !await confirm('Discard unsaved changes?')) return;
     setSelectedId(script.id);
     setDraft({ name: script.name, description: script.description || '', context: script.context || 'both', code: script.code || '' });
     setDirty(false);
   };
 
-  const startNew = () => {
-    if (dirty && !window.confirm('Discard unsaved changes?')) return;
+  const startNew = async () => {
+    if (dirty && !await confirm('Discard unsaved changes?')) return;
     setSelectedId('__new__');
     setDraft({ ...BLANK_SCRIPT });
     setDirty(false);
@@ -75,8 +76,8 @@ export default function ScriptEditorDialog({ isOpen, onClose, colors: c }) {
     }
   };
 
-  const remove = () => {
-    if (!window.confirm(`Delete "${draft.name}"? This cannot be undone.`)) return;
+  const remove = async () => {
+    if (!await confirm(`Delete "${draft.name}"? This cannot be undone.`)) return;
     removeScript(selectedId);
     setSelectedId(null);
     setDraft(null);

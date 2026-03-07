@@ -89,7 +89,7 @@ export default function useChatSend() {
     const app = useAppStore.getState();
     const provState = app.providers[app.activeProvider] || {};
 
-    if (!provState.apiKey) {
+    if (!provState.apiKey && PROVIDERS[app.activeProvider]?.requiresApiKey !== false) {
       chat.setError('No API key configured. Open Settings to add one.');
       return;
     }

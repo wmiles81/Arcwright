@@ -8,6 +8,7 @@ import { PROVIDERS, PROVIDER_ORDER } from '../../api/providers';
 import { fetchModels, fetchImageModels } from '../../api/providerAdapter';
 import ProviderCard from './ProviderCard';
 import VoiceTab from './VoiceTab';
+import ShortcutsTab from './ShortcutsTab';
 
 export default function SettingsDialog({ isOpen, onClose }) {
   const editorTheme = useEditorStore((s) => s.editorTheme);
@@ -90,21 +91,25 @@ export default function SettingsDialog({ isOpen, onClose }) {
     // Persist to disk if Arcwrite is initialized
     const proj = useProjectStore.getState();
     if (proj.arcwriteHandle) {
-      const diskProviders = {};
-      for (const [id, p] of Object.entries(localProviders)) {
-        diskProviders[id] = {
-          apiKey: p.apiKey,
-          selectedModel: p.selectedModel,
-          availableModels: p.availableModels || [],
-        };
+      try {
+        const diskProviders = {};
+        for (const [id, p] of Object.entries(localProviders)) {
+          diskProviders[id] = {
+            apiKey: p.apiKey,
+            selectedModel: p.selectedModel,
+            availableModels: p.availableModels || [],
+          };
+        }
+        await proj.updateSettings({
+          activeProvider: localActiveProvider,
+          providers: diskProviders,
+          chatSettings: { ...localChatSettings, activeVoicePath, activeVoiceContent, activeNarratorGender, activeGenderMechanicsContent },
+          editorTheme: localEditorTheme,
+          imageSettings: localImageSettings,
+        });
+      } catch (err) {
+        console.error('[Settings] Disk persistence failed:', err.message);
       }
-      await proj.updateSettings({
-        activeProvider: localActiveProvider,
-        providers: diskProviders,
-        chatSettings: { ...localChatSettings, activeVoicePath, activeVoiceContent, activeNarratorGender, activeGenderMechanicsContent },
-        editorTheme: localEditorTheme,
-        imageSettings: localImageSettings,
-      });
     }
 
     onClose();
@@ -211,6 +216,9 @@ export default function SettingsDialog({ isOpen, onClose }) {
             <button style={tabStyle(activeTab === 'accessibility')} onClick={() => setActiveTab('accessibility')}>
               Accessibility
             </button>
+            <button style={tabStyle(activeTab === 'shortcuts')} onClick={() => setActiveTab('shortcuts')}>
+              Shortcuts
+            </button>
           </div>
         </div>
 
@@ -259,6 +267,9 @@ export default function SettingsDialog({ isOpen, onClose }) {
           )}
           {activeTab === 'accessibility' && (
             <AccessibilityTab colors={c} />
+          )}
+          {activeTab === 'shortcuts' && (
+            <ShortcutsTab colors={c} />
           )}
         </div>
 
@@ -465,6 +476,246 @@ function ChatTab({ chatSettings, onUpdate, supported, activeModel, colors: c }) 
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* MCP Servers (for ACP agents) */}
+      <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${c.chromeBorder}` }}>
+        <div style={{ fontSize: 10, color: c.chromeText, textTransform: 'uppercase', fontWeight: 700, marginBottom: 6 }}>
+          MCP Servers (ACP)
+        </div>
+        <div style={{ fontSize: 11, color: c.chromeText, marginBottom: 8, lineHeight: 1.5 }}>
+          External MCP servers available to ACP agents. The built-in Arcwright server is always included.
+        </div>
+        {(chatSettings.mcpServers || []).map((srv, i) => (
+          <div key={i} style={{
+            display: 'flex', gap: 6, marginBottom: 6, alignItems: 'center',
+          }}>
+            <input
+              type="text"
+              placeholder="Name"
+              value={srv.name || ''}
+              onChange={(e) => {
+                const updated = [...(chatSettings.mcpServers || [])];
+                updated[i] = { ...updated[i], name: e.target.value };
+                onUpdate({ mcpServers: updated });
+              }}
+              style={{
+                width: 80, padding: '4px 6px', fontSize: 11, fontFamily: 'monospace',
+                background: c.bg, color: c.text, border: `1px solid ${c.chromeBorder}`, borderRadius: 4, outline: 'none',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Command"
+              value={srv.command || ''}
+              onChange={(e) => {
+                const updated = [...(chatSettings.mcpServers || [])];
+                updated[i] = { ...updated[i], command: e.target.value };
+                onUpdate({ mcpServers: updated });
+              }}
+              style={{
+                width: 100, padding: '4px 6px', fontSize: 11, fontFamily: 'monospace',
+                background: c.bg, color: c.text, border: `1px solid ${c.chromeBorder}`, borderRadius: 4, outline: 'none',
+              }}
+            />
+            <input
+              type="text"
+              placeholder="Args (space-separated)"
+              value={(srv.args || []).join(' ')}
+              onChange={(e) => {
+                const updated = [...(chatSettings.mcpServers || [])];
+                updated[i] = { ...updated[i], args: e.target.value.split(' ').filter(Boolean) };
+                onUpdate({ mcpServers: updated });
+              }}
+              style={{
+                flex: 1, padding: '4px 6px', fontSize: 11, fontFamily: 'monospace',
+                background: c.bg, color: c.text, border: `1px solid ${c.chromeBorder}`, borderRadius: 4, outline: 'none',
+              }}
+            />
+            <button
+              onClick={() => {
+                const updated = (chatSettings.mcpServers || []).filter((_, j) => j !== i);
+                onUpdate({ mcpServers: updated });
+              }}
+              style={{
+                background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer',
+                fontSize: 14, lineHeight: 1, padding: '2px 4px',
+              }}
+              title="Remove"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+
+        {/* Action buttons row */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            onClick={() => {
+              const updated = [...(chatSettings.mcpServers || []), { name: '', command: '', args: [] }];
+              onUpdate({ mcpServers: updated });
+            }}
+            style={{
+              flex: 1, background: 'none', border: `1px dashed ${c.chromeBorder}`, borderRadius: 4,
+              color: c.chromeText, fontSize: 11, padding: '4px 10px', cursor: 'pointer',
+              textAlign: 'center',
+            }}
+          >
+            + Add Custom
+          </button>
+
+          {/* Preset dropdown */}
+          <McpPresetDropdown
+            existingServers={chatSettings.mcpServers || []}
+            onAdd={(preset) => {
+              const updated = [...(chatSettings.mcpServers || []), { name: preset.name, command: preset.command, args: [...preset.args] }];
+              onUpdate({ mcpServers: updated });
+            }}
+            colors={c}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── MCP Server Presets ──
+
+const MCP_PRESETS = [
+  {
+    name: 'notion',
+    label: 'Notion',
+    description: 'Read/write Notion pages, databases, and blocks',
+    command: 'npx',
+    args: ['-y', '@notionhq/notion-mcp-server'],
+    envHint: 'Set NOTION_API_KEY env var or use OAuth',
+  },
+  {
+    name: 'n8n',
+    label: 'n8n Workflows',
+    description: 'Trigger and manage n8n automation workflows',
+    command: 'npx',
+    args: ['-y', '@anthropic/n8n-mcp-server'],
+    envHint: 'Requires N8N_API_KEY and N8N_BASE_URL',
+  },
+  {
+    name: 'filesystem',
+    label: 'Filesystem',
+    description: 'Read, write, and search local files',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-filesystem', '/tmp'],
+    envHint: 'Edit the path argument to set the root directory',
+  },
+  {
+    name: 'github',
+    label: 'GitHub',
+    description: 'Repos, issues, PRs, and file contents',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-github'],
+    envHint: 'Set GITHUB_PERSONAL_ACCESS_TOKEN env var',
+  },
+  {
+    name: 'brave-search',
+    label: 'Brave Search',
+    description: 'Web and local search via Brave API',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-brave-search'],
+    envHint: 'Set BRAVE_API_KEY env var',
+  },
+  {
+    name: 'memory',
+    label: 'Memory',
+    description: 'Persistent key-value memory across sessions',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-memory'],
+    envHint: 'No configuration required',
+  },
+  {
+    name: 'postgres',
+    label: 'PostgreSQL',
+    description: 'Query and explore PostgreSQL databases',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-postgres', 'postgresql://localhost/mydb'],
+    envHint: 'Edit the connection string argument',
+  },
+  {
+    name: 'sequential-thinking',
+    label: 'Sequential Thinking',
+    description: 'Step-by-step reasoning and planning',
+    command: 'npx',
+    args: ['-y', '@modelcontextprotocol/server-sequential-thinking'],
+    envHint: 'No configuration required',
+  },
+];
+
+function McpPresetDropdown({ existingServers, onAdd, colors: c }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const existingNames = new Set((existingServers || []).map((s) => s.name));
+
+  return (
+    <div ref={ref} style={{ position: 'relative', flex: 1 }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: '100%', background: 'none', border: `1px dashed ${c.chromeBorder}`, borderRadius: 4,
+          color: '#A78BFA', fontSize: 11, padding: '4px 10px', cursor: 'pointer',
+          textAlign: 'center',
+        }}
+      >
+        + Add from Presets ▾
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(100% + 4px)', left: 0, right: 0,
+          background: c.bg, border: `1px solid ${c.chromeBorder}`, borderRadius: 6,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)', zIndex: 60, maxHeight: 300, overflowY: 'auto',
+        }}>
+          {MCP_PRESETS.map((preset) => {
+            const alreadyAdded = existingNames.has(preset.name);
+            return (
+              <div
+                key={preset.name}
+                onClick={() => {
+                  if (!alreadyAdded) {
+                    onAdd(preset);
+                    setOpen(false);
+                  }
+                }}
+                style={{
+                  padding: '8px 12px', cursor: alreadyAdded ? 'default' : 'pointer',
+                  borderBottom: `1px solid ${c.chromeBorder}22`,
+                  opacity: alreadyAdded ? 0.5 : 1,
+                }}
+                onMouseEnter={(e) => { if (!alreadyAdded) e.currentTarget.style.background = `${c.chromeBorder}44`; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontWeight: 600, fontSize: 12, color: c.text }}>
+                    {alreadyAdded ? '✓ ' : ''}{preset.label}
+                  </span>
+                </div>
+                <div style={{ fontSize: 10, color: c.chromeText, marginTop: 2 }}>
+                  {preset.description}
+                </div>
+                <div style={{ fontSize: 9, color: '#A78BFA', marginTop: 2, fontStyle: 'italic' }}>
+                  {preset.envHint}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -706,9 +957,9 @@ function ImageTab({ imageSettings, onUpdate, localProviders, colors: c }) {
 
   const filteredModels = modelFilter
     ? imageModels.filter((m) =>
-        m.id.toLowerCase().includes(modelFilter.toLowerCase()) ||
-        (m.name && m.name.toLowerCase().includes(modelFilter.toLowerCase()))
-      )
+      m.id.toLowerCase().includes(modelFilter.toLowerCase()) ||
+      (m.name && m.name.toLowerCase().includes(modelFilter.toLowerCase()))
+    )
     : imageModels;
 
   return (

@@ -1,0 +1,69 @@
+Here are revised entries you can drop straight into your bibliography, in a consistent, citation-ready form.
+
+### Core fixes and clarifications
+
+#### 1. Zep / Graphiti (replace your current placeholder entry)
+
+If you want to cite the **arXiv paper** as the canonical source:
+
+> Ramasubramanian, P., Cross, D., Blank, P., Sahar, A., & Grafstein, D. (2025). *Zep: A temporal knowledge graph architecture for agent memory*. arXiv preprint arXiv:2501.13956.[1][2]
+
+If you also want to keep the **“Graphiti”** product name, you can mention it in the text, e.g., “the Graphiti framework (Ramasubramanian et al., 2025)” and leave the bibliography entry as above.
+
+***
+
+#### 2. Loyall & Bates / Hap
+
+Update your Hap-related reference to a clean, standard form. If you’re referring to the Oz “believable agents” work:
+
+> Loyall, A. B., & Bates, J. (1991). *Hap: A reactive, adaptive architecture for agents*. Unpublished manuscript, Carnegie Mellon University, Pittsburgh, PA.[3][4]
+
+If instead you anchor it to the better-known Oz / believable agents tech report, use:
+
+> Bates, J., Loyall, A. B., & Reilly, W. S. (1992). *An architecture for action, emotion, and social behavior*. Technical Report CMU-CS-92-144, Carnegie Mellon University.[4]
+
+Pick one consistent anchor and match your in-text citation accordingly (either “Loyall & Bates, 1991” or “Bates, Loyall, & Reilly, 1992”).
+
+***
+
+#### 3. RDF-star / W3C Working Group
+
+Keep Hartig et al. as the main technical reference, and make the W3C group entry clearly organizational:
+
+> Hartig, O., Kellogg, G., & Champin, P.-A. (2021). *RDF★ and SPARQL★: A syntax to express statements about statements in RDF*. In *Proceedings of the 16th International Conference on Semantic Systems (SEMANTiCS 2020)* (pp. 72–88). IOS Press.[5]
+
+> W3C RDF-star Working Group. (2022). *RDF-star and SPARQL-star community group report*. World Wide Web Consortium. https://www.w3.org/community/rdf-star/[5]
+
+Adjust year/venue details slightly if your current bib already uses a specific RDF-star draft—just keep the organizational “W3C RDF-star Working Group” formatting.
+
+***
+
+#### 4. Jockers / syuzhet blog (make grey-literature status explicit)
+
+> Jockers, M. L. (2015, February 2). *Revealing sentiment and plot arcs with the syuzhet package*. Blog post. https://www.matthewjockers.net[6]
+
+***
+
+#### 5. Kennedy / Quality-Based Narrative and Resource Narrative
+
+Quality-Based Narrative blog:
+
+> Kennedy, A. (2010). *Quality-based narrative* [Blog post]. Failbetter Games. https://www.failbettergames.com[7]
+
+Resource Narrative follow-up:
+
+> Kennedy, A. (2017, June 13). *I’ve stopped talking about quality-based narrative* [Blog post]. Weather Factory. https://weatherfactory.biz/qbn-to-resource-narratives/[8]
+
+***
+
+If you paste these into your bib and align the formatting with your existing style (italics vs quotes, URLs, access dates), you’ll have clean, defensible entries for all the problematic spots.
+
+Sources
+[1] [PDF] zep:atemporal knowledge graph architecture for agent memory - arXiv https://arxiv.org/pdf/2501.13956.pdf
+[2] Zep: A Temporal Knowledge Graph Architecture for Agent Memory https://arxiv.org/abs/2501.13956
+[3] Hap A Reactive, Adaptive Architecture for Agents | Semantic Scholar https://www.semanticscholar.org/paper/Hap-A-Reactive,-Adaptive-Architecture-for-Agents-Bryan-Bates/f060869ea79e2d8279bb9ce5e20b29090c861022
+[4] [PDF] Believable Agents: Building Interactive Personalities https://www.cs.cmu.edu/Groups/oz/papers/CMU-CS-97-123.pdf
+[5] Named graph https://en.wikipedia.org/wiki/Named_graph
+[6] The emotional arcs of stories are dominated by six basic shapes https://pdodds.w3.uvm.edu/research/papers/reagan2016c/
+[7] Echo Bazaar Narrative Structures, part one - Failbetter Games https://www.failbettergames.com/news/echo-bazaar-narrative-structures-part-one
+[8] I've stopped talking about quality-based narrative ... - Weather Factory https://weatherfactory.biz/qbn-to-resource-narratives/

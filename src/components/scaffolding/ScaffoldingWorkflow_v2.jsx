@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef, useCallback, useEffect } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useAppStore from '../../store/useAppStore';
 import useSeriesStore from '../../store/useSeriesStore';
 import useBookStore from '../../store/useBookStore';
@@ -215,8 +216,8 @@ export default function ScaffoldingWorkflow() {
                         />
                         <TemplateLoader />
                         <button
-                            onClick={() => {
-                                if (scaffoldBeats.length === 0 || window.confirm('Clear all beats?')) {
+                            onClick={async () => {
+                                if (scaffoldBeats.length === 0 || await confirm('Clear all beats?')) {
                                     clearScaffold();
                                 }
                             }}

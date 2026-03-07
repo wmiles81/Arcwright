@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import useFocusTrap from '../../hooks/useFocusTrap';
 import useEditorStore from '../../store/useEditorStore';
 import useProjectStore from '../../store/useProjectStore';
 import { getTheme } from '../edit/editorThemes';
@@ -39,6 +40,8 @@ export default function ProjectsDialog({ isOpen, onClose }) {
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
+
+  const trapRef = useFocusTrap(isOpen);
 
   if (!isOpen) return null;
 
@@ -91,6 +94,10 @@ export default function ProjectsDialog({ isOpen, onClose }) {
       }}
     >
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Arcwright Projects"
         style={{
           background: c.chrome,
           color: c.text,

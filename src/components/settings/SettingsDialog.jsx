@@ -8,6 +8,7 @@ import { PROVIDERS, PROVIDER_ORDER } from '../../api/providers';
 import { fetchModels, fetchImageModels } from '../../api/providerAdapter';
 import ProviderCard from './ProviderCard';
 import VoiceTab from './VoiceTab';
+import ShortcutsTab from './ShortcutsTab';
 
 export default function SettingsDialog({ isOpen, onClose }) {
   const editorTheme = useEditorStore((s) => s.editorTheme);
@@ -215,6 +216,9 @@ export default function SettingsDialog({ isOpen, onClose }) {
             <button style={tabStyle(activeTab === 'accessibility')} onClick={() => setActiveTab('accessibility')}>
               Accessibility
             </button>
+            <button style={tabStyle(activeTab === 'shortcuts')} onClick={() => setActiveTab('shortcuts')}>
+              Shortcuts
+            </button>
           </div>
         </div>
 
@@ -263,6 +267,9 @@ export default function SettingsDialog({ isOpen, onClose }) {
           )}
           {activeTab === 'accessibility' && (
             <AccessibilityTab colors={c} />
+          )}
+          {activeTab === 'shortcuts' && (
+            <ShortcutsTab colors={c} />
           )}
         </div>
 

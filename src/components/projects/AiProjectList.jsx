@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useProjectStore from '../../store/useProjectStore';
 import { AI_PROJECT_PRESETS } from '../../chat/editPrompts';
 import AiProjectEditor from './AiProjectEditor';
@@ -16,18 +17,18 @@ export default function AiProjectList({ selected, onSelect, colors: c, isDark })
   ];
 
   const handleDelete = async (name) => {
-    if (!window.confirm(`Delete AI project "${name}"?`)) return;
+    if (!await confirm(`Delete AI project "${name}" ? `)) return;
     await useProjectStore.getState().deleteAiProject(name);
     if (selected?.name === name) onSelect(null);
   };
 
   const handleDuplicate = async (preset) => {
-    let baseName = `Copy of ${preset.name}`;
+    let baseName = `Copy of ${preset.name} `;
     let name = baseName;
     const existingNames = aiProjects.map((p) => (p.name || '').toLowerCase());
     let counter = 2;
     while (existingNames.includes(name.toLowerCase())) {
-      name = `${baseName} ${counter}`;
+      name = `${baseName} ${counter} `;
       counter++;
     }
     const newProject = {
@@ -80,7 +81,7 @@ export default function AiProjectList({ selected, onSelect, colors: c, isDark })
       {/* Project list */}
       <div
         style={{
-          border: `1px solid ${inputBorder}`,
+          border: `1px solid ${inputBorder} `,
           borderRadius: 6,
           maxHeight: 300,
           overflowY: 'auto',
@@ -90,7 +91,7 @@ export default function AiProjectList({ selected, onSelect, colors: c, isDark })
       >
         {allProjects.map((p, i) => (
           <div
-            key={p._isPreset ? `preset_${p.presetKey}` : p.name}
+            key={p._isPreset ? `preset_${p.presetKey} ` : p.name}
             onClick={() => onSelect(isSelected(p) ? null : p)}
             style={{
               display: 'flex',
@@ -100,7 +101,7 @@ export default function AiProjectList({ selected, onSelect, colors: c, isDark })
               cursor: 'pointer',
               background: isSelected(p) ? (isDark ? 'rgba(124,58,237,0.2)' : 'rgba(124,58,237,0.1)') : 'transparent',
               borderLeft: isSelected(p) ? '3px solid #7C3AED' : '3px solid transparent',
-              borderBottom: i < allProjects.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}` : 'none',
+              borderBottom: i < allProjects.length - 1 ? `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} ` : 'none',
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>

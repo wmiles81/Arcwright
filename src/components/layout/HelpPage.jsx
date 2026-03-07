@@ -334,7 +334,7 @@ function InterfaceGuideTab() {
         {sub === 'settings' && (
           <>
             <Section title="Settings Dialog">
-              <p className="mb-3">Opened via the gear icon in the nav bar. Six tabs: Providers, Chat, Appearance, Voice, Image, and Packs.</p>
+              <p className="mb-3">Opened via the gear icon in the nav bar. Seven tabs: Providers, Chat, Appearance, Voice, Image, Packs, and Accessibility.</p>
             </Section>
 
             <Section title="Providers Tab">
@@ -394,6 +394,18 @@ function InterfaceGuideTab() {
                 <ControlRow name="Pack Cards">Each installed pack displays its name, author, version, description, and content summary (genres, structures, prompts, sequences).</ControlRow>
                 <ControlRow name="Pack Count">Header showing total installed packs and the extensions directory path.</ControlRow>
                 <ControlRow name="Empty State">Instructions for installing packs when none are present.</ControlRow>
+              </div>
+            </Section>
+
+            <Section title="Accessibility Tab">
+              <p className="mb-2">Adjust display settings for better readability and comfort. All changes take effect immediately.</p>
+              <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
+                <ControlRow name="Zoom Level">Button group: 100%, 115%, 130%, 150%. Scales the entire interface &mdash; text, buttons, and panels.</ControlRow>
+                <ControlRow name="Dyslexia-Friendly Font">Toggle switch. Enables OpenDyslexic font for improved letter recognition throughout the app.</ControlRow>
+                <ControlRow name="Letter Spacing">Dropdown: Normal, Wide (+0.05em), Extra Wide (+0.1em). Increases space between letters for readability.</ControlRow>
+                <ControlRow name="Line Height">Dropdown: Normal (1.5), Relaxed (1.75), Loose (2.0). Increases space between lines of text.</ControlRow>
+                <ControlRow name="Minimum Font Size">Toggle switch. Prevents any text in the interface from being smaller than 12px.</ControlRow>
+                <ControlRow name="Reduce Motion">Toggle switch. Minimizes animations and transitions throughout the interface.</ControlRow>
               </div>
             </Section>
           </>

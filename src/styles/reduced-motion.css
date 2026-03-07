@@ -1,0 +1,19 @@
+/* F-007: Reduced Motion — wires the existing reducedMotion store flag to CSS.
+   The 'reduce-motion' class is toggled on <html> by App.jsx, and the media query
+   catches the OS-level preference as a fallback. */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}

@@ -1,4 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
+import useFocusTrap from '../../hooks/useFocusTrap';
 import useInlineEdit from '../../hooks/useInlineEdit';
 import useInlineEditStore from '../../store/useInlineEditStore';
 import useEditorStore from '../../store/useEditorStore';
@@ -279,6 +280,12 @@ function InlineEditPanel({
   const [pendingPromptPreview, setPendingPromptPreview] = useState(null);
 
   const popupRef = useRef(null);
+  const trapRef = useFocusTrap(true);
+  // Merge refs: attach both popupRef and trapRef to the same DOM node
+  const mergedRef = useCallback((node) => {
+    popupRef.current = node;
+    trapRef.current = node;
+  }, [trapRef]);
   const inputRef = useRef(null);
   const responseRef = useRef(null);
 
@@ -534,7 +541,10 @@ function InlineEditPanel({
 
   return (
     <div
-      ref={popupRef}
+      ref={mergedRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="AI inline edit"
       onMouseDown={(e) => e.stopPropagation()}
       style={{
         position: 'fixed',

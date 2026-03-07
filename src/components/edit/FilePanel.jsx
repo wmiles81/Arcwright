@@ -1,4 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { confirm } from '../../store/useConfirmStore';
+import { matchesShortcut } from '../../store/useShortcutStore';
 import useEditorStore from '../../store/useEditorStore';
 import useProjectStore from '../../store/useProjectStore';
 import FileContextMenu from './FileContextMenu';
@@ -499,7 +501,7 @@ export default function FilePanel() {
   // Delete file or folder
   const handleDelete = useCallback(async (node) => {
     const what = node.type === 'dir' ? `folder "${node.name}" and all its contents` : `"${node.name}"`;
-    if (!window.confirm(`Delete ${what}?`)) return;
+    if (!await confirm(`Delete ${what}?`)) return;
 
     try {
       const pp = parentPath(node.path);
@@ -724,6 +726,7 @@ function TreeNode({ node, depth, onToggle, onFileClick, onNewFile, onNewFolder, 
         style={{ paddingLeft: indent + 4 + 16 }}
         title={`"${node.name}" — not a text file (kind: ${node.handle?.kind})`}
         onContextMenu={(e) => onContextMenu(e, node)}
+        onKeyDown={(e) => { if (matchesShortcut('file.contextMenu', e)) { e.preventDefault(); onContextMenu(e, node); } }}
         onClick={(e) => onNodeClick(e, node)}
         {...dragProps}
       >
@@ -748,6 +751,7 @@ function TreeNode({ node, depth, onToggle, onFileClick, onNewFile, onNewFolder, 
           className={`group flex items-center gap-1 w-full text-left px-1 py-0.5 text-sm text-gray-600 hover:bg-gray-100 rounded transition-colors${selClass}${isDropTarget ? ' ring-2 ring-blue-400 bg-blue-50' : ''}${isBookFolder ? ' bg-indigo-50 ring-1 ring-indigo-300' : ''}`}
           style={{ paddingLeft: indent + 4 }}
           onContextMenu={(e) => onContextMenu(e, node)}
+          onKeyDown={(e) => { if (matchesShortcut('file.contextMenu', e)) { e.preventDefault(); onContextMenu(e, node); } }}
           onClick={(e) => onNodeClick(e, node)}
           {...dragProps}
           {...dropProps}
@@ -843,6 +847,7 @@ function TreeNode({ node, depth, onToggle, onFileClick, onNewFile, onNewFolder, 
       }}
       onDoubleClick={(e) => { e.stopPropagation(); onStartRename(node.path, node.name); }}
       onContextMenu={(e) => onContextMenu(e, node)}
+      onKeyDown={(e) => { if (matchesShortcut('file.contextMenu', e)) { e.preventDefault(); onContextMenu(e, node); } }}
       {...dragProps}
     >
       <span className="text-gray-400 shrink-0">{'\uD83D\uDCC4'}</span>

@@ -166,6 +166,19 @@ const themes = [
     },
   },
   {
+    key: 'solarizedDarkBright',
+    name: 'Solarized Dark (Bright)',
+    family: 'dark',
+    colors: {
+      bg: '#002B36', text: '#93A1A1', placeholder: '#586E75', caret: '#2AA198',
+      chrome: '#073642', chromeBorder: '#094959', chromeText: '#93A1A1',
+      statusBg: '#073642', statusText: '#657B83',
+      tabActiveBg: '#002B36', tabActiveText: '#EEE8D5',
+      tabInactiveBg: '#073642', tabInactiveText: '#657B83', tabHoverBg: '#094959',
+      toolbarBtn: '#93A1A1', toolbarBtnHover: '#EEE8D5', toolbarBtnHoverBg: '#094959',
+    },
+  },
+  {
     key: 'gruvboxDark',
     name: 'Gruvbox Dark',
     family: 'dark',

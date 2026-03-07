@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useSequenceStore from '../../store/useSequenceStore';
 import usePromptStore from '../../store/usePromptStore';
 import { ACTION_HANDLERS } from '../../chat/actionExecutor';
@@ -35,24 +36,24 @@ export default function SequencesPanel() {
   };
 
   const handleDeleteSequence = async (id) => {
-    if (!window.confirm('Delete this sequence?')) return;
+    if (!await confirm('Delete this sequence?')) return;
     await useSequenceStore.getState().deleteSequence(id);
   };
 
   const handleRunSequence = async (seq) => {
     useChatStore.getState().addMessage({
-      id: `seq_trigger_${Date.now()}`,
+      id: `seq_trigger_${Date.now()} `,
       role: 'user',
-      content: `/run "${seq.name}"`,
+      content: `/ run "${seq.name}"`,
       timestamp: Date.now(),
     });
     try {
       await ACTION_HANDLERS.runNamedSequence({ sequenceId: seq.id });
     } catch (e) {
       useChatStore.getState().addMessage({
-        id: `seq_err_${Date.now()}`,
+        id: `seq_err_${Date.now()} `,
         role: 'assistant',
-        content: `Error running "${seq.name}": ${e.message}`,
+        content: `Error running "${seq.name}": ${e.message} `,
         timestamp: Date.now(),
       });
       useSequenceStore.getState().clearRunningSequence();
@@ -192,11 +193,11 @@ function RunningView({ running, isRunning, onBack }) {
               {isRunning
                 ? `Step ${running.currentStep} of ${running.totalSteps}…`
                 : allDone
-                  ? errorCount > 0 ? `Finished with ${errorCount} error${errorCount !== 1 ? 's' : ''}` : 'Complete'
+                  ? errorCount > 0 ? `Finished with ${errorCount} error${errorCount !== 1 ? 's' : ''} ` : 'Complete'
                   : `${doneCount}/${running.totalSteps} done`
               }
-            </div>
-          </div>
+            </div >
+          </div >
           {!isRunning && (
             <button
               onClick={onBack}
@@ -205,7 +206,7 @@ function RunningView({ running, isRunning, onBack }) {
               Back
             </button>
           )}
-        </div>
+        </div >
         {isRunning && (
           <div className="mt-2 h-1 bg-g-chrome rounded-full overflow-hidden">
             <div
@@ -214,7 +215,7 @@ function RunningView({ running, isRunning, onBack }) {
             />
           </div>
         )}
-      </div>
+      </div >
 
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {running.steps.map((step, i) => {
@@ -267,7 +268,7 @@ function RunningView({ running, isRunning, onBack }) {
           );
         })}
       </div>
-    </div>
+    </div >
   );
 }
 

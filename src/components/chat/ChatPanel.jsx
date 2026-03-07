@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useChatStore from '../../store/useChatStore';
 import useAppStore from '../../store/useAppStore';
@@ -444,8 +445,8 @@ export default function ChatPanel() {
           </button>
 
           <button
-            onClick={() => {
-              if (messages.length === 0 || window.confirm('Start a new chat? Current messages will be cleared.')) {
+            onClick={async () => {
+              if (messages.length === 0 || await confirm('Start a new chat? Current messages will be cleared.')) {
                 clearMessages();
                 useProjectStore.getState().clearProjectHistory().catch(() => { });
               }
@@ -601,8 +602,8 @@ export default function ChatPanel() {
                   {trimOptions.map((n) => (
                     <button
                       key={n}
-                      onClick={() => {
-                        if (window.confirm(`Keep only the last ${n} messages? Older messages will be removed from this session.`)) {
+                      onClick={async () => {
+                        if (await confirm(`Keep only the last ${n} messages? Older messages will be removed from this session.`)) {
                           trimToLast(n);
                           useProjectStore.getState().saveCurrentChatHistory().catch(() => { });
                         }

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useAppStore from '../../store/useAppStore';
 
 let chapterIdCounter = 1;
@@ -98,15 +99,14 @@ export default function TextInputPanel() {
         <div className="flex gap-2">
           <button
             onClick={() => setBulkMode(!bulkMode)}
-            className={`text-xs px-3 py-1 rounded font-semibold ${
-              bulkMode ? 'bg-purple-600' : 'bg-slate-600 hover:bg-slate-500'
-            }`}
+            className={`text-xs px-3 py-1 rounded font-semibold ${bulkMode ? 'bg-purple-600' : 'bg-slate-600 hover:bg-slate-500'
+              }`}
           >
             {bulkMode ? 'Single Mode' : 'Bulk Split Mode'}
           </button>
           {chapters.length > 0 && (
             <button
-              onClick={() => window.confirm('Remove all chapters?') && clearChapters()}
+              onClick={async () => await confirm('Remove all chapters?') && clearChapters()}
               className="text-xs bg-red-600 hover:bg-red-700 px-3 py-1 rounded font-semibold"
             >
               Clear All
@@ -161,11 +161,10 @@ export default function TextInputPanel() {
               <span className="text-xs text-purple-300">
                 {ch.text.split(/\s+/).length} words
               </span>
-              <span className={`text-xs px-2 py-0.5 rounded ${
-                ch.status === 'analyzed' ? 'bg-blue-600/50 text-blue-200' :
-                ch.status === 'reviewed' ? 'bg-green-600/50 text-green-200' :
-                'bg-slate-600/50 text-slate-300'
-              }`}>
+              <span className={`text-xs px-2 py-0.5 rounded ${ch.status === 'analyzed' ? 'bg-blue-600/50 text-blue-200' :
+                  ch.status === 'reviewed' ? 'bg-green-600/50 text-green-200' :
+                    'bg-slate-600/50 text-slate-300'
+                }`}>
                 {ch.status || 'pending'}
               </span>
               <button

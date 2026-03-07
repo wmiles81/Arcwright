@@ -21,6 +21,7 @@ export default function DimensionSlider({ dimKey, dim, value, onChange }) {
         onChange={(e) => onChange(dimKey, parseFloat(e.target.value))}
         className="flex-1 h-1.5 accent-purple-500"
         style={{ accentColor: dim.color }}
+        aria-label={dim.name}
       />
       <input
         type="number"
@@ -33,6 +34,7 @@ export default function DimensionSlider({ dimKey, dim, value, onChange }) {
           if (!isNaN(v)) onChange(dimKey, Math.max(min, Math.min(max, v)));
         }}
         className="w-14 bg-slate-700 border border-purple-500/50 rounded px-1 py-0.5 text-xs text-center text-white"
+        aria-label={`${dim.name} value`}
       />
     </div>
   );

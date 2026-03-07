@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { confirm } from '../../store/useConfirmStore';
 import useAppStore from '../../store/useAppStore';
 import { getIdealCurve } from '../../data/presetArcs';
 import { applyPacingToBeats } from '../../engine/pacing';
@@ -30,9 +31,9 @@ export default function TemplateLoader() {
     return () => document.removeEventListener('mousedown', handleClick);
   }, [menuOpen]);
 
-  const confirmReplace = () => {
+  const confirmReplace = async () => {
     if (scaffoldBeats.length === 0) return true;
-    return window.confirm('This will replace your current beats. Continue?');
+    return await confirm('This will replace your current beats. Continue?');
   };
 
   const handleLoadGenreTemplate = () => {
@@ -68,9 +69,9 @@ export default function TemplateLoader() {
     setMenuOpen(false);
   };
 
-  const handleDeleteCustom = (e, id) => {
+  const handleDeleteCustom = async (e, id) => {
     e.stopPropagation();
-    if (window.confirm('Delete this custom structure?')) {
+    if (await confirm('Delete this custom structure?')) {
       deleteCustomStructure(id);
     }
   };
@@ -156,11 +157,10 @@ export default function TemplateLoader() {
       {/* Save current as structure */}
       <button
         onClick={handleSave}
-        className={`text-sm px-4 py-2 rounded font-semibold transition-colors ${
-          saved
-            ? 'bg-green-600 text-white'
-            : 'bg-purple-600 hover:bg-purple-700'
-        }`}
+        className={`text-sm px-4 py-2 rounded font-semibold transition-colors ${saved
+          ? 'bg-green-600 text-white'
+          : 'bg-purple-600 hover:bg-purple-700'
+          }`}
       >
         {saved ? 'Saved!' : 'Save as Structure'}
       </button>

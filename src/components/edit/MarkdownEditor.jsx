@@ -1,5 +1,7 @@
 import React, { useRef, useCallback, useEffect, useState } from 'react';
 import useEditorStore from '../../store/useEditorStore';
+import { undo as undoStoreUndo, redo as undoStoreRedo } from '../../store/useUndoStore';
+import { matchesShortcut } from '../../store/useShortcutStore';
 import { getTheme, lightThemes, darkThemes } from './editorThemes';
 import RevisionModal from './RevisionModal';
 import SearchReplaceBar from './SearchReplaceBar';
@@ -132,6 +134,8 @@ export default function MarkdownEditor() {
   const closeTab = useEditorStore((s) => s.closeTab);
   const updateTabContent = useEditorStore((s) => s.updateTabContent);
   const toggleDualPane = useEditorStore((s) => s.toggleDualPane);
+  const focusMode = useEditorStore((s) => s.focusMode);
+  const toggleFocusMode = useEditorStore((s) => s.toggleFocusMode);
   const toggleSyncScroll = useEditorStore((s) => s.toggleSyncScroll);
   const diffMode = useEditorStore((s) => s.diffMode);
   const toggleDiffMode = useEditorStore((s) => s.toggleDiffMode);
@@ -347,20 +351,30 @@ export default function MarkdownEditor() {
     }
   }, [slashMenu, slashIndex, handleSlashSelect]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts (F-012: remappable via useShortcutStore)
   useEffect(() => {
     const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      if (matchesShortcut('editor.save', e)) {
         e.preventDefault();
         if (activeTabId) saveTab(activeTabId);
       }
-      if ((e.metaKey || e.ctrlKey) && (e.key === 'h' || e.key === 'f')) {
+      if (matchesShortcut('editor.search', e)) {
         e.preventDefault();
         setShowSearchBar((v) => !v);
       }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      if (matchesShortcut('editor.inlineEdit', e)) {
         e.preventDefault();
         handleInlineEditOpen();
+      }
+      // F-009: Undo/Redo (only when not editing text natively)
+      if (!e.target?.isContentEditable) {
+        if (matchesShortcut('editor.redo', e)) {
+          e.preventDefault();
+          undoStoreRedo();
+        } else if (matchesShortcut('editor.undo', e)) {
+          e.preventDefault();
+          undoStoreUndo();
+        }
       }
     };
     document.addEventListener('keydown', handler);
@@ -864,6 +878,20 @@ export default function MarkdownEditor() {
           >
             {dualPane ? '\u2016 1' : '\u2016 2'}
           </button>
+          <button
+            onClick={toggleFocusMode}
+            className="text-[10px] px-1.5 py-0.5 rounded transition-colors"
+            style={focusMode
+              ? { background: '#7C3AED', color: '#FFFFFF' }
+              : { color: c.toolbarBtn }
+            }
+            title={focusMode ? 'Exit focus mode (Esc)' : 'Enter focus mode'}
+            aria-label={focusMode ? 'Exit focus mode' : 'Enter focus mode'}
+            onMouseEnter={(e) => { if (!focusMode) { e.currentTarget.style.color = c.toolbarBtnHover; e.currentTarget.style.background = c.toolbarBtnHoverBg; } }}
+            onMouseLeave={(e) => { if (!focusMode) { e.currentTarget.style.color = c.toolbarBtn; e.currentTarget.style.background = 'transparent'; } }}
+          >
+            ✦
+          </button>
         </div>
       </div>
 
@@ -922,6 +950,9 @@ export default function MarkdownEditor() {
             <div
               ref={primaryRef}
               contentEditable
+              role="textbox"
+              aria-multiline="true"
+              aria-label="Document editor"
               suppressContentEditableWarning
               onInput={() => handleContentInput(primaryRef, activeTabId)}
               onPaste={handlePaste}
@@ -971,6 +1002,9 @@ export default function MarkdownEditor() {
                 <div
                   ref={secondaryRef}
                   contentEditable={!!secondaryTab}
+                  role="textbox"
+                  aria-multiline="true"
+                  aria-label="Secondary editor"
                   suppressContentEditableWarning
                   onInput={() => handleContentInput(secondaryRef, secondaryTabId)}
                   onPaste={handlePaste}

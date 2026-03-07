@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { confirm } from '../../store/useConfirmStore';
 import useProjectStore from '../../store/useProjectStore';
-import SeriesManager from './SeriesManager_v2';
+import SeriesManager from './SeriesManager_v3';
 
 export default function BookProjectList({ selected, onSelect, colors: c, isDark }) {
   const bookProjects = useProjectStore((s) => s.bookProjects);

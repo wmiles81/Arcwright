@@ -166,6 +166,37 @@ router.put('/projects/books/:name/chat', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
+// Series Folders
+// ---------------------------------------------------------------------------
+
+router.get('/projects/series', (_req, res) => {
+    const seriesDir = ensureDir('projects', 'series');
+    const entries = fs.readdirSync(seriesDir, { withFileTypes: true });
+    const folders = entries
+        .filter((e) => e.isDirectory())
+        .map((e) => ({ name: e.name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    res.json(folders);
+});
+
+router.post('/projects/series', (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'name required' });
+    ensureDir('projects', 'series', name);
+    res.status(201).json({ ok: true, name });
+});
+
+/** Write a file to a series folder (e.g., market-survey.md, premises.md) */
+router.put('/projects/series/:name/files/:filename', (req, res) => {
+    const { name, filename } = req.params;
+    const { content } = req.body;
+    if (!content && content !== '') return res.status(400).json({ error: 'content required' });
+    const seriesDir = ensureDir('projects', 'series', name);
+    fs.writeFileSync(path.join(seriesDir, filename), content, 'utf-8');
+    res.json({ ok: true });
+});
+
+// ---------------------------------------------------------------------------
 // AI Projects
 // ---------------------------------------------------------------------------
 

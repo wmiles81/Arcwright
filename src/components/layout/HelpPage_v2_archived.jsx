@@ -54,7 +54,7 @@ function MermaidDiagram({ chart, id }) {
   );
 }
 
-const tabs = ['about', 'interface', 'mainPages', 'series', 'sequences', 'dataPacks', 'structures', 'actStructures', 'dimensions', 'changelog'];
+const tabs = ['about', 'interface', 'mainPages', 'sequences', 'dataPacks', 'structures', 'actStructures', 'dimensions', 'changelog'];
 
 function Tab({ id, label, active, onClick }) {
   return (
@@ -327,7 +327,7 @@ function InterfaceGuideTab() {
         {sub === 'settings' && (
           <>
             <Section title="Settings Dialog">
-              <p className="mb-3">Opened via the gear icon in the nav bar. Eight tabs: Providers, Chat, Appearance, Voice, Image, Packs, Accessibility, and Shortcuts.</p>
+              <p className="mb-3">Opened via the gear icon in the nav bar. Seven tabs: Providers, Chat, Appearance, Voice, Image, Packs, and Accessibility.</p>
             </Section>
 
             <Section title="Providers Tab">
@@ -350,17 +350,16 @@ function InterfaceGuideTab() {
                 <ControlRow name="Native Tools">Toggle switch. When on, uses the provider&rsquo;s native tool-calling API. When off (or unsupported), falls back to fenced-block parsing. Shows a hint explaining the current state.</ControlRow>
                 <ControlRow name="Reasoning">Toggle switch. Enables extended thinking / chain-of-thought on models that support it. Disabled with explanation on models that don&rsquo;t.</ControlRow>
                 <ControlRow name="Model Info">Read-only section showing context length, max output tokens, input/output pricing, and modalities for the selected model.</ControlRow>
-                <ControlRow name="MCP Servers (ACP)">List of external MCP servers exposed to ACP agents alongside the built-in Arcwright server. Add custom rows or pick from the preset dropdown (Notion, n8n, Filesystem, GitHub, Brave Search, Memory, Postgres, Sequential Thinking). See the <strong>Series &amp; ACP</strong> tab for full details.</ControlRow>
               </div>
             </Section>
 
             <Section title="Voice Tab">
               <p className="mb-2">Configure voice guides and narrator gender mechanics that are injected into every AI prompt.</p>
               <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-                <ControlRow name="Voice Guide">Dropdown listing all <code className="text-purple-200 bg-slate-700/50 px-1 rounded">.md</code> files in the open editor folder&rsquo;s <code className="text-purple-200 bg-slate-700/50 px-1 rounded">voices/</code> subdirectory. Selecting one loads the file and appends it to every system prompt as a style reference. The AI writes in the voice established by that guide.</ControlRow>
+                <ControlRow name="Voice Guide">Dropdown listing all <code className="text-purple-200 bg-slate-700/50 px-1 rounded">.md</code> files in <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/voices/</code>. Selecting one loads the file and appends it to every system prompt as a style reference. The AI writes in the voice established by that guide.</ControlRow>
                 <ControlRow name="Active Indicator">Shows the loaded voice file path. The guide content is injected into every AI call until cleared.</ControlRow>
-                <ControlRow name="Narrator Gender">Three buttons: None / Female narrator / Male narrator. Selecting a gender loads the corresponding mechanics file from the open folder&rsquo;s <code className="text-purple-200 bg-slate-700/50 px-1 rounded">gender-mechanics/female.md</code> or <code className="text-purple-200 bg-slate-700/50 px-1 rounded">male.md</code>. This content is appended <em>after</em> the voice guide as a supplemental layer &mdash; it doesn&rsquo;t replace the voice guide.</ControlRow>
-                <ControlRow name="Gender Mechanics Files">Must be placed manually at <code className="text-purple-200 bg-slate-700/50 px-1 rounded">&lt;open-folder&gt;/gender-mechanics/female.md</code> and <code className="text-purple-200 bg-slate-700/50 px-1 rounded">male.md</code>. An error is shown if the file is missing when you select a gender.</ControlRow>
+                <ControlRow name="Narrator Gender">Three buttons: None / Female narrator / Male narrator. Selecting a gender loads the corresponding mechanics file from <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/gender-mechanics/female.md</code> or <code className="text-purple-200 bg-slate-700/50 px-1 rounded">male.md</code>. This content is appended <em>after</em> the voice guide as a supplemental layer &mdash; it doesn&rsquo;t replace the voice guide.</ControlRow>
+                <ControlRow name="Gender Mechanics Files">Must be placed manually at <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/gender-mechanics/female.md</code> and <code className="text-purple-200 bg-slate-700/50 px-1 rounded">male.md</code>. An error is shown if the file is missing when you select a gender.</ControlRow>
               </div>
             </Section>
 
@@ -383,7 +382,7 @@ function InterfaceGuideTab() {
             </Section>
 
             <Section title="Packs Tab">
-              <p className="mb-2">View installed data packs from the server data directory <code className="text-purple-200 bg-slate-700/50 px-1 rounded">~/.arcwright/extensions/</code>.</p>
+              <p className="mb-2">View installed data packs from <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/extensions/</code>.</p>
               <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
                 <ControlRow name="Pack Cards">Each installed pack displays its name, author, version, description, and content summary (genres, structures, prompts, sequences).</ControlRow>
                 <ControlRow name="Pack Count">Header showing total installed packs and the extensions directory path.</ControlRow>
@@ -400,16 +399,6 @@ function InterfaceGuideTab() {
                 <ControlRow name="Line Height">Dropdown: Normal (1.5), Relaxed (1.75), Loose (2.0). Increases space between lines of text.</ControlRow>
                 <ControlRow name="Minimum Font Size">Toggle switch. Prevents any text in the interface from being smaller than 12px.</ControlRow>
                 <ControlRow name="Reduce Motion">Toggle switch. Minimizes animations and transitions throughout the interface.</ControlRow>
-              </div>
-            </Section>
-
-            <Section title="Shortcuts Tab">
-              <p className="mb-2">Remap any keyboard shortcut. Bindings are stored per user in <code className="text-purple-200 bg-slate-700/50 px-1 rounded">localStorage</code> (zustand <code className="text-purple-200 bg-slate-700/50 px-1 rounded">shortcut-store</code>) and override the defaults at runtime.</p>
-              <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-                <ControlRow name="Shortcut Rows">One row per remappable action: <code className="text-purple-200 bg-slate-700/50 px-1 rounded">editor.save</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">editor.search</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">editor.inlineEdit</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">editor.focusMode</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">editor.undo</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">editor.redo</code>, <code className="text-purple-200 bg-slate-700/50 px-1 rounded">file.contextMenu</code>.</ControlRow>
-                <ControlRow name="Record">Click the binding to enter record mode, then press the key combination you want. Bare modifier presses are ignored.</ControlRow>
-                <ControlRow name="Conflict Detection">If the chosen binding collides with another action, the conflict is shown and the change is rejected until you pick something unique.</ControlRow>
-                <ControlRow name="Reset">Per-row button restores that one shortcut to its default. The <strong>Reset All</strong> button clears every override.</ControlRow>
               </div>
             </Section>
           </>
@@ -431,7 +420,7 @@ function InterfaceGuideTab() {
                 <ControlRow name="Context Mode Badge">Purple badge indicating the current context mode (see below). Shows the active project name, or &ldquo;Full Context&rdquo; when no project is active.</ControlRow>
                 <ControlRow name="&ldquo;tools&rdquo; Badge + AI Label">Small green &ldquo;tools&rdquo; badge visible in Full Context mode when native tools are enabled. When tools are active the &ldquo;AI&rdquo; label at the top-left also turns green. The AI can call tools to modify app state (beats, genres, scores).</ControlRow>
                 <ControlRow name="Mode Button">Toggle button. When active (black background), an expandable panel shows the exact system prompt being sent to the AI. Use this to inspect what context the AI receives.</ControlRow>
-                <ControlRow name="Prompts Button">Opens the Prompt Manager where you can create, edit, and delete saved prompt templates. Templates are stored as JSON files in <code className="text-purple-200 bg-slate-700/50 px-1 rounded">~/.arcwright/prompts/</code> and are also accessible via the <Kbd>/</Kbd> slash menu in the chat input.</ControlRow>
+                <ControlRow name="Prompts Button">Opens the Prompt Manager where you can create, edit, and delete saved prompt templates. Templates are stored as <code className="text-purple-200 bg-slate-700/50 px-1 rounded">.md</code> files in the <code className="text-purple-200 bg-slate-700/50 px-1 rounded">Arcwrite/prompts/</code> folder and are also accessible via the <Kbd>/</Kbd> slash menu in the chat input.</ControlRow>
                 <ControlRow name="Files Button">Toggle button. When active, shows a file tree panel listing files loaded from the open folder. Only visible when files are loaded. Files listed here are available as AI context.</ControlRow>
                 <ControlRow name="New Chat Button">Document-with-plus icon. Clears all messages and starts a fresh conversation. Shows a confirmation dialog before clearing.</ControlRow>
               </div>
@@ -782,18 +771,10 @@ function InterfaceGuideTab() {
             </Section>
 
             <Section title="Editor Shortcuts">
-              <p className="text-xs text-purple-300 mb-2">
-                The bindings below are defaults. Most are remappable via <strong>Settings &rarr; Shortcuts</strong> &mdash; see the
-                Shortcuts section under the <strong>Settings</strong> sub-tab for the full list and how to record a new combo.
-              </p>
               <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-                <ControlRow name={<Kbd>{'\u2318'}S</Kbd>}>Save the active file to disk. <span className="text-purple-400">(remappable)</span></ControlRow>
-                <ControlRow name={<><Kbd>{'\u2318'}H</Kbd> / <Kbd>{'\u2318'}F</Kbd></>}>Toggle the search &amp; replace bar. <span className="text-purple-400">(remappable)</span></ControlRow>
-                <ControlRow name={<Kbd>{'\u2318'}K</Kbd>}>Open the inline AI editing popup on the current selection. <span className="text-purple-400">(remappable)</span></ControlRow>
-                <ControlRow name={<Kbd>{'\u2318'}Z</Kbd>}>Undo the last app-state action (beat / score / chapter mutations). <span className="text-purple-400">(remappable)</span></ControlRow>
-                <ControlRow name={<Kbd>{'\u2318'}{'\u21e7'}Z</Kbd>}>Redo. <span className="text-purple-400">(remappable)</span></ControlRow>
-                <ControlRow name={<Kbd>Esc</Kbd>}>Toggle focus mode in the editor. <span className="text-purple-400">(remappable)</span></ControlRow>
-                <ControlRow name={<Kbd>{'\u21e7'}F10</Kbd>}>Open the file context menu in the file panel. <span className="text-purple-400">(remappable)</span></ControlRow>
+                <ControlRow name={<Kbd>{'\u2318'}S</Kbd>}>Save the active file to disk.</ControlRow>
+                <ControlRow name={<><Kbd>{'\u2318'}H</Kbd> / <Kbd>{'\u2318'}F</Kbd></>}>Toggle the search &amp; replace bar.</ControlRow>
+                <ControlRow name={<Kbd>{'\u2318'}K</Kbd>}>Open the inline AI editing popup on the current selection.</ControlRow>
                 <ControlRow name={<Kbd>{'\u2318'}B</Kbd>}>Bold the selected text.</ControlRow>
                 <ControlRow name={<Kbd>{'\u2318'}I</Kbd>}>Italicize the selected text.</ControlRow>
                 <ControlRow name={<Kbd>{'\u2318'}U</Kbd>}>Underline the selected text.</ControlRow>
@@ -2787,128 +2768,10 @@ const weightChannelDescriptions = [
   { key: 'mystery', formula: 'point.mystery', explanation: 'Direct: mystery/unknown value' },
 ];
 
-function SeriesAcpTab() {
-  return (
-    <div className="space-y-4 text-sm text-purple-100 leading-relaxed">
-      <Section title="Overview">
-        <p className="mb-2">
-          Arcwright supports multi-book series and exposes its data to external AI coding agents via
-          the Agent Client Protocol (ACP). This page covers the Series Wizard, Series Manager, and the
-          built-in MCP server that bridges Arcwright to ACP-aware tools.
-        </p>
-        <ul className="list-disc list-inside text-xs text-purple-200 space-y-0.5 mt-2">
-          <li><strong>Series Wizard</strong> &mdash; 5-step guided flow that brainstorms a new series with AI</li>
-          <li><strong>Series Manager</strong> &mdash; CRUD for existing series, with automatic file artifacts</li>
-          <li><strong>ACP / MCP server</strong> &mdash; lets external agents read scenes, settings, scaffold beats, and projects</li>
-          <li><strong>External MCP servers</strong> &mdash; configurable in Settings &rarr; Chat &rarr; MCP Servers</li>
-        </ul>
-      </Section>
-
-      <Section title="Series Wizard">
-        <p className="mb-2">
-          Open via <strong>Projects &rarr; Series &rarr; New Series</strong>. The wizard runs through five steps and persists
-          its output as a new series row plus markdown files in <code className="bg-slate-700/50 px-1 rounded">~/.arcwright/projects/series/&lt;name&gt;/</code>.
-        </p>
-        <div className="space-y-2 mt-3">
-          <div className="bg-slate-800/50 rounded p-3 border-l-2 border-purple-500">
-            <h5 className="font-bold text-white text-xs">Step 1 &mdash; Series Name</h5>
-            <p className="text-xs text-purple-200">Pick a working name. Used as the folder name and the canonical series ID.</p>
-          </div>
-          <div className="bg-slate-800/50 rounded p-3 border-l-2 border-purple-500">
-            <h5 className="font-bold text-white text-xs">Step 2 &mdash; Parameters</h5>
-            <p className="text-xs text-purple-200">
-              Choose genre, subgenre, and series type (Trilogy / Saga / Continuing / Common World), book count,
-              and word/chapter targets per book. Defaults vary by genre (e.g., Romance &asymp; 70k words / 24 chapters).
-            </p>
-          </div>
-          <div className="bg-slate-800/50 rounded p-3 border-l-2 border-purple-500">
-            <h5 className="font-bold text-white text-xs">Step 3 &mdash; Market Survey</h5>
-            <p className="text-xs text-purple-200">
-              AI-generated market analysis: comparable titles, current trends, reader expectations,
-              demand/competition assessment, and a 1&ndash;10 viability score. Saved as <code className="bg-slate-700/50 px-1 rounded">market-survey.md</code>.
-            </p>
-          </div>
-          <div className="bg-slate-800/50 rounded p-3 border-l-2 border-purple-500">
-            <h5 className="font-bold text-white text-xs">Step 4 &mdash; Viability</h5>
-            <p className="text-xs text-purple-200">Review the market score and decide whether to continue or revise parameters.</p>
-          </div>
-          <div className="bg-slate-800/50 rounded p-3 border-l-2 border-purple-500">
-            <h5 className="font-bold text-white text-xs">Step 5 &mdash; Series Premises</h5>
-            <p className="text-xs text-purple-200">
-              AI generates 10 high-concept series pitches informed by the market survey. Each premise has a working title,
-              a 2&ndash;3 sentence hook, and a one-line "series engine" describing the per-book mechanism.
-              Pick one to seed the new series; the chosen premise is saved as <code className="bg-slate-700/50 px-1 rounded">premise.md</code>.
-            </p>
-          </div>
-        </div>
-      </Section>
-
-      <Section title="Series Manager">
-        <p className="mb-2">
-          Opens from <strong>Projects &rarr; Series</strong>. Lists every series in the database with create / open / delete actions.
-          On every open, the manager syncs each series&rsquo; markdown artifacts to disk so external editors and agents see the latest content.
-        </p>
-        <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-          <ControlRow name="New Series">Launches the Series Wizard.</ControlRow>
-          <ControlRow name="Open">Loads the series and switches the active context. The series&rsquo; books, beats, and arc points become the working set.</ControlRow>
-          <ControlRow name="Delete">Removes the series row and (optionally) its folder. Confirm dialog uses the global confirm primitive (no native browser prompt).</ControlRow>
-          <ControlRow name="Artifact Sync">Each open writes per-series files (<code className="bg-slate-700/50 px-1 rounded">premise.md</code>, <code className="bg-slate-700/50 px-1 rounded">market-survey.md</code>, etc.) into <code className="bg-slate-700/50 px-1 rounded">~/.arcwright/projects/series/&lt;name&gt;/</code> via the file API.</ControlRow>
-        </div>
-      </Section>
-
-      <Section title="ACP &amp; the Built-in MCP Server">
-        <p className="mb-2">
-          Arcwright ships a standalone MCP server at <code className="bg-slate-700/50 px-1 rounded">mcp/arcwright-mcp-server.js</code>.
-          It runs as a stdio subprocess, spoken to over JSON-RPC by any ACP-compatible agent (e.g., Zed&rsquo;s Claude Code ACP integration).
-          The server is the bridge that lets external coding agents read your story state without going through the browser.
-        </p>
-        <p className="mb-2 text-xs text-purple-300">
-          <strong>Important:</strong> the standalone MCP server reads from a different env var than the main app.
-          Set <code className="bg-slate-700/50 px-1 rounded">ARCWRITE_DATA_DIR</code> (note the spelling &mdash; no <em>R</em> before the underscore)
-          to point at your data root. The default is <code className="bg-slate-700/50 px-1 rounded">/Volumes/home/Arcwrite</code>.
-        </p>
-        <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mt-3 mb-1">Tools exposed</h5>
-        <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-          <ControlRow name="list_scenes">List scene files in <code className="bg-slate-700/50 px-1 rounded">Scenes/</code>.</ControlRow>
-          <ControlRow name="read_scene">Return the full content of a named scene.</ControlRow>
-          <ControlRow name="get_genre_config">Genre, subgenre, modifier, and pacing pulled from <code className="bg-slate-700/50 px-1 rounded">settings.json</code>.</ControlRow>
-          <ControlRow name="get_scaffold_beats">All scaffold beats with their dimension values.</ControlRow>
-          <ControlRow name="list_projects">Project directories under the data root.</ControlRow>
-          <ControlRow name="read_project">Full project JSON for a given project name.</ControlRow>
-          <ControlRow name="search_content">Grep-style search across scene content.</ControlRow>
-        </div>
-        <h5 className="font-semibold text-purple-300 text-xs uppercase tracking-wider mt-3 mb-1">Resources exposed</h5>
-        <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-          <ControlRow name="arcwright://settings">Current settings summary.</ControlRow>
-          <ControlRow name="arcwright://scenes">Scene listing.</ControlRow>
-          <ControlRow name="arcwright://scene/{name}">Individual scene content.</ControlRow>
-        </div>
-      </Section>
-
-      <Section title="External MCP Servers (Settings &rarr; Chat)">
-        <p className="mb-2">
-          The same MCP servers list configured in <strong>Settings &rarr; Chat &rarr; MCP Servers (ACP)</strong> is forwarded to ACP agents alongside the built-in Arcwright server.
-          Add custom servers, or pick from the preset dropdown (Notion, n8n, Filesystem, GitHub, Brave Search, Memory, Postgres, Sequential Thinking).
-        </p>
-        <div className="bg-slate-800/50 rounded p-4 space-y-0.5">
-          <ControlRow name="+ Add Custom">Adds a blank row. Fill in name, command (e.g., <code className="bg-slate-700/50 px-1 rounded">npx</code>), and space-separated args.</ControlRow>
-          <ControlRow name="Preset Dropdown">Picks a pre-filled common server. Greys out servers already configured by name.</ControlRow>
-          <ControlRow name="Per-server ✕">Removes that server from the list.</ControlRow>
-          <ControlRow name="Env hint">Each preset notes whether it needs an environment variable (e.g., <code className="bg-slate-700/50 px-1 rounded">NOTION_API_KEY</code>, <code className="bg-slate-700/50 px-1 rounded">GITHUB_PERSONAL_ACCESS_TOKEN</code>).</ControlRow>
-        </div>
-        <p className="mt-3 text-xs text-purple-300">
-          The built-in Arcwright server is always included &mdash; you don&rsquo;t need to add it manually here.
-        </p>
-      </Section>
-    </div>
-  );
-}
-
 const tabLabels = {
   about: 'About',
   interface: 'Interface Guide',
   mainPages: 'Main Pages',
-  series: 'Series & ACP',
   sequences: 'Sequences',
   dataPacks: 'Data Packs',
   structures: 'Story Structures',
@@ -2942,7 +2805,6 @@ export default function HelpPage() {
         {activeTab === 'about' && <AboutTab />}
         {activeTab === 'interface' && <InterfaceGuideTab />}
         {activeTab === 'mainPages' && <MainPagesTab />}
-        {activeTab === 'series' && <SeriesAcpTab />}
         {activeTab === 'sequences' && <SequencesTab />}
         {activeTab === 'dataPacks' && <DataPacksTab />}
         {activeTab === 'structures' && <StructuresTab />}

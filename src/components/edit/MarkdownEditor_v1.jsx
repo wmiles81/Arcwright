@@ -46,43 +46,9 @@ function markdownToHtml(content) {
     if (!line.trim()) { i++; continue; }
 
     // Already an HTML block element — pass through
-    if (/^<(?:h[1-6]|hr|ul|ol|blockquote|div|p|table)\b/i.test(line.trim())) {
+    if (/^<(?:h[1-6]|hr|ul|ol|blockquote|div|p)\b/i.test(line.trim())) {
       outputBlocks.push(line);
       i++;
-      continue;
-    }
-
-    // Markdown table: header row + separator row + body rows
-    // Header & body rows: |a|b|c| ; separator: |---|:--:|--:|
-    if (/^\|.*\|$/.test(line.trim()) && i + 1 < lines.length && /^\|[\s:|\-]+\|$/.test(lines[i + 1].trim())) {
-      const splitRow = (raw) => raw.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((s) => s.trim());
-      const headerCells = splitRow(line);
-      const aligns = splitRow(lines[i + 1]).map((s) => {
-        const t = s.trim();
-        if (/^:.*:$/.test(t)) return 'center';
-        if (/^:/.test(t)) return 'left';
-        if (/:$/.test(t)) return 'right';
-        return null;
-      });
-      i += 2;
-      let tableHtml = '<table><thead><tr>';
-      for (let c = 0; c < headerCells.length; c++) {
-        const align = aligns[c];
-        tableHtml += `<th${align ? ` style="text-align:${align}"` : ''}>${headerCells[c]}</th>`;
-      }
-      tableHtml += '</tr></thead><tbody>';
-      while (i < lines.length && /^\|.*\|$/.test(lines[i].trim())) {
-        const bodyCells = splitRow(lines[i]);
-        tableHtml += '<tr>';
-        for (let c = 0; c < bodyCells.length; c++) {
-          const align = aligns[c];
-          tableHtml += `<td${align ? ` style="text-align:${align}"` : ''}>${bodyCells[c]}</td>`;
-        }
-        tableHtml += '</tr>';
-        i++;
-      }
-      tableHtml += '</tbody></table>';
-      outputBlocks.push(tableHtml);
       continue;
     }
 
@@ -127,12 +93,8 @@ function markdownToHtml(content) {
       !/^[-*]\s+/.test(lines[i].trim()) &&
       !/^\d+[.)]\s+/.test(lines[i].trim()) &&
       !/^>\s*/.test(lines[i].trim()) &&
-      !/^\|.*\|$/.test(lines[i].trim()) &&
-      !/^<(?:h[1-6]|hr|ul|ol|blockquote|div|p|table)\b/i.test(lines[i].trim())) {
-      // CommonMark soft break: consecutive non-blank lines join into one
-      // paragraph with a space, not a <br>. Hard-wrapped prose flows correctly;
-      // paragraph breaks come from blank lines (already consumed at top of loop).
-      para += (para ? ' ' : '') + lines[i];
+      !/^<(?:h[1-6]|hr|ul|ol|blockquote|div|p)\b/i.test(lines[i].trim())) {
+      para += (para ? '<br>' : '') + lines[i];
       i++;
     }
     if (para) outputBlocks.push('<p>' + para + '</p>');
@@ -181,9 +143,6 @@ export default function MarkdownEditor() {
   const renameTab = useEditorStore((s) => s.renameTab);
   const clearAllTabs = useEditorStore((s) => s.clearAllTabs);
   const setEditorTheme = useEditorStore((s) => s.setEditorTheme);
-  const editorFontScale = useEditorStore((s) => s.editorFontScale);
-  const bumpEditorFontScale = useEditorStore((s) => s.bumpEditorFontScale);
-  const setEditorFontScale = useEditorStore((s) => s.setEditorFontScale);
   const setLeftPanelTab = useEditorStore((s) => s.setLeftPanelTab);
   const focusedPane = useEditorStore((s) => s.focusedPane);
   const setFocusedPane = useEditorStore((s) => s.setFocusedPane);
@@ -827,46 +786,6 @@ export default function MarkdownEditor() {
 
         {/* Right-side controls */}
         <div className="ml-auto flex items-center gap-1">
-          {/* Font size: − % + */}
-          <div
-            className="inline-flex items-center rounded overflow-hidden border"
-            style={{ borderColor: c.chromeBorder }}
-            role="group"
-            aria-label="Editor font size"
-          >
-            <button
-              onClick={() => bumpEditorFontScale(-0.1)}
-              disabled={editorFontScale <= 0.5}
-              className="text-[10px] px-1.5 py-0.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ color: c.toolbarBtn }}
-              title="Decrease editor font size"
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.color = c.toolbarBtnHover; e.currentTarget.style.background = c.toolbarBtnHoverBg; } }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = c.toolbarBtn; e.currentTarget.style.background = 'transparent'; }}
-            >
-              {'−'}
-            </button>
-            <button
-              onClick={() => setEditorFontScale(1.0)}
-              className="text-[10px] px-1.5 py-0.5 font-mono transition-colors"
-              style={{ color: c.toolbarBtn, minWidth: '38px' }}
-              title="Reset editor font size to 100%"
-              onMouseEnter={(e) => { e.currentTarget.style.color = c.toolbarBtnHover; e.currentTarget.style.background = c.toolbarBtnHoverBg; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = c.toolbarBtn; e.currentTarget.style.background = 'transparent'; }}
-            >
-              {Math.round(editorFontScale * 100)}%
-            </button>
-            <button
-              onClick={() => bumpEditorFontScale(0.1)}
-              disabled={editorFontScale >= 2.0}
-              className="text-[10px] px-1.5 py-0.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ color: c.toolbarBtn }}
-              title="Increase editor font size"
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.color = c.toolbarBtnHover; e.currentTarget.style.background = c.toolbarBtnHoverBg; } }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = c.toolbarBtn; e.currentTarget.style.background = 'transparent'; }}
-            >
-              +
-            </button>
-          </div>
           <button
             onClick={() => setShowSearchBar(!showSearchBar)}
             className="text-[10px] px-1.5 py-0.5 rounded transition-colors"
@@ -997,9 +916,6 @@ export default function MarkdownEditor() {
         .editor-content a { color: #2563EB; text-decoration: underline; }
         .editor-content hr { border: none; border-top: 1px solid ${c.chromeBorder}; margin: 1em 0; }
         .editor-content ul, .editor-content ol { margin: 0.3em 0; padding-left: 1.5em; }
-        .editor-content table { border-collapse: collapse; margin: 0.6em 0; max-width: 100%; }
-        .editor-content th, .editor-content td { border: 1px solid ${c.chromeBorder}; padding: 4px 8px; text-align: left; vertical-align: top; }
-        .editor-content th { background: rgba(128,128,128,0.1); font-weight: 600; }
         ::highlight(search-results) { background-color: rgba(255, 255, 0, 0.4); }
         ::highlight(current-match) { background-color: rgba(255, 165, 0, 0.6); }
       `}</style>
@@ -1046,10 +962,9 @@ export default function MarkdownEditor() {
               onKeyUp={handleEditorMouseUp}
               onKeyDown={handleEditorKeyDown}
               onFocus={() => setFocusedPane('primary')}
-              className="editor-content p-4 outline-none leading-relaxed overflow-y-auto"
+              className="editor-content font-mono text-sm p-4 outline-none leading-relaxed overflow-y-auto"
               style={{
                 background: c.bg, color: c.text, caretColor: c.caret,
-                fontSize: `${editorFontScale}rem`,
                 width: dualPane ? `${splitPercent}%` : '100%',
                 flexShrink: 0, minHeight: 0,
                 borderTop: dualPane ? `2px solid ${focusedPane === 'primary' ? '#7C3AED' : 'transparent'}` : 'none',
@@ -1099,10 +1014,9 @@ export default function MarkdownEditor() {
                   onKeyUp={handleEditorMouseUp}
                   onKeyDown={handleEditorKeyDown}
                   onFocus={() => setFocusedPane('secondary')}
-                  className="editor-content p-4 outline-none leading-relaxed overflow-y-auto"
+                  className="editor-content font-mono text-sm p-4 outline-none leading-relaxed overflow-y-auto"
                   style={{
                     background: c.bg, color: c.text, caretColor: c.caret,
-                    fontSize: `${editorFontScale}rem`,
                     flex: 1, minWidth: 0, minHeight: 0,
                     borderTop: `2px solid ${focusedPane === 'secondary' ? '#7C3AED' : 'transparent'}`,
                   }}

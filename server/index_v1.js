@@ -17,7 +17,6 @@ import { fileURLToPath } from 'url';
 import { initDatabase, closeDatabase } from './db.js';
 import databaseRoutes from './routes/database.js';
 import filesRoutes, { setDataDir } from './routes/files.js';
-import acpRoutes from './routes/acp.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const IS_PROD = process.env.NODE_ENV === 'production';
@@ -35,7 +34,6 @@ console.log(`[API] Data directory: ${DATA_DIR}`);
 // ── API routes ──────────────────────────────────────────────────────────
 app.use('/api', databaseRoutes);
 app.use('/api', filesRoutes);
-app.use('/api', acpRoutes);
 
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'ok', dataDir: DATA_DIR, port: PORT, mode: IS_PROD ? 'production' : 'development' });

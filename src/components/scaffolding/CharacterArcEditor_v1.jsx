@@ -1,8 +1,15 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import useBookStore from '../../store/useBookStore';
 import useAppStore from '../../store/useAppStore';
 import { dimensions, DIMENSION_KEYS } from '../../data/dimensions';
 
+/**
+ * CharacterArcEditor — scaffold-side panel for editing character dimension arcs.
+ *
+ * Shows characters in the active book and lets authors set dimension values
+ * (vulnerability, agency, trust, etc.) at different story positions (0–100%).
+ * These arc points define how a character's traits evolve across the narrative.
+ */
 export default function CharacterArcEditor() {
     const activeBookId = useBookStore((s) => s.activeBookId);
     const characters = useBookStore((s) => s.characters);
@@ -17,24 +24,14 @@ export default function CharacterArcEditor() {
     const [showAddChar, setShowAddChar] = useState(false);
     const [newCharName, setNewCharName] = useState('');
     const [newCharRole, setNewCharRole] = useState('protagonist');
-    const [refreshKey, setRefreshKey] = useState(0);
-    const [arcPoints, setArcPoints] = useState([]);
 
-    const refresh = () => setRefreshKey((k) => k + 1);
+    // Load arc points for selected character
+    const arcPoints = useMemo(() => {
+        if (!selectedCharId) return [];
+        return getCharacterArcPoints(selectedCharId);
+    }, [selectedCharId, getCharacterArcPoints]);
 
-    // Load arc points for the selected character (async — server-backed)
-    useEffect(() => {
-        let cancelled = false;
-        if (!selectedCharId) {
-            setArcPoints([]);
-            return;
-        }
-        getCharacterArcPoints(selectedCharId).then((pts) => {
-            if (!cancelled) setArcPoints(pts || []);
-        });
-        return () => { cancelled = true; };
-    }, [selectedCharId, refreshKey, getCharacterArcPoints]);
-
+    // Group arc points by dimension
     const pointsByDimension = useMemo(() => {
         const grouped = {};
         DIMENSION_KEYS.forEach((k) => { grouped[k] = []; });
@@ -43,31 +40,37 @@ export default function CharacterArcEditor() {
                 grouped[pt.dimension_key].push(pt);
             }
         });
+        // Sort each group by time
         Object.values(grouped).forEach((arr) => arr.sort((a, b) => a.time - b.time));
         return grouped;
     }, [arcPoints]);
 
-    const handleAddCharacter = async () => {
+    // Refresh trigger
+    const [refreshKey, setRefreshKey] = useState(0);
+    const refresh = () => setRefreshKey((k) => k + 1);
+
+    const handleAddCharacter = () => {
         if (!newCharName.trim()) return;
-        const id = await addCharacter({ name: newCharName.trim(), role: newCharRole });
+        const id = addCharacter({ name: newCharName.trim(), role: newCharRole });
         setNewCharName('');
         setShowAddChar(false);
-        if (id) setSelectedCharId(id);
+        setSelectedCharId(id);
     };
 
-    const handleAddPoint = async (dimensionKey) => {
+    const handleAddPoint = (dimensionKey) => {
         if (!selectedCharId) return;
-        await addArcPoint({ characterId: selectedCharId, dimensionKey, time: 50, value: 5.0 });
+        // Default: add at 50% with value 5
+        addArcPoint({ characterId: selectedCharId, dimensionKey, time: 50, value: 5.0 });
         refresh();
     };
 
-    const handleUpdatePoint = async (pointId, field, value) => {
-        await updateArcPointById(pointId, { [field]: value });
+    const handleUpdatePoint = (pointId, field, value) => {
+        updateArcPointById(pointId, { [field]: value });
         refresh();
     };
 
-    const handleRemovePoint = async (pointId) => {
-        await removeArcPoint(pointId);
+    const handleRemovePoint = (pointId) => {
+        removeArcPoint(pointId);
         refresh();
     };
 
@@ -83,7 +86,7 @@ export default function CharacterArcEditor() {
     const selectedChar = characters.find((c) => c.id === selectedCharId);
 
     return (
-        <div className="bg-white/5 backdrop-blur rounded-lg border border-purple-500/20 p-4 mb-6">
+        <div className="bg-white/5 backdrop-blur rounded-lg border border-purple-500/20 p-4 mb-6" key={refreshKey}>
             <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-bold text-purple-300">Character Arcs</h3>
                 <button
@@ -94,6 +97,7 @@ export default function CharacterArcEditor() {
                 </button>
             </div>
 
+            {/* Add character form */}
             {showAddChar && (
                 <div className="flex gap-2 mb-3 items-end">
                     <input
@@ -124,6 +128,7 @@ export default function CharacterArcEditor() {
                 </div>
             )}
 
+            {/* Character tabs */}
             {characters.length > 0 ? (
                 <div className="flex gap-1 mb-3 flex-wrap">
                     {characters.map((char) => (
@@ -144,6 +149,7 @@ export default function CharacterArcEditor() {
                 <p className="text-xs text-gray-500 mb-3">No characters yet. Add one to start defining arcs.</p>
             )}
 
+            {/* Dimension arc editor */}
             {selectedChar && (
                 <div className="space-y-3">
                     <div className="text-xs text-gray-400 mb-1">
@@ -215,6 +221,7 @@ export default function CharacterArcEditor() {
                                     </div>
                                 )}
 
+                                {/* Beat reference markers mini-bar */}
                                 {scaffoldBeats.length > 0 && points.length > 0 && (
                                     <div className="relative h-1.5 bg-gray-700 rounded-full mt-1.5 overflow-hidden">
                                         {scaffoldBeats.map((b, i) => (

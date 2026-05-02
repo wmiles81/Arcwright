@@ -1,11 +1,12 @@
 /**
  * Zustand store for Book entities.
  *
- * Reads from / writes to SQLite via database.js.
+ * Reads from / writes to the local Express API (better-sqlite3) via database.js.
  * Holds the active book's characters, scenes, chapters, settings in memory
- * for fast React access, with every mutation persisted to SQLite.
+ * for fast React access, with every mutation persisted server-side.
  *
- * Does NOT duplicate scaffold state (genre/weights/beats stay in useAppStore).
+ * All database helpers are async (REST), so every method that touches them
+ * is async and awaits the underlying call before calling `set(...)`.
  */
 
 import { create } from 'zustand';
@@ -25,7 +26,7 @@ import {
 const useBookStore = create((set, get) => ({
     // --- Active book ---
     activeBookId: null,
-    activeBook: null,     // { id, title, hook, premise, series_id, ... }
+    activeBook: null,
 
     // --- Entity arrays for active book ---
     characters: [],
@@ -38,224 +39,228 @@ const useBookStore = create((set, get) => ({
 
     // ── Book lifecycle ──
 
-    /** Load a book by ID and populate all child entities. */
     loadBook: async (bookId) => {
         set({ isLoading: true });
         try {
-            const book = getBookById(bookId);
+            const book = await getBookById(bookId);
             if (!book) {
                 set({ activeBookId: null, activeBook: null, characters: [], scenes: [], chapters: [], settings: [], isLoading: false });
                 return;
             }
-            const bookCharacters = getCharactersByBook(bookId);
-            const bookScenes = getScenesByBook(bookId);
-            const bookChapters = getChaptersByBook(bookId);
-            const bookSettings = getSettingsByBook(bookId);
-            set({ activeBookId: bookId, activeBook: book, characters: bookCharacters, scenes: bookScenes, chapters: bookChapters, settings: bookSettings, isLoading: false });
+            const [bookCharacters, bookScenes, bookChapters, bookSettings] = await Promise.all([
+                getCharactersByBook(bookId),
+                getScenesByBook(bookId),
+                getChaptersByBook(bookId),
+                getSettingsByBook(bookId),
+            ]);
+            set({
+                activeBookId: bookId,
+                activeBook: book,
+                characters: bookCharacters || [],
+                scenes: bookScenes || [],
+                chapters: bookChapters || [],
+                settings: bookSettings || [],
+                isLoading: false,
+            });
         } catch (err) {
             console.error('[BookStore] Failed to load book:', err);
             set({ isLoading: false });
         }
     },
 
-    /** Load a book by title (used when activating a book project by name). */
     loadBookByTitle: async (title) => {
-        // Wait for database to be ready (handles the init race condition)
         const { waitForDb } = await import('../services/database');
         const dbInstance = await waitForDb();
         if (!dbInstance) {
             console.warn('[BookStore] Database not available, skipping loadBookByTitle');
             return;
         }
-        const book = getBookByTitle(title);
+        const book = await getBookByTitle(title);
         if (book) {
             await get().loadBook(book.id);
         } else {
-            // Auto-create a book record for this project
-            const id = insertBook({ title });
+            const id = await insertBook({ title });
             await get().loadBook(id);
         }
     },
 
-    /** Create a new book and activate it. */
-    createBook: ({ title, seriesId = null, seriesPosition = null, hook = '', premise = '' }) => {
-        const id = insertBook({ title, seriesId, seriesPosition, hook, premise });
-        get().loadBook(id);
+    createBook: async ({ title, seriesId = null, seriesPosition = null, hook = '', premise = '' }) => {
+        const id = await insertBook({ title, seriesId, seriesPosition, hook, premise });
+        await get().loadBook(id);
         return id;
     },
 
-    /** Update the active book's metadata. */
-    updateActiveBook: (updates) => {
+    updateActiveBook: async (updates) => {
         const { activeBookId, activeBook } = get();
         if (!activeBookId) return;
-        updateBook(activeBookId, updates);
+        await updateBook(activeBookId, updates);
         set({ activeBook: { ...activeBook, ...updates } });
     },
 
-    /** Clear the active book (deactivate). */
     clearBook: () => {
         set({ activeBookId: null, activeBook: null, characters: [], scenes: [], chapters: [], settings: [] });
     },
 
-    /** Get all books (for listings). */
-    listBooks: () => getAllBooks(),
+    listBooks: async () => getAllBooks(),
 
     // ── Characters ──
 
-    addCharacter: ({ name, role = 'supporting', notes = '' }) => {
+    addCharacter: async ({ name, role = 'supporting', notes = '' }) => {
         const { activeBookId } = get();
         if (!activeBookId) return null;
-        const id = insertCharacter({ bookId: activeBookId, name, role, notes });
-        set({ characters: getCharactersByBook(activeBookId) });
+        const id = await insertCharacter({ bookId: activeBookId, name, role, notes });
+        const characters = await getCharactersByBook(activeBookId);
+        set({ characters: characters || [] });
         return id;
     },
 
-    updateCharacterById: (id, updates) => {
+    updateCharacterById: async (id, updates) => {
         const { activeBookId } = get();
-        updateCharacter(id, updates);
-        set({ characters: getCharactersByBook(activeBookId) });
+        await updateCharacter(id, updates);
+        const characters = await getCharactersByBook(activeBookId);
+        set({ characters: characters || [] });
     },
 
-    removeCharacter: (id) => {
+    removeCharacter: async (id) => {
         const { activeBookId } = get();
-        deleteCharacter(id);
-        set({ characters: getCharactersByBook(activeBookId) });
+        await deleteCharacter(id);
+        const characters = await getCharactersByBook(activeBookId);
+        set({ characters: characters || [] });
     },
 
     // ── Character Arc Points ──
 
-    /** Get arc points for a character (returns array). */
-    getCharacterArcPoints: (characterId) => getArcPointsByCharacter(characterId),
+    getCharacterArcPoints: async (characterId) => getArcPointsByCharacter(characterId),
 
-    /** Add an arc point to a character. */
-    addArcPoint: ({ characterId, dimensionKey, time, value, note = '' }) => {
+    addArcPoint: async ({ characterId, dimensionKey, time, value, note = '' }) => {
         return insertArcPoint({ characterId, dimensionKey, time, value, note });
     },
 
-    /** Update an existing arc point. */
-    updateArcPointById: (id, updates) => {
-        updateArcPoint(id, updates);
+    updateArcPointById: async (id, updates) => {
+        await updateArcPoint(id, updates);
     },
 
-    /** Remove an arc point. */
-    removeArcPoint: (id) => {
-        deleteArcPoint(id);
+    removeArcPoint: async (id) => {
+        await deleteArcPoint(id);
     },
 
     // ── Scenes ──
 
-    addScene: ({ title, summary = '', beatId = null, timePosition = null, chapterId = null, orderInChapter = 0, povCharacterId = null, settingId = null, filePath = null }) => {
+    addScene: async ({ title, summary = '', beatId = null, timePosition = null, chapterId = null, orderInChapter = 0, povCharacterId = null, settingId = null, filePath = null }) => {
         const { activeBookId } = get();
         if (!activeBookId) return null;
-        const id = insertScene({
+        const id = await insertScene({
             bookId: activeBookId, title, summary, beatId, timePosition,
             chapterId, orderInChapter, povCharacterId, settingId, filePath,
         });
-        set({ scenes: getScenesByBook(activeBookId) });
+        const scenes = await getScenesByBook(activeBookId);
+        set({ scenes: scenes || [] });
         return id;
     },
 
-    updateSceneById: (id, updates) => {
+    updateSceneById: async (id, updates) => {
         const { activeBookId } = get();
-        updateScene(id, updates);
-        set({ scenes: getScenesByBook(activeBookId) });
+        await updateScene(id, updates);
+        const scenes = await getScenesByBook(activeBookId);
+        set({ scenes: scenes || [] });
     },
 
-    removeScene: (id) => {
+    removeScene: async (id) => {
         const { activeBookId } = get();
-        deleteScene(id);
-        set({ scenes: getScenesByBook(activeBookId) });
+        await deleteScene(id);
+        const scenes = await getScenesByBook(activeBookId);
+        set({ scenes: scenes || [] });
     },
 
-    /** Link a scene to a scaffold beat. */
-    linkSceneToBeatAction: (sceneId, beatId, timePosition = null) => {
+    linkSceneToBeatAction: async (sceneId, beatId, timePosition = null) => {
         const { activeBookId } = get();
-        linkSceneToBeat(sceneId, beatId, timePosition);
-        set({ scenes: getScenesByBook(activeBookId) });
+        await linkSceneToBeat(sceneId, beatId, timePosition);
+        const scenes = await getScenesByBook(activeBookId);
+        set({ scenes: scenes || [] });
     },
 
-    /** Unlink a scene from its beat. */
-    unlinkSceneAction: (sceneId) => {
+    unlinkSceneAction: async (sceneId) => {
         const { activeBookId } = get();
-        unlinkScene(sceneId);
-        set({ scenes: getScenesByBook(activeBookId) });
+        await unlinkScene(sceneId);
+        const scenes = await getScenesByBook(activeBookId);
+        set({ scenes: scenes || [] });
     },
 
-    /** Add a character to a scene. */
-    addCharacterToSceneAction: (sceneId, characterId) => {
-        addCharacterToScene(sceneId, characterId);
+    addCharacterToSceneAction: async (sceneId, characterId) => {
+        await addCharacterToScene(sceneId, characterId);
     },
 
-    /** Remove a character from a scene. */
-    removeCharacterFromSceneAction: (sceneId, characterId) => {
-        removeCharacterFromScene(sceneId, characterId);
+    removeCharacterFromSceneAction: async (sceneId, characterId) => {
+        await removeCharacterFromScene(sceneId, characterId);
     },
 
     // ── Chapters ──
 
-    addChapter: ({ number, title, filePath = null, notes = '', sortOrder = 0 }) => {
+    addChapter: async ({ number, title, filePath = null, notes = '', sortOrder = 0 }) => {
         const { activeBookId } = get();
         if (!activeBookId) return null;
-        const id = insertChapter({ bookId: activeBookId, number, title, filePath, notes, sortOrder });
-        set({ chapters: getChaptersByBook(activeBookId) });
+        const id = await insertChapter({ bookId: activeBookId, number, title, filePath, notes, sortOrder });
+        const chapters = await getChaptersByBook(activeBookId);
+        set({ chapters: chapters || [] });
         return id;
     },
 
-    updateChapterById: (id, updates) => {
+    updateChapterById: async (id, updates) => {
         const { activeBookId } = get();
-        updateChapter(id, updates);
-        set({ chapters: getChaptersByBook(activeBookId) });
+        await updateChapter(id, updates);
+        const chapters = await getChaptersByBook(activeBookId);
+        set({ chapters: chapters || [] });
     },
 
-    removeChapter: (id) => {
+    removeChapter: async (id) => {
         const { activeBookId } = get();
-        deleteChapter(id);
-        set({ chapters: getChaptersByBook(activeBookId) });
+        await deleteChapter(id);
+        const chapters = await getChaptersByBook(activeBookId);
+        set({ chapters: chapters || [] });
     },
 
     // ── Settings (locations/worlds) ──
 
-    addSetting: ({ name, description = '' }) => {
+    addSetting: async ({ name, description = '' }) => {
         const { activeBookId } = get();
         if (!activeBookId) return null;
-        const id = insertSetting({ bookId: activeBookId, name, description });
-        set({ settings: getSettingsByBook(activeBookId) });
+        const id = await insertSetting({ bookId: activeBookId, name, description });
+        const settings = await getSettingsByBook(activeBookId);
+        set({ settings: settings || [] });
         return id;
     },
 
-    updateSettingById: (id, updates) => {
+    updateSettingById: async (id, updates) => {
         const { activeBookId } = get();
-        updateSetting(id, updates);
-        set({ settings: getSettingsByBook(activeBookId) });
+        await updateSetting(id, updates);
+        const settings = await getSettingsByBook(activeBookId);
+        set({ settings: settings || [] });
     },
 
-    removeSetting: (id) => {
+    removeSetting: async (id) => {
         const { activeBookId } = get();
-        deleteSetting(id);
-        set({ settings: getSettingsByBook(activeBookId) });
+        await deleteSetting(id);
+        const settings = await getSettingsByBook(activeBookId);
+        set({ settings: settings || [] });
     },
 
     // ── Analysis ──
 
-    /** Get analysis history for a scene. */
-    getSceneSnapshots: (sceneId) => getSnapshotsByScene(sceneId),
+    getSceneSnapshots: async (sceneId) => getSnapshotsByScene(sceneId),
 
-    /** Record a new analysis snapshot for a scene. */
-    addAnalysisSnapshot: ({ sceneId, scores, source = 'ai' }) => {
+    addAnalysisSnapshot: async ({ sceneId, scores, source = 'ai' }) => {
         return insertSnapshot({ sceneId, scores, source });
     },
 
     // ── Aggregate queries ──
 
-    /** Get scenes with full relationship details. */
-    getScenesDetailed: () => {
+    getScenesDetailed: async () => {
         const { activeBookId } = get();
         if (!activeBookId) return [];
         return getScenesWithDetails(activeBookId);
     },
 
-    /** Get book statistics. */
-    getStats: () => {
+    getStats: async () => {
         const { activeBookId } = get();
         if (!activeBookId) return { sceneCount: 0, chapterCount: 0, characterCount: 0, mappedSceneCount: 0, snapshotCount: 0 };
         return getBookStats(activeBookId);

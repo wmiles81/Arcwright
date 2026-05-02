@@ -36,11 +36,6 @@ const useEditorStore = create(
       //   'analyzed' = compare against the most-recent analyzed chapter scores (actual)
       variableSource: 'scaffold',
 
-      // --- Editor font scale ---
-      // Multiplier applied to the contentEditable's font-size in the editor pane(s).
-      // 1.0 = baseline (text-base / 1rem). Stepped via the toolbar - / + buttons.
-      editorFontScale: 1.0,
-
       // --- Editor theme ---
       editorTheme: 'light', // 'light' | 'dark' | 'sepia' | 'nord'
 
@@ -142,10 +137,6 @@ const useEditorStore = create(
       // --- Left panel ---
       setLeftPanelTab: (tab) => set({ leftPanelTab: tab }),
       setVariableSource: (source) => set({ variableSource: source }),
-      setEditorFontScale: (scale) => set({ editorFontScale: Math.max(0.5, Math.min(2.0, Number(scale) || 1.0)) }),
-      bumpEditorFontScale: (delta) => set((s) => ({
-        editorFontScale: Math.max(0.5, Math.min(2.0, Number((s.editorFontScale + delta).toFixed(2)))),
-      })),
 
       // --- Editor theme ---
       setEditorTheme: (theme) => set({ editorTheme: theme }),
@@ -285,7 +276,6 @@ const useEditorStore = create(
         editorTheme: state.editorTheme,
         leftPanelTab: state.leftPanelTab,
         variableSource: state.variableSource,
-        editorFontScale: state.editorFontScale,
         zoomLevel: state.zoomLevel,
         dyslexiaFont: state.dyslexiaFont,
         letterSpacing: state.letterSpacing,

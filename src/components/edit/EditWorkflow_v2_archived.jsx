@@ -113,104 +113,64 @@ export default function EditWorkflow() {
 function VariablesPanel() {
     const chapters = useAppStore((s) => s.chapters);
     const scaffoldBeats = useAppStore((s) => s.scaffoldBeats);
-    const variableSource = useEditorStore((s) => s.variableSource);
-    const setVariableSource = useEditorStore((s) => s.setVariableSource);
+    const selectedGenre = useAppStore((s) => s.selectedGenre);
 
     const hasChapters = chapters.length > 0;
     const hasBeats = scaffoldBeats.length > 0;
-    const showAnalyzed = variableSource === 'analyzed';
-
-    const pillBase = 'px-3 py-1 text-[11px] font-semibold transition-colors';
-    const pillActive = 'bg-purple-600 text-white shadow-inner';
-    const pillInactive = 'bg-transparent text-g-muted hover:text-g-text';
 
     return (
         <div className="p-3 overflow-y-auto text-sm text-g-text">
-            <div className="flex items-center justify-between mb-3">
-                <h3 className="text-xs font-bold text-g-muted uppercase">Variables</h3>
-                <div
-                    className="inline-flex rounded-md border border-g-border overflow-hidden"
-                    role="radiogroup"
-                    aria-label="Variable source"
-                >
-                    <button
-                        type="button"
-                        role="radio"
-                        aria-checked={showAnalyzed}
-                        onClick={() => setVariableSource('analyzed')}
-                        className={`${pillBase} ${showAnalyzed ? pillActive : pillInactive}`}
-                        title="Show variables observed by the analysis pass"
-                    >
-                        Analyzed
-                    </button>
-                    <button
-                        type="button"
-                        role="radio"
-                        aria-checked={!showAnalyzed}
-                        onClick={() => setVariableSource('scaffold')}
-                        className={`${pillBase} ${!showAnalyzed ? pillActive : pillInactive}`}
-                        title="Show planned scaffold beat targets"
-                    >
-                        Scaffold
-                    </button>
-                </div>
-            </div>
+            <h3 className="text-xs font-bold text-g-muted uppercase mb-3">Chapter Variables</h3>
 
-            <p className="text-[10px] text-g-status mb-3">
-                {showAnalyzed
-                    ? 'Showing analyzed chapter scores. Inline-edit prompts will reference these as the comparison target.'
-                    : 'Showing scaffold beat targets. Inline-edit prompts will reference these as the comparison target.'}
-            </p>
+            {!hasChapters && !hasBeats && (
+                <p className="text-g-status text-xs">
+                    No chapter data yet. Add chapters in the Analyze workflow or beats in Scaffold to see dimension targets here.
+                </p>
+            )}
 
-            {showAnalyzed ? (
-                hasChapters ? (
-                    <div className="space-y-2">
-                        {chapters.map((ch, i) => {
-                            const scores = ch.userScores || ch.aiScores;
-                            return (
-                                <div key={ch.id} className="bg-g-chrome rounded p-2">
-                                    <div className="font-medium text-xs mb-1">
-                                        {i + 1}. {ch.title || 'Untitled'}
-                                    </div>
-                                    {scores ? (
-                                        <div className="grid grid-cols-3 gap-x-2 gap-y-0.5 text-[10px] text-g-muted">
-                                            {DIMENSION_KEYS.map((k) => (
-                                                <span key={k}>
-                                                    {k}: <span className="font-mono">{scores[k] != null ? Number(scores[k]).toFixed(1) : '-'}</span>
-                                                </span>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-[10px] text-g-status">Not yet analyzed.</div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                ) : (
-                    <p className="text-g-status text-xs">No analyzed chapters yet. Add chapters in the Analyze workflow to populate.</p>
-                )
-            ) : (
-                hasBeats ? (
-                    <div className="space-y-2">
-                        {scaffoldBeats.map((beat, i) => (
-                            <div key={beat.id} className="bg-g-chrome rounded p-2">
+            {hasChapters && (
+                <div className="space-y-2 mb-4">
+                    <div className="text-[10px] font-bold text-g-status uppercase">Analyzed Chapters</div>
+                    {chapters.map((ch, i) => {
+                        const scores = ch.userScores || ch.aiScores;
+                        return (
+                            <div key={ch.id} className="bg-g-chrome rounded p-2">
                                 <div className="font-medium text-xs mb-1">
-                                    {i + 1}. {beat.label || 'Untitled'} <span className="text-g-status">({beat.time}%)</span>
+                                    {i + 1}. {ch.title || 'Untitled'}
                                 </div>
-                                <div className="grid grid-cols-3 gap-x-2 gap-y-0.5 text-[10px] text-g-muted">
-                                    {DIMENSION_KEYS.map((k) => (
-                                        <span key={k}>
-                                            {k}: <span className="font-mono">{beat[k] != null ? Number(beat[k]).toFixed(1) : '-'}</span>
-                                        </span>
-                                    ))}
-                                </div>
+                                {scores && (
+                                    <div className="grid grid-cols-3 gap-x-2 gap-y-0.5 text-[10px] text-g-muted">
+                                        {DIMENSION_KEYS.map((k) => (
+                                            <span key={k}>
+                                                {k}: <span className="font-mono">{scores[k] != null ? Number(scores[k]).toFixed(1) : '-'}</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="text-g-status text-xs">No scaffold beats yet. Define beats in the Scaffold workflow to populate.</p>
-                )
+                        );
+                    })}
+                </div>
+            )}
+
+            {hasBeats && (
+                <div className="space-y-2">
+                    <div className="text-[10px] font-bold text-g-status uppercase">Scaffold Beats</div>
+                    {scaffoldBeats.map((beat, i) => (
+                        <div key={beat.id} className="bg-g-chrome rounded p-2">
+                            <div className="font-medium text-xs mb-1">
+                                {i + 1}. {beat.label || 'Untitled'} <span className="text-g-status">({beat.time}%)</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-x-2 gap-y-0.5 text-[10px] text-g-muted">
+                                {DIMENSION_KEYS.map((k) => (
+                                    <span key={k}>
+                                        {k}: <span className="font-mono">{beat[k] != null ? Number(beat[k]).toFixed(1) : '-'}</span>
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             )}
         </div>
     );

@@ -220,7 +220,6 @@ function InlineEditPanel({
   const bookScenes = useBookStore((s) => s.scenes);
   const bookCharacters = useBookStore((s) => s.characters);
   const activeTabId = useEditorStore((s) => s.activeTabId);
-  const variableSource = useEditorStore((s) => s.variableSource);
   const scaffoldVars = useMemo(() => {
     const gd = genreSystem[selectedGenre];
     const sd = gd?.subgenres?.[selectedSubgenre];
@@ -230,7 +229,6 @@ function InlineEditPanel({
       modifier: selectedModifier || '',
       pacing: selectedPacing || '',
       structure: selectedStructure || '',
-      variable_source: variableSource || 'scaffold',
     };
 
     // Enrich with scene/beat context if the active file matches a scene
@@ -250,34 +248,8 @@ function InlineEditPanel({
           vars.pov_character = char?.name || '';
         }
 
-        // Reference dimensions: scaffold target OR analyzed actual, depending on variableSource.
-        if (variableSource === 'analyzed') {
-          // Find an analyzed chapter that matches the scene by title/beat name.
-          const analyzedChapters = useAppStore.getState().chapters || [];
-          const sceneKey = (scene.title || scene.beat_id || '').toLowerCase();
-          let matchCh = null;
-          if (sceneKey) {
-            matchCh = analyzedChapters.find((ch) => {
-              const t = (ch.title || '').toLowerCase();
-              return t && (t === sceneKey || t.includes(sceneKey) || sceneKey.includes(t));
-            });
-          }
-          // Fallback: positional match if scene index is derivable.
-          if (!matchCh && analyzedChapters.length > 0) {
-            const sceneIdx = bookScenes.indexOf(scene);
-            if (sceneIdx >= 0 && sceneIdx < analyzedChapters.length) {
-              matchCh = analyzedChapters[sceneIdx];
-            }
-          }
-          const scores = matchCh && (matchCh.userScores || matchCh.aiScores);
-          if (matchCh && scores) {
-            vars.beat_guidance = matchCh.title || '';
-            const dimParts = DIMENSION_KEYS
-              .filter((k) => scores[k] != null)
-              .map((k) => `${dimensions[k].name}: ${Number(scores[k]).toFixed(1)}`);
-            vars.expected_dimensions = dimParts.join(', ');
-          }
-        } else if (scene.time_position != null) {
+        // Expected dimensions formatted as a compact string
+        if (scene.time_position != null) {
           const scaffoldBeats = useAppStore.getState().scaffoldBeats;
           const matchBeat = scaffoldBeats.find((b) =>
             b.beat === scene.beat_id || b.label === scene.beat_id
@@ -294,7 +266,7 @@ function InlineEditPanel({
     }
 
     return vars;
-  }, [selectedGenre, selectedSubgenre, selectedModifier, selectedPacing, selectedStructure, activeTabId, bookScenes, bookCharacters, variableSource]);
+  }, [selectedGenre, selectedSubgenre, selectedModifier, selectedPacing, selectedStructure, activeTabId, bookScenes, bookCharacters]);
 
   const [prompt, setPrompt] = useState(initialPreset?.title || '');
   const [showHistory, setShowHistory] = useState(false);

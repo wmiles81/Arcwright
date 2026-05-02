@@ -1,10 +1,19 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useBookStore from '../../store/useBookStore';
 import useSeriesStore from '../../store/useSeriesStore';
 import useAppStore from '../../store/useAppStore';
 import { dimensions, DIMENSION_KEYS } from '../../data/dimensions';
 
+/**
+ * ProjectDashboard — unified overview of the active book project.
+ *
+ * Shows:
+ * - Book metadata and series context
+ * - Chapter/scene grid with beat mapping status
+ * - Analysis scores with trend indicators
+ * - Quick-action buttons (Analyze, Edit, Revise)
+ */
 export default function ProjectDashboard() {
     const activeBookId = useBookStore((s) => s.activeBookId);
     const activeBook = useBookStore((s) => s.activeBook);
@@ -17,43 +26,19 @@ export default function ProjectDashboard() {
 
     const activeSeries = useSeriesStore((s) => s.activeSeries);
     const scaffoldBeats = useAppStore((s) => s.scaffoldBeats);
+    const appChapters = useAppStore((s) => s.chapters);
 
     const navigate = useNavigate();
 
-    const [stats, setStats] = useState(null);
-    const [snapshotsByScene, setSnapshotsByScene] = useState({});
-
-    // Load stats for the active book
-    useEffect(() => {
-        let cancelled = false;
-        if (!activeBookId) {
-            setStats(null);
-            return;
-        }
-        getStats().then((s) => {
-            if (!cancelled) setStats(s);
-        });
-        return () => { cancelled = true; };
+    const stats = useMemo(() => {
+        if (!activeBookId) return null;
+        return getStats();
     }, [activeBookId, getStats]);
 
-    // Load snapshots for every scene in parallel and store keyed by scene id
-    useEffect(() => {
-        let cancelled = false;
-        if (!scenes || scenes.length === 0) {
-            setSnapshotsByScene({});
-            return;
-        }
-        Promise.all(
-            scenes.map(async (scene) => [scene.id, (await getSceneSnapshots(scene.id)) || []])
-        ).then((entries) => {
-            if (!cancelled) setSnapshotsByScene(Object.fromEntries(entries));
-        });
-        return () => { cancelled = true; };
-    }, [scenes, getSceneSnapshots]);
-
+    // Scenes with analysis data
     const scenesEnriched = useMemo(() => {
         return scenes.map((scene) => {
-            const snapshots = snapshotsByScene[scene.id] || [];
+            const snapshots = getSceneSnapshots(scene.id);
             const latestSnap = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
             let latestScores = null;
             if (latestSnap?.scores) {
@@ -70,9 +55,10 @@ export default function ProjectDashboard() {
                 latestSource: latestSnap?.source,
             };
         });
-    }, [scenes, snapshotsByScene]);
+    }, [scenes, getSceneSnapshots]);
 
     const mappedScenes = scenesEnriched.filter((s) => s.beat_id);
+    const unmappedScenes = scenesEnriched.filter((s) => !s.beat_id);
     const analyzedScenes = scenesEnriched.filter((s) => s.snapshotCount > 0);
     const beatCoverage = scaffoldBeats.length > 0
         ? Math.round((new Set(mappedScenes.map((s) => s.beat_id)).size / scaffoldBeats.length) * 100)
@@ -97,6 +83,7 @@ export default function ProjectDashboard() {
         <div className="p-6 max-w-6xl mx-auto">
             <h1 className="text-3xl font-bold mb-2">Project Dashboard</h1>
 
+            {/* Book header */}
             <div className="bg-white/5 backdrop-blur rounded-lg border border-purple-500/20 p-4 mb-6">
                 <div className="flex items-start justify-between">
                     <div>
@@ -134,10 +121,11 @@ export default function ProjectDashboard() {
                 </div>
             </div>
 
+            {/* Stats cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
-                <StatCard label="Chapters" value={stats?.chapterCount ?? chapters.length} />
-                <StatCard label="Scenes" value={stats?.sceneCount ?? scenes.length} />
-                <StatCard label="Characters" value={stats?.characterCount ?? characters.length} />
+                <StatCard label="Chapters" value={stats?.chapterCount || chapters.length} />
+                <StatCard label="Scenes" value={stats?.sceneCount || scenes.length} />
+                <StatCard label="Characters" value={stats?.characterCount || characters.length} />
                 <StatCard label="Settings" value={settings.length} />
                 <StatCard
                     label="Beat Coverage"
@@ -147,6 +135,7 @@ export default function ProjectDashboard() {
                 <StatCard label="Analyzed" value={analyzedScenes.length} />
             </div>
 
+            {/* Scene grid */}
             <h3 className="text-lg font-bold text-purple-300 mb-3">Scenes</h3>
             {scenesEnriched.length === 0 ? (
                 <div className="bg-white/5 rounded-lg p-6 text-center text-gray-500 text-sm mb-6">
@@ -162,6 +151,7 @@ export default function ProjectDashboard() {
                 </div>
             )}
 
+            {/* Characters overview */}
             {characters.length > 0 && (
                 <>
                     <h3 className="text-lg font-bold text-purple-300 mb-3">Characters</h3>
@@ -179,6 +169,7 @@ export default function ProjectDashboard() {
                 </>
             )}
 
+            {/* Scaffold beats status */}
             {scaffoldBeats.length > 0 && (
                 <>
                     <h3 className="text-lg font-bold text-purple-300 mb-3">Beat Mapping Status</h3>
@@ -245,6 +236,7 @@ function SceneCard({ scene }) {
                 </div>
             </div>
 
+            {/* Mini score bar if analyzed */}
             {hasAnalysis && scene.latestScores && (
                 <div className="flex gap-0.5 mt-1.5">
                     {DIMENSION_KEYS.map((k) => {
@@ -268,6 +260,7 @@ function SceneCard({ scene }) {
                 </div>
             )}
 
+            {/* Status badges */}
             <div className="flex gap-1 mt-2 flex-wrap">
                 {hasBeat && (
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">

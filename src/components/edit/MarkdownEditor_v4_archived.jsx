@@ -181,9 +181,6 @@ export default function MarkdownEditor() {
   const renameTab = useEditorStore((s) => s.renameTab);
   const clearAllTabs = useEditorStore((s) => s.clearAllTabs);
   const setEditorTheme = useEditorStore((s) => s.setEditorTheme);
-  const editorFontScale = useEditorStore((s) => s.editorFontScale);
-  const bumpEditorFontScale = useEditorStore((s) => s.bumpEditorFontScale);
-  const setEditorFontScale = useEditorStore((s) => s.setEditorFontScale);
   const setLeftPanelTab = useEditorStore((s) => s.setLeftPanelTab);
   const focusedPane = useEditorStore((s) => s.focusedPane);
   const setFocusedPane = useEditorStore((s) => s.setFocusedPane);
@@ -827,46 +824,6 @@ export default function MarkdownEditor() {
 
         {/* Right-side controls */}
         <div className="ml-auto flex items-center gap-1">
-          {/* Font size: − % + */}
-          <div
-            className="inline-flex items-center rounded overflow-hidden border"
-            style={{ borderColor: c.chromeBorder }}
-            role="group"
-            aria-label="Editor font size"
-          >
-            <button
-              onClick={() => bumpEditorFontScale(-0.1)}
-              disabled={editorFontScale <= 0.5}
-              className="text-[10px] px-1.5 py-0.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ color: c.toolbarBtn }}
-              title="Decrease editor font size"
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.color = c.toolbarBtnHover; e.currentTarget.style.background = c.toolbarBtnHoverBg; } }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = c.toolbarBtn; e.currentTarget.style.background = 'transparent'; }}
-            >
-              {'−'}
-            </button>
-            <button
-              onClick={() => setEditorFontScale(1.0)}
-              className="text-[10px] px-1.5 py-0.5 font-mono transition-colors"
-              style={{ color: c.toolbarBtn, minWidth: '38px' }}
-              title="Reset editor font size to 100%"
-              onMouseEnter={(e) => { e.currentTarget.style.color = c.toolbarBtnHover; e.currentTarget.style.background = c.toolbarBtnHoverBg; }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = c.toolbarBtn; e.currentTarget.style.background = 'transparent'; }}
-            >
-              {Math.round(editorFontScale * 100)}%
-            </button>
-            <button
-              onClick={() => bumpEditorFontScale(0.1)}
-              disabled={editorFontScale >= 2.0}
-              className="text-[10px] px-1.5 py-0.5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ color: c.toolbarBtn }}
-              title="Increase editor font size"
-              onMouseEnter={(e) => { if (!e.currentTarget.disabled) { e.currentTarget.style.color = c.toolbarBtnHover; e.currentTarget.style.background = c.toolbarBtnHoverBg; } }}
-              onMouseLeave={(e) => { e.currentTarget.style.color = c.toolbarBtn; e.currentTarget.style.background = 'transparent'; }}
-            >
-              +
-            </button>
-          </div>
           <button
             onClick={() => setShowSearchBar(!showSearchBar)}
             className="text-[10px] px-1.5 py-0.5 rounded transition-colors"
@@ -1046,10 +1003,9 @@ export default function MarkdownEditor() {
               onKeyUp={handleEditorMouseUp}
               onKeyDown={handleEditorKeyDown}
               onFocus={() => setFocusedPane('primary')}
-              className="editor-content p-4 outline-none leading-relaxed overflow-y-auto"
+              className="editor-content text-base p-4 outline-none leading-relaxed overflow-y-auto"
               style={{
                 background: c.bg, color: c.text, caretColor: c.caret,
-                fontSize: `${editorFontScale}rem`,
                 width: dualPane ? `${splitPercent}%` : '100%',
                 flexShrink: 0, minHeight: 0,
                 borderTop: dualPane ? `2px solid ${focusedPane === 'primary' ? '#7C3AED' : 'transparent'}` : 'none',
@@ -1099,10 +1055,9 @@ export default function MarkdownEditor() {
                   onKeyUp={handleEditorMouseUp}
                   onKeyDown={handleEditorKeyDown}
                   onFocus={() => setFocusedPane('secondary')}
-                  className="editor-content p-4 outline-none leading-relaxed overflow-y-auto"
+                  className="editor-content text-base p-4 outline-none leading-relaxed overflow-y-auto"
                   style={{
                     background: c.bg, color: c.text, caretColor: c.caret,
-                    fontSize: `${editorFontScale}rem`,
                     flex: 1, minWidth: 0, minHeight: 0,
                     borderTop: `2px solid ${focusedPane === 'secondary' ? '#7C3AED' : 'transparent'}`,
                   }}

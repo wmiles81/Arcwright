@@ -1,18 +1,5 @@
 # Changelog
 
-## [3.1.2] — 2026-05-04
-
-### Added
-
-- **Cross-platform launchers** — `start.command` (macOS), `start.bat` (Windows), and `start.sh` (Linux) at the project root. Recipients of a distribution zip can double-click (or run) the launcher for their platform; it verifies Node.js ≥ v18, runs `npm install --production` on first run, opens the default browser to `http://localhost:3000`, and runs the server in the foreground. No npm knowledge required.
-
-### Notes
-
-- macOS Gatekeeper may flag `start.command` on first run as "from an unidentified developer." Right-click → Open the first time, then it remembers. Same potential warning on Windows SmartScreen for `start.bat`.
-- The launchers do not handle port conflicts. If something else is on port 3000 the server will exit and the recipient sees the error in their terminal.
-
----
-
 ## [3.1.1] — 2026-05-02
 
 ### Added

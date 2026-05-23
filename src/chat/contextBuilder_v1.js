@@ -82,19 +82,6 @@ You have tools to inspect the current application state. Current scaffold beats 
     }
   }
 
-  // Variable source mode — drives whether the user wants the AI to reason
-  // against scaffold targets (intent) or analyzed scores (actual).
-  {
-    const { variableSource } = useEditorStore.getState();
-    if (variableSource === 'analyzed') {
-      prompt += `\n## Variable Source: Analyzed (Actual)\n`;
-      prompt += `The user has set the variable comparison mode to **analyzed**. When reasoning about whether a chapter or scene is hitting its dimensions, prefer the analyzed chapter scores below over the scaffold beat targets. Treat scaffold as prior intent and analyzed as the current state of the prose.\n`;
-    } else {
-      prompt += `\n## Variable Source: Scaffold (Intent)\n`;
-      prompt += `The user has set the variable comparison mode to **scaffold**. When reasoning about whether a chapter or scene is hitting its dimensions, prefer the scaffold beat targets below over the analyzed chapter scores. Treat scaffold as the authoritative target; analyzed scores show how far the prose is from that target.\n`;
-    }
-  }
-
   // Always inline genre + beats — user may ask about scaffold from any workflow
   {
     const { scaffoldBeats, selectedGenre, selectedSubgenre, selectedModifier, selectedPacing, customGenreName, customSubgenreName } = useAppStore.getState();

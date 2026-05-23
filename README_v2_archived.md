@@ -48,24 +48,6 @@ ARCWRIGHT_DATA=/path/to/custom/dir npm run dev
 
 The standalone MCP server (`mcp/arcwright-mcp-server.js`, used by external ACP agents) reads from a different env var — `ARCWRITE_DATA_DIR` — and is not part of the main app build.
 
-## Quick start (recipients of a distribution zip)
-
-Unzip the archive and double-click the launcher for your platform:
-
-| Platform | Launcher |
-|---|---|
-| macOS | `start.command` |
-| Windows | `start.bat` |
-| Linux | `./start.sh` |
-
-The launcher verifies Node.js v18+ is installed, runs `npm install --production` on first launch (one-time, ~1–2 minutes), opens your browser to `http://localhost:3000`, and runs the server in the foreground.
-
-> **Keep the launcher's terminal window open while using Arcwright.** Closing it stops the server.
-
-**First-run warnings.** macOS Gatekeeper may flag `start.command` as "from an unidentified developer" — right-click the file → **Open** the first time. Windows SmartScreen may show a similar one-time warning for `start.bat`.
-
-If Node.js isn't installed, the launcher tells you and points at https://nodejs.org. After installing it, run the launcher again.
-
 ## Run locally (development)
 
 1. Clone the repository:

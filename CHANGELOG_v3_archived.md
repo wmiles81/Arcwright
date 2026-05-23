@@ -1,37 +1,5 @@
 # Changelog
 
-## [3.1.2] — 2026-05-04
-
-### Added
-
-- **Cross-platform launchers** — `start.command` (macOS), `start.bat` (Windows), and `start.sh` (Linux) at the project root. Recipients of a distribution zip can double-click (or run) the launcher for their platform; it verifies Node.js ≥ v18, runs `npm install --production` on first run, opens the default browser to `http://localhost:3000`, and runs the server in the foreground. No npm knowledge required.
-
-### Notes
-
-- macOS Gatekeeper may flag `start.command` on first run as "from an unidentified developer." Right-click → Open the first time, then it remembers. Same potential warning on Windows SmartScreen for `start.bat`.
-- The launchers do not handle port conflicts. If something else is on port 3000 the server will exit and the recipient sees the error in their terminal.
-
----
-
-## [3.1.1] — 2026-05-02
-
-### Added
-
-- **`.docx` import via mammoth** — clicking a Word document in the file tree converts it to markdown on first open and writes the working copy to a sibling `<filename>.docx.md`. The original `.docx` is never modified; subsequent clicks open the existing `.docx.md` directly. mammoth is lazy-loaded only when a `.docx` is opened, so the main bundle is unaffected.
-
-### Fixed
-
-- **Editor displayed prose in monospace** — the WYSIWYG `contentEditable` panes hardcoded `font-mono`, so chapters rendered like a typewriter document. Replaced with proportional `text-base` so prose now reads correctly. Code files still use the dedicated `<CodePane>` for syntax highlighting.
-- **`scenes.forEach is not a function` on `/edit`** — the server-backed migration left every database call in `useBookStore` unawaited, so `scenes` (and `characters`, `chapters`, `settings`) were being stored as Promises rather than arrays. Made `loadBook` and all mutator methods async, with `Promise.all` for the four entity loads.
-- **`ProjectDashboard` and `CharacterArcEditor` consumed Promises synchronously** — both components called now-async store methods (`getStats`, `getSceneSnapshots`, `getCharacterArcPoints`) inside `useMemo` and dropped them into render output. Replaced with `useEffect` + `useState` patterns; `ProjectDashboard` now batches snapshot loads with `Promise.all` keyed by scene id.
-- **"Open Folder" threw `WellKnownDirectory` enum error** — `FilePanel` passed `arcwriteHandle` directly to `showDirectoryPicker({ startIn })`. After the server migration, `arcwriteHandle` is the string `'server'` rather than a real `FileSystemDirectoryHandle`. Now only forwards the handle when its `kind === 'directory'`, otherwise falls back to `'documents'`.
-
-### Notes
-
-- Latent issue not yet fixed: `/api/projects/books/<title>/tree` and `/api/books/by-title/<title>` return 404 during book auto-restore. The endpoints were renamed during the server migration but the auto-restore path wasn't updated. App degrades gracefully to "no active book"; harmless until the project-restore flow is rewired.
-
----
-
 ## [3.1.0] — 2026-05-01
 
 ### Added

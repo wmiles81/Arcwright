@@ -30,41 +30,19 @@ npm -v
 
 ## Data directory
 
-Arcwright stores all settings, prompts, sequences, projects, chat history, and extension packs server-side under:
+Arcwright stores all project data (settings, prompts, sequences, projects, chat history) in:
 
 ```
 ~/.arcwright/
 ```
 
-Inside that directory, the SQLite database lives at `arcwright.db` and JSON artifacts live in matching subfolders (see the header of `server/routes/files.js`). The directory is created automatically on first run.
+This directory is created automatically on first run. If you have an existing Arcwrite folder from a previous version, the app will prompt you to import that data.
 
-The editor's open-folder workspace is **separate** — it uses the browser's File System Access API and points wherever you choose (your manuscripts, drafts, etc.). That handle is persisted in IndexedDB so it reopens on relaunch.
-
-The server data directory can be overridden for development/testing:
+The data directory can be overridden for development/testing:
 
 ```bash
 ARCWRIGHT_DATA=/path/to/custom/dir npm run dev
 ```
-
-The standalone MCP server (`mcp/arcwright-mcp-server.js`, used by external ACP agents) reads from a different env var — `ARCWRITE_DATA_DIR` — and is not part of the main app build.
-
-## Quick start (recipients of a distribution zip)
-
-Unzip the archive and double-click the launcher for your platform:
-
-| Platform | Launcher |
-|---|---|
-| macOS | `start.command` |
-| Windows | `start.bat` |
-| Linux | `./start.sh` |
-
-The launcher verifies Node.js v18+ is installed, runs `npm install --production` on first launch (one-time, ~1–2 minutes), opens your browser to `http://localhost:3000`, and runs the server in the foreground.
-
-> **Keep the launcher's terminal window open while using Arcwright.** Closing it stops the server.
-
-**First-run warnings.** macOS Gatekeeper may flag `start.command` as "from an unidentified developer" — right-click the file → **Open** the first time. Windows SmartScreen may show a similar one-time warning for `start.bat`.
-
-If Node.js isn't installed, the launcher tells you and points at https://nodejs.org. After installing it, run the launcher again.
 
 ## Run locally (development)
 
@@ -135,12 +113,12 @@ Many features (chat, analysis, inline editing, revision pipeline) require an API
 
 Supported providers:
 
-- **Cloud:** OpenRouter, OpenAI, Anthropic, Perplexity
-- **Local (OpenAI-compatible REST on localhost):** Ollama, LM Studio, Jan.ai, LocalAI
+- OpenRouter
+- OpenAI
+- Anthropic
+- Perplexity
 
-Local providers require CORS to be enabled on their server — see the header comment in `src/api/providers.js` for per-provider setup (e.g., `OLLAMA_ORIGINS=http://localhost:5173 ollama serve`).
-
-API keys and local-provider config are stored in `~/.arcwright/settings.json`.
+API keys are stored in `~/.arcwright/settings.json`.
 
 ## Troubleshooting
 
@@ -157,7 +135,7 @@ API keys and local-provider config are stored in `~/.arcwright/settings.json`.
   npm install
   ```
 
-- **Reset data:** Delete `~/.arcwright/` (or your custom `ARCWRIGHT_DATA` directory) to start with an empty install. The directory is recreated on next launch.
+- **Data migration:** If upgrading from the browser-based version, use the import banner on the landing page to copy data from your old Arcwrite folder.
 
 ## License
 

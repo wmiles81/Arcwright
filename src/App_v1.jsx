@@ -18,6 +18,10 @@ import UndoNotification from './components/shared/UndoNotification';
 import { genreSystem, genreDimensionRanges } from './data/genreSystem';
 import { plotStructures, allStructures } from './data/plotStructures';
 
+// ── Trial expiration ─────────────────────────────────────────────────────────
+// Set at build time. After this date the app shows an expiration screen.
+const TRIAL_EXPIRES = new Date('2026-04-20T00:00:00Z').getTime(); // 2 months from today
+
 const ScaffoldingWorkflow = lazy(() => import('./components/scaffolding/ScaffoldingWorkflow_v2'));
 const AnalysisWorkflow = lazy(() => import('./components/analysis/AnalysisWorkflow'));
 const EditWorkflow = lazy(() => import('./components/edit/EditWorkflow_v2'));
@@ -81,7 +85,29 @@ function applyDataPacks() {
   }
 }
 
+function TrialExpired() {
+  const expDate = new Date(TRIAL_EXPIRES).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 to-purple-900 text-white p-8">
+      <div className="max-w-md text-center space-y-4">
+        <div className="text-5xl mb-2">&#128220;</div>
+        <h1 className="text-2xl font-bold">Build Expired</h1>
+        <p className="text-purple-200 text-sm leading-relaxed">
+          This build of Arcwright expired on <span className="font-semibold text-white">{expDate}</span>.
+          Please obtain a newer version to continue.
+        </p>
+        <p className="text-purple-300/60 text-xs">
+          Expired builds are retired to prevent use of outdated models and features.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  // Trial expiration check
+  if (Date.now() > TRIAL_EXPIRES) return <TrialExpired />;
+
   // Initialize: connect to API server and restore project state
   useEffect(() => {
     // Init database (server-backed — no WASM needed)

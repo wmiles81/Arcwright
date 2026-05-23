@@ -11,7 +11,7 @@ import { buildChatSystemPrompt, buildAiProjectSystemPrompt } from '../../chat/co
 import { buildEditModePrompt, AI_PROJECT_PRESETS } from '../../chat/editPrompts';
 import { modelSupportsTools } from '../../api/claude';
 import { PROVIDERS } from '../../api/providers';
-import { useOpenSettings } from '../layout/AppShell_v2';
+import { useOpenSettings } from '../layout/AppShell';
 import useEditorStore from '../../store/useEditorStore';
 import useSequenceStore from '../../store/useSequenceStore';
 import usePromptStore from '../../store/usePromptStore';

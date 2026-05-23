@@ -5,28 +5,7 @@ import useEditorStore from '../../store/useEditorStore';
 import useProjectStore from '../../store/useProjectStore';
 import FileContextMenu from './FileContextMenu';
 
-const TEXT_EXTENSIONS = new Set(['.md', '.txt', '.markdown', '.mdown', '.mkd', '.json', '.js', '.jsx', '.py', '.docx']);
-
-/** Walk the path under rootHandle to return the handle of the parent directory of `filePath`. */
-async function getParentDirHandle(rootHandle, filePath) {
-  const segments = filePath.split('/').filter(Boolean);
-  segments.pop();
-  let dir = rootHandle;
-  for (const seg of segments) {
-    dir = await dir.getDirectoryHandle(seg);
-  }
-  return dir;
-}
-
-/** Convert a .docx file (ArrayBuffer) to markdown via mammoth. Returns the markdown string. */
-async function docxToMarkdown(arrayBuffer) {
-  const mammoth = await import('mammoth/mammoth.browser.js');
-  const result = await mammoth.convertToMarkdown({ arrayBuffer });
-  if (result.messages?.length) {
-    console.info('[FilePanel] mammoth conversion notes:', result.messages);
-  }
-  return result.value || '';
-}
+const TEXT_EXTENSIONS = new Set(['.md', '.txt', '.markdown', '.mdown', '.mkd', '.json', '.js', '.jsx', '.py']);
 
 // Module-level ref for drag payload (avoids dataTransfer serialization issues)
 let dragPayload = null;
@@ -393,51 +372,13 @@ export default function FilePanel() {
 
   const handleFileClick = useCallback(async (node) => {
     try {
-      // .docx import: redirect to a sibling .docx.md (creating it on first open)
-      if (/\.docx$/i.test(node.name)) {
-        const siblingName = `${node.name}.md`;
-        const siblingPath = `${node.path}.md`;
-        const parentDir = await getParentDirHandle(directoryHandle, node.path);
-
-        let siblingHandle;
-        try {
-          siblingHandle = await parentDir.getFileHandle(siblingName, { create: false });
-        } catch (err) {
-          if (err.name !== 'NotFoundError') throw err;
-        }
-
-        if (siblingHandle) {
-          // Existing working copy — open it directly
-          const file = await siblingHandle.getFile();
-          const content = await file.text();
-          openTab(siblingPath, siblingName, content, siblingHandle);
-          return;
-        }
-
-        // First open: convert the .docx to markdown and write the working copy
-        const docxFile = await node.handle.getFile();
-        const buffer = await docxFile.arrayBuffer();
-        const markdown = await docxToMarkdown(buffer);
-
-        siblingHandle = await parentDir.getFileHandle(siblingName, { create: true });
-        const writable = await siblingHandle.createWritable();
-        await writable.write(markdown);
-        await writable.close();
-
-        // Refresh the tree so the new sibling appears, then open it
-        const tree = await buildFileTree(directoryHandle);
-        setFileTree(tree);
-        openTab(siblingPath, siblingName, markdown, siblingHandle);
-        return;
-      }
-
       const file = await node.handle.getFile();
       const content = await file.text();
       openTab(node.path, node.name, content, node.handle);
     } catch (e) {
       console.error('Failed to read file:', e);
     }
-  }, [openTab, directoryHandle, setFileTree]);
+  }, [openTab]);
 
   const handleNewFile = useCallback(async (parentDirHandle, parentDirPath) => {
     if (!parentDirHandle) return;
